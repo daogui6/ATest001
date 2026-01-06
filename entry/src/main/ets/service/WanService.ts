@@ -85,7 +85,9 @@ function extractCookies(resp: http.HttpResponse): string {
     return rawCookies.join('; ');
   }
 
-  const header = (resp as { header?: Record<string, unknown> }).header;
+  const header = typeof resp.header === 'object' && resp.header !== null
+    ? (resp.header as Record<string, unknown>)
+    : undefined;
   const setCookie = header?.['Set-Cookie'] ?? header?.['set-cookie'];
   if (Array.isArray(setCookie)) {
     return setCookie.join('; ');
