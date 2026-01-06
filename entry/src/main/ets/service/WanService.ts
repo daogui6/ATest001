@@ -73,12 +73,13 @@ function mapArticle(item: ArticlePayload): Article {
   const id = item.id ?? 0;
   const title = item.title ?? '未命名';
   const desc = item.desc && item.desc.trim().length > 0 ? item.desc : title;
+  const link = item.link && item.link.trim().length > 0 ? item.link.trim() : '';
   const author = (item.author && item.author.trim().length > 0)
     ? item.author
     : (item.shareUser && item.shareUser.trim().length > 0 ? item.shareUser : '佚名');
   const cid = item.chapterId ?? item.superChapterId ?? 0;
 
-  const content = `${title}\n\n来源：wanandroid（ID=${id}）\n作者：${author}\n分类：${cid}\n\n摘要：${desc}`;
+  const content = `${title}\n\n来源：wanandroid（ID=${id}）\n作者：${author}\n分类：${cid}\n链接：${link || '暂无链接'}\n\n摘要：${desc}`;
   return {
     id,
     title,

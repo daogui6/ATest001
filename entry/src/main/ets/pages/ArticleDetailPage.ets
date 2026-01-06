@@ -119,8 +119,12 @@ struct ArticleDetailPage {
     const next = new Set(this.favIds);
     if (next.has(id)) {
       next.delete(id);
+      await FavoriteStore.removeArticleSnapshot(ctx, id);
     } else {
       next.add(id);
+      if (this.article) {
+        await FavoriteStore.saveArticleSnapshot(ctx, this.article);
+      }
     }
 
     this.favIds = next;
