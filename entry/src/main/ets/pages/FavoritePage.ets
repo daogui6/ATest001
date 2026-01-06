@@ -5,6 +5,7 @@ import router from '@ohos.router';
 import type { Article } from '../model/Article';
 import { LocalArticles } from '../data/LocalArticles';
 import { FavoriteStore } from '../store/FavoriteStore';
+import { ArticleStore } from '../store/ArticleStore';
 
 // ✅ 确保 key 存在（避免首次 get 为 undefined）
 AppStorage.setOrCreate('fav_version', 0);
@@ -62,11 +63,12 @@ export struct FavoritePage {
   }
 
   // ✅ 安全跳转（解决 ArkTSCheck：可能抛异常）
-  private async openDetail(id: number) {
+  private async openDetail(article: Article) {
     try {
+      ArticleStore.setArticles(this.favArticles);
       await router.pushUrl({
         url: 'pages/ArticleDetailPage',
-        params: { id: id }
+        params: { id: article.id, article: article }
       });
     } catch (e) {
       promptAction.showToast({ message: '跳转失败：页面不存在或参数错误' });
@@ -126,7 +128,7 @@ export struct FavoritePage {
               .backgroundColor('#F5F5F5')
               // ✅ 点卡片进正文
               .onClick(async () => {
-                await this.openDetail(item.id);
+                await this.openDetail(item);
               })
             }
           })

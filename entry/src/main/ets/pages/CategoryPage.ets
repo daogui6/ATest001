@@ -8,6 +8,7 @@ import type { Category } from '../model/Category';
 import { LocalCategories } from '../data/LocalCategories';
 import { FavoriteStore } from '../store/FavoriteStore';
 import { fetchArticlesByCid, fetchCategories } from '../service/WanService';
+import { ArticleStore } from '../store/ArticleStore';
 
 @Component
 export struct CategoryPage {
@@ -135,11 +136,12 @@ export struct CategoryPage {
   }
 
   // 安全跳转（解决 ArkTSCheck：可能抛异常）
-  private async openDetail(id: number) {
+  private async openDetail(article: Article) {
     try {
+      ArticleStore.setArticles(this.articles);
       await router.pushUrl({
         url: 'pages/ArticleDetailPage',
-        params: { id: id }
+        params: { id: article.id, article: article }
       });
     } catch (e) {
       promptAction.showToast({ message: '跳转失败：页面不存在或参数错误' });
@@ -229,7 +231,7 @@ export struct CategoryPage {
                   .backgroundColor('#F5F5F5')
                   // ✅ 点卡片跳转正文页
                   .onClick(async () => {
-                    await this.openDetail(item.id);
+                    await this.openDetail(item);
                   })
                 }
               })

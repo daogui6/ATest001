@@ -7,9 +7,11 @@ import { LocalArticles } from '../data/LocalArticles';
 import { FavoriteStore } from '../store/FavoriteStore';
 import { callZhipu, type AiMode } from '../service/ZhipuAI';
 import { HistoryStore } from '../store/HistoryStore';
+import { ArticleStore } from '../store/ArticleStore';
 
 interface DetailParams {
   id?: number | string;
+  article?: Article;
 }
 
 // 确保全局 key 存在
@@ -49,19 +51,26 @@ struct ArticleDetailPage {
   async aboutToAppear() {
     // 1) 读路由参数 id
     const params = router.getParams() as DetailParams;
+    const paramArticle = params?.article as Article | undefined;
     const rawId = params?.id;
     const id = typeof rawId === 'number' ? rawId : Number(rawId);
 
     // 2) 查文章
-    if (!id || Number.isNaN(id)) {
+    if ((!id || Number.isNaN(id)) && !paramArticle) {
       this.article = null;
       promptAction.showToast({ message: '文章参数缺失，无法打开' });
       await this.refreshFav();
       return;
     }
 
-    // 2) 查文章（先本地列表，兜底历史缓存）
-    this.article = await this.resolveArticleById(id);
+    /// 2) 查文章（参数 > 缓存 > 本地 > 历史）
+    this.article = paramArticle
+      ?? ArticleStore.getArticleById(id)
+      ?? await this.resolveArticleById(id);
+
+    if (this.article) {
+      ArticleStore.setArticle(this.article);
+    }
 
     if (this.article) {
       await HistoryStore.addVisit(this.hostCtx(), this.article);

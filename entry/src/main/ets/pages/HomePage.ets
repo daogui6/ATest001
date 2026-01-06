@@ -6,6 +6,7 @@ import type { Article } from '../model/Article';
 import { LocalArticles } from '../data/LocalArticles';
 import { FavoriteStore } from '../store/FavoriteStore';
 import { fetchLatestArticles, fetchTopArticles } from '../service/WanService';
+import { ArticleStore } from '../store/ArticleStore';
 
 // ✅ 确保 key 存在（避免首次为 undefined）
 AppStorage.setOrCreate('fav_version', 0);
@@ -154,9 +155,10 @@ export struct HomePage {
             .borderRadius(12)
             .backgroundColor('#F5F5F5')
             .onClick(() => {
+              ArticleStore.setArticles(this.articles);
               router.pushUrl({
                 url: 'pages/ArticleDetailPage',
-                params: { id: item.id }
+                params: { id: item.id, article: item }
               })
             })
           }
