@@ -315,14 +315,14 @@ export struct CategoryPage {
       })
 
       if (this.showBackToTop) {
-        Positioned({ bottom: 24, right: 16 }) {
-          Button('↑')
-            .backgroundColor('#F5F5F5')
-            .fontColor('#444444')
-            .borderRadius(18)
-            .padding({ left: 10, right: 10, top: 8, bottom: 8 })
-            .onClick(() => this.articleScroller.scrollToIndex(0))
-        }
+        Button('↑')
+          .backgroundColor('#F5F5F5')
+          .fontColor('#444444')
+          .borderRadius(18)
+          .padding({ left: 10, right: 10, top: 8, bottom: 8 })
+          .margin({ right: 16, bottom: 24 })
+          .align(Alignment.BottomEnd)
+          .onClick(() => this.articleScroller.scrollToIndex(0))
       }
     }
     .width('100%')
