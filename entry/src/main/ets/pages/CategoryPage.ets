@@ -315,12 +315,12 @@ export struct CategoryPage {
       })
 
       if (this.showBackToTop) {
-        Button('↑ 顶部')
-          .backgroundColor('#007DFF')
-          .fontColor(Color.White)
+        Button('↑')
+          .backgroundColor('#F5F5F5')
+          .fontColor('#444444')
           .borderRadius(18)
-          .padding({ left: 12, right: 12 })
-          .margin({ bottom: 26, right: 20 })
+          .padding({ left: 10, right: 10, top: 8, bottom: 8 })
+          .margin({ bottom: 24, right: 16 })
           .align(Alignment.BottomEnd)
           .onClick(() => this.articleScroller.scrollToIndex(0))
       }
