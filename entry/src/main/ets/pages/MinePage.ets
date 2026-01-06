@@ -1,4 +1,5 @@
 import type common from '@ohos.app.ability.common';
+import promptAction from '@ohos.promptAction';
 import { Prefs } from '../store/Prefs';
 import { UserStore } from '../store/UserStore';
 
@@ -63,6 +64,17 @@ export struct MinePage {
     if (this.isLogin && this.uid !== '0') {
       await UserStore.updateProfile(this.hostCtx(), { nickname: this.nickname, bio: this.bio });
     }
+  }
+
+  private async persistProfileChanges() {
+    this.nickname = this.nickname.trim() || this.username || '用户1';
+    this.bio = this.bio.trim() || '这个人很懒，还没有签名～';
+
+    await this.saveAll();
+    AppStorage.setOrCreate('session_version', 0);
+    const v = (AppStorage.get('session_version') as number) ?? 0;
+    AppStorage.set('session_version', v + 1);
+    promptAction.showToast({ message: '已保存个人资料' });
   }
 
   private async handleLogin() {
@@ -203,17 +215,21 @@ export struct MinePage {
 
           Text('编辑昵称').fontSize(14).opacity(0.7)
           TextInput({ text: this.nickname, placeholder: '请输入昵称' })
-            .onChange(async (v) => { //边输入边保存数据防止丢失
+            .onChange((v) => { // 首先更新本地状态，统一点击保存时再持久化
               this.nickname = v;
-              await this.saveAll();
             })
 
           Text('编辑签名').fontSize(14).opacity(0.7).margin({ top: 6 })
           TextInput({ text: this.bio, placeholder: '请输入签名' })
-            .onChange(async (v) => {
-              this.bio = v;
-              await this.saveAll();
+            .onChange((v) => {
+              this.bio = v
             })
+
+          Button('保存资料', { type: ButtonType.Capsule })
+            .onClick(async () => {
+              await this.persistProfileChanges();
+            })
+            .margin({ top: 6 })
 
           Button('退出登录', { type: ButtonType.Capsule })
             .onClick(async () => {

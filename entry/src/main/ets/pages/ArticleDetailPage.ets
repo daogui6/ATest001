@@ -376,27 +376,49 @@ struct ArticleDetailPage {
 
             Divider().margin({ top: 12, bottom: 4 })
 
-            // 点赞 + 评论
-            Column({ space: 10 }) {
-              Row({ space: 8 }) {
-                Button(this.liked ? `👍 已赞（${this.likeCount}）` : `👍 点赞（${this.likeCount}）`, { type: ButtonType.Capsule })
+            // 点赞 + 收藏 + 评论：小红书式排列
+            Column({ space: 12 }) {
+              Row() {
+                TextInput({ text: this.newComment, placeholder: '说点什么…' })
+                  .onChange((v: string) => { this.newComment = v; })
+                  .layoutWeight(1)
+                  .height(42)
+                  .padding({ left: 14, right: 14 })
+                  .borderRadius(22)
+                  .backgroundColor('#FFFFFF')
+
+                Button('发送', { type: ButtonType.Capsule })
+                  .height(36)
+                  .margin({ left: 8, right: 4 })
+                  .onClick(async () => await this.submitComment())
+
+                Row({ space: 16 }) {
+                  Row({ space: 4 }) {
+                    Text(this.liked ? '❤️' : '🤍').fontSize(22)
+                    Text(`${this.likeCount}`).fontSize(14).opacity(0.8)
+                  }
                   .onClick(async () => await this.toggleLikeStatus())
 
-                Text(`评论 ${this.comments.length}`)
-                  .fontSize(14)
-                  .opacity(0.7)
-              }
+                  if (this.article) {
+                    Row({ space: 4 }) {
+                      Text(this.favIds.has(this.article.id) ? '★' : '☆').fontSize(22)
+                      Text('收藏').fontSize(14).opacity(0.8)
+                    }
+                    .onClick(async () => await this.toggleFav(this.article!.id))
+                  }
 
-              Column({ space: 8 }) {
-                Text('发表评论').fontSize(16).fontWeight(FontWeight.Medium)
-                TextInput({ text: this.newComment, placeholder: '写下你的想法...' })
-                  .onChange((v: string) => { this.newComment = v; })
-                Button('发表', { type: ButtonType.Capsule })
-                  .onClick(async () => await this.submitComment())
+                  Row({ space: 4 }) {
+                    Text('💬').fontSize(22)
+                    Text(`${this.comments.length}`).fontSize(14).opacity(0.8)
+                  }
+                }
+                .margin({ left: 8 })
+                .alignItems(VerticalAlign.Center)
               }
               .padding(12)
-              .borderRadius(12)
-              .backgroundColor('#F7F7F7')
+              .borderRadius(26)
+              .backgroundColor('#F0F1F5')
+              .alignItems(VerticalAlign.Center)
 
               Column({ space: 10 }) {
                 Text('最新评论').fontSize(16).fontWeight(FontWeight.Medium)
