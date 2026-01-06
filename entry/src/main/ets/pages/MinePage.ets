@@ -19,9 +19,11 @@ export struct MinePage {
   @State token: string = ''
   @State loginUsername: string = ''
   @State loginPassword: string = ''
+  @State loginAgree: boolean = false
   @State regUsername: string = ''
   @State regPassword: string = ''
   @State regNickname: string = ''
+  @State registerAgree: boolean = false
   @State message: string = ''
   @State showRegister: boolean = false
   @State rememberPassword: boolean = false
@@ -79,6 +81,10 @@ export struct MinePage {
 
   private async handleLogin() {
     this.message = '';
+    if (!this.loginAgree) {
+      this.message = '请先阅读并同意服务条款再登录';
+      return;
+    }
     const result = await UserStore.login(this.hostCtx(), this.loginUsername.trim(), this.loginPassword);
     if (result.ok === false) {
       this.message = result.message;
@@ -102,6 +108,10 @@ export struct MinePage {
 
   private async handleRegister() {
     this.message = '';
+    if (!this.registerAgree) {
+      this.message = '请先阅读并同意服务条款再注册';
+      return;
+    }
     const result = await UserStore.register(
       this.hostCtx(),
       this.regUsername.trim(),
@@ -144,10 +154,24 @@ export struct MinePage {
     this.isLogin = false;
     this.showRegister = false;
     this.message = '';
+    this.loginAgree = false;
+    this.registerAgree = false;
     this.resetRegisterForm();
     if (!this.rememberPassword) {
       this.loginPassword = '';
     }
+  }
+
+  private async handleLogout() {
+    this.handleLogoutState();
+    await this.saveAll();
+    await UserStore.logout(this.hostCtx());
+
+    AppStorage.setOrCreate('session_version', 0);
+    const v = (AppStorage.get('session_version') as number) ?? 0;
+    AppStorage.set('session_version', v + 1);
+
+    promptAction.showToast({ message: '已退出登录' });
   }
 
   build() {
@@ -169,6 +193,26 @@ export struct MinePage {
             Text('记住密码').fontSize(14)
           }
           .alignItems(VerticalAlign.Center)
+          Row({ space: 8 }) {
+            Checkbox({ name: 'loginAgree', group: 'loginAgreement' })
+              .select(this.loginAgree)
+              .onChange((value: boolean) => {
+                this.loginAgree = value;
+                if (value) {
+                  this.message = '';
+                }
+              })
+            Text('我已阅读并同意《用户协议》和《隐私政策》').fontSize(12)
+              .onClick(() => {
+                const next = !this.loginAgree;
+                this.loginAgree = next;
+                if (next) {
+                  this.message = '';
+                }
+              })
+          }
+          .alignItems(VerticalAlign.Center)
+          .margin({ top: 4 })
           Button('登录', { type: ButtonType.Capsule })
             .onClick(async () => { await this.handleLogin(); })
 
@@ -189,6 +233,26 @@ export struct MinePage {
               .onChange((v) => { this.regPassword = v; })
             TextInput({ text: this.regNickname, placeholder: '昵称（可选）' })
               .onChange((v) => { this.regNickname = v; })
+            Row({ space: 8 }) {
+              Checkbox({ name: 'registerAgree', group: 'registerAgreement' })
+                .select(this.registerAgree)
+                .onChange((value: boolean) => {
+                  this.registerAgree = value;
+                  if (value) {
+                    this.message = '';
+                  }
+                })
+              Text('我已阅读并同意《用户协议》和《隐私政策》').fontSize(12)
+                .onClick(() => {
+                  const next = !this.registerAgree;
+                  this.registerAgree = next;
+                  if (next) {
+                    this.message = '';
+                  }
+                })
+            }
+            .alignItems(VerticalAlign.Center)
+            .margin({ top: 4 })
             Button('注册并登录', { type: ButtonType.Capsule })
               .onClick(async () => { await this.handleRegister(); })
           }
@@ -233,12 +297,7 @@ export struct MinePage {
 
           Button('退出登录', { type: ButtonType.Capsule })
             .onClick(async () => {
-              this.handleLogoutState();
-              await this.saveAll();
-              await UserStore.logout(this.hostCtx());
-              AppStorage.setOrCreate('session_version', 0);
-              const v = (AppStorage.get('session_version') as number) ?? 0;
-              AppStorage.set('session_version', v + 1);
+              await this.handleLogout();
             })
             .margin({ top: 10 })
         }
