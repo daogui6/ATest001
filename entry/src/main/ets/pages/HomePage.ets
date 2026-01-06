@@ -9,6 +9,19 @@ import { ArticleStore } from '../store/ArticleStore';
 import type { ThemePalette } from '../store/ThemeStore';
 import { DARK_MODE_STORAGE_KEY, ThemeStore } from '../store/ThemeStore';
 
+// 本地兜底配色，避免 ThemeStore 异常时返回 undefined 导致渲染崩溃
+const DEFAULT_PALETTE: ThemePalette = {
+  background: '#FFFFFF',
+  card: '#F5F5F5',
+  cardActive: '#E5E7EB',
+  primaryText: '#111827',
+  secondaryText: '#4B5563',
+  hintText: '#9CA3AF',
+  accent: '#2563EB',
+  divider: '#E5E7EB',
+  inputBackground: '#F5F5F5'
+};
+
 // ✅ 确保 key 存在（避免首次为 undefined）
 AppStorage.setOrCreate('fav_version', 0);
 AppStorage.setOrCreate('session_version', 0);
@@ -58,18 +71,27 @@ export struct HomePage {
 
   private get colors(): ThemePalette {
     // 兜底逻辑：任何情况下都返回完整的配色对象，避免 this.colors 为空导致渲染崩溃
-    const fallback = ThemeStore.palette(false);
-
-    try {
-      const palette = ThemeStore.palette(!!this.isDarkMode) as ThemePalette | undefined;
-      if (palette) {
-        return palette;
+    const palette = (() => {
+      try {
+        return ThemeStore.palette(!!this.isDarkMode) as ThemePalette | undefined;
+      } catch (_) {
+        return undefined;
       }
-    } catch (_) {
-      // ignore and fall back
-    }
+    })();
+    // ArkTS 对标准库有限制，显式按字段合并，避免 Object.assign / 扩展运算符告警
+    const merged: ThemePalette = {
+      background: palette?.background ?? DEFAULT_PALETTE.background,
+      card: palette?.card ?? DEFAULT_PALETTE.card,
+      cardActive: palette?.cardActive ?? DEFAULT_PALETTE.cardActive,
+      primaryText: palette?.primaryText ?? DEFAULT_PALETTE.primaryText,
+      secondaryText: palette?.secondaryText ?? DEFAULT_PALETTE.secondaryText,
+      hintText: palette?.hintText ?? DEFAULT_PALETTE.hintText,
+      accent: palette?.accent ?? DEFAULT_PALETTE.accent,
+      divider: palette?.divider ?? DEFAULT_PALETTE.divider,
+      inputBackground: palette?.inputBackground ?? DEFAULT_PALETTE.inputBackground
+    };
 
-    return fallback;
+    return merged;
   }
 
   async aboutToAppear() {
