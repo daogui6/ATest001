@@ -7,6 +7,7 @@ import { LocalArticles } from '../data/LocalArticles';
 import type { Category } from '../model/Category';
 import { LocalCategories } from '../data/LocalCategories';
 import { FavoriteStore } from '../store/FavoriteStore';
+import { fetchArticlesByCid, fetchCategories } from '../service/WanService';
 
 @Component
 export struct CategoryPage {
@@ -16,6 +17,10 @@ export struct CategoryPage {
 
   @State categories: Category[] = LocalCategories;
   @State selectedCid: number = 101;
+  @State articles: Article[] = [];
+  @State loadingCats: boolean = true;
+  @State loadingArticles: boolean = true;
+  @State errorMsg: string = '';
   @State uid: string = '0';
   @State favIds: Set<number> = new Set<number>();
   // 监听全局变化：收藏变化 / 登录变化（和你首页/收藏页同一套机制）
@@ -39,6 +44,47 @@ export struct CategoryPage {
     AppStorage.setOrCreate('fav_version', 0);
     AppStorage.setOrCreate('session_version', 0);
     await this.refreshFav();
+    await this.loadCategories();
+  }
+
+  private async loadCategories() {
+    this.loadingCats = true;
+    this.errorMsg = '';
+    try {
+      const remote = await fetchCategories();
+      if (remote.length > 0) {
+        this.categories = remote;
+        this.selectedCid = remote[0].cid;
+      } else {
+        this.categories = LocalCategories;
+        this.selectedCid = LocalCategories[0]?.cid ?? 0;
+      }
+    } catch (e) {
+      this.errorMsg = (e as Error)?.message ?? '分类加载失败';
+      this.categories = LocalCategories;
+      this.selectedCid = LocalCategories[0]?.cid ?? 0;
+    } finally {
+      this.loadingCats = false;
+      await this.loadArticlesByCid(this.selectedCid);
+    }
+  }
+
+  private async loadArticlesByCid(cid: number) {
+    this.loadingArticles = true;
+    this.errorMsg = '';
+    try {
+      const remote = await fetchArticlesByCid(cid);
+      if (remote.length > 0) {
+        this.articles = remote;
+      } else {
+        this.articles = LocalArticles.filter(a => a.cid === cid);
+      }
+    } catch (e) {
+      this.errorMsg = (e as Error)?.message ?? '文章加载失败';
+      this.articles = LocalArticles.filter(a => a.cid === cid);
+    } finally {
+      this.loadingArticles = false;
+    }
   }
 
   private async refreshFav() {
@@ -58,11 +104,12 @@ export struct CategoryPage {
     AppStorage.set('fav_version', v + 1);
   }
 
-  private getFilteredArticles(): Article[] {
-    return LocalArticles.filter(a => a.cid === this.selectedCid);
-  }
+  // private getFilteredArticles(): Article[] {
+  //   return LocalArticles.filter(a => a.cid === this.selectedCid);
+  // }
 
-  private async toggleFav(id: number) {
+  //private async toggleFav(id: number) {
+  private async toggleFav(article: Article) {
     const ctx = this.hostCtx();
     const uid = await FavoriteStore.getUid(ctx);
     if (uid === '0') {
@@ -71,10 +118,15 @@ export struct CategoryPage {
     }
 
     const next = new Set(this.favIds);
-    if (next.has(id)) {
-      next.delete(id);
+    // if (next.has(id)) {
+    //   next.delete(id);
+    if (next.has(article.id)) {
+      next.delete(article.id);
+      await FavoriteStore.removeArticleSnapshot(ctx, article.id);
     } else {
-      next.add(id);
+      // next.add(id);
+      next.add(article.id);
+      await FavoriteStore.saveArticleSnapshot(ctx, article);
     }
 
     this.favIds = next;
@@ -113,11 +165,18 @@ export struct CategoryPage {
                   .padding(12)
                   .backgroundColor(this.selectedCid === c.cid ? '#EDEDED' : '#FFFFFF')
                   .borderRadius(8)
-                  .onClick(() => {
-                    this.selectedCid = c.cid;
-                  })
+                  // .onClick(() => {
+                  //   this.selectedCid = c.cid;
+                  // })
               }
-            })
+            // })
+              .onClick(async () => {
+                if (this.selectedCid !== c.cid) {
+                  this.selectedCid = c.cid;
+                  await this.loadArticlesByCid(c.cid);
+                }
+              })
+            }, (c: Category) => c.cid)
           }
         }
         .width('34%')
@@ -125,11 +184,27 @@ export struct CategoryPage {
 
         // 右侧：文章列表（按 selectedCid 筛选）
         Column() {
-          if (this.getFilteredArticles().length === 0) {
+          // if (this.getFilteredArticles().length === 0) {
+          if (this.loadingCats || this.loadingArticles) {
+            Row({ space: 8 }) {
+              LoadingProgress()
+              Text('正在加载数据...').opacity(0.7)
+            }
+            .padding(12)
+          } else if (this.errorMsg) {
+            Column({ space: 6 }) {
+              Text('网络加载失败，已回退到本地示例数据').fontSize(13).opacity(0.7)
+              Text(this.errorMsg).fontSize(12).opacity(0.6)
+            }
+            .padding({ left: 12, right: 12, bottom: 6 })
+          }
+
+          if (this.articles.length === 0) {
             Text('该分类暂无文章').margin(16).opacity(0.7)
           } else {
             List() {
-              ForEach(this.getFilteredArticles(), (item: Article) => {
+              // ForEach(this.getFilteredArticles(), (item: Article) => {
+              ForEach(this.articles, (item: Article) => {
                 ListItem() {
                   Row() {
                     Column({ space: 6 }) {
@@ -143,7 +218,8 @@ export struct CategoryPage {
                       .margin({ left: 8 })
                       .gesture(
                         TapGesture().onAction(async () => {
-                          await this.toggleFav(item.id);
+                          // await this.toggleFav(item.id);
+                          await this.toggleFav(item);
                         })
                       )
                   }

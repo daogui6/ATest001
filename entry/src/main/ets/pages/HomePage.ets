@@ -5,6 +5,7 @@ import router from '@ohos.router';
 import type { Article } from '../model/Article';
 import { LocalArticles } from '../data/LocalArticles';
 import { FavoriteStore } from '../store/FavoriteStore';
+import { fetchTopArticles } from '../service/WanService';
 
 // ✅ 确保 key 存在（避免首次为 undefined）
 AppStorage.setOrCreate('fav_version', 0);
@@ -24,6 +25,8 @@ export struct HomePage {
   @Watch('onSessionVersionChange')
   sessionVersion: number = 0;
   @State articles: Article[] = LocalArticles;
+  @State loading: boolean = true;
+  @State errorMsg: string = '';
   @State uid: string = '0';
   @State favIds: Set<number> = new Set<number>();
 
@@ -50,7 +53,31 @@ export struct HomePage {
   }
 
   async aboutToAppear() {
+    await this.loadArticles();
     await this.refreshFav();
+  }
+
+  private async loadArticles() {
+    this.loading = true;
+    this.errorMsg = '';
+    try {
+      const [tops, latest] = await Promise.all([fetchTopArticles(), fetchLatestArticles()]);
+      const merged = [...tops, ...latest];
+      // 去重合并，保证列表至少有几条
+      const uniqMap = new Map<number, Article>();
+      merged.forEach(item => uniqMap.set(item.id, item));
+      const uniq = Array.from(uniqMap.values());
+      if (uniq.length > 0) {
+        this.articles = uniq;
+      } else {
+        this.articles = LocalArticles;
+      }
+    } catch (e) {
+      this.errorMsg = (e as Error)?.message ?? '加载失败';
+      this.articles = LocalArticles;
+    } finally {
+      this.loading = false;
+    }
   }
 
   private async bumpFavVersion() {
@@ -58,7 +85,8 @@ export struct HomePage {
     AppStorage.set('fav_version', v + 1);
   }
 
-  private async toggleFav(id: number) {
+  // private async toggleFav(id: number) {
+  private async toggleFav(article: Article) {
     const ctx = this.hostCtx();
     const uid = await FavoriteStore.getUid(ctx);
     if (uid === '0') {
@@ -67,10 +95,15 @@ export struct HomePage {
     }
 
     const next = new Set(this.favIds);
-    if (next.has(id)) {
-      next.delete(id);
+    // if (next.has(id)) {
+    //   next.delete(id);
+    if (next.has(article.id)) {
+      next.delete(article.id);
+      await FavoriteStore.removeArticleSnapshot(ctx, article.id);
     } else {
-      next.add(id);
+      // next.add(id);
+      next.add(article.id);
+      await FavoriteStore.saveArticleSnapshot(ctx, article);
     }
 
     this.favIds = next;
@@ -83,6 +116,20 @@ export struct HomePage {
   build() {
     Column() {
       Text('首页').fontSize(22).fontWeight(FontWeight.Bold).margin({ top: 16, left: 16, bottom: 12 })
+
+      if (this.loading) {
+        Row({ space: 8 }) {
+          LoadingProgress()
+          Text('正在加载文章...').opacity(0.7)
+        }
+        .padding(16)
+      } else if (this.errorMsg) {
+        Column({ space: 6 }) {
+          Text('网络加载失败，已使用本地示例数据').fontSize(14).opacity(0.7)
+          Text(this.errorMsg).fontSize(12).opacity(0.6)
+        }
+        .padding({ left: 16, right: 16, bottom: 6 })
+      }
 
       List() {
         ForEach(this.articles, (item: Article) => {
@@ -98,7 +145,8 @@ export struct HomePage {
               Text(this.favIds.has(item.id) ? '❤️' : '🤍')
                 .fontSize(22)
                 .margin({ left: 10 })
-                .onClick(async () => await this.toggleFav(item.id))
+                // .onClick(async () => await this.toggleFav(item.id))
+                .onClick(async () => await this.toggleFav(item))
             }
             .padding(12)
             .margin({ left: 16, right: 16, bottom: 12 })

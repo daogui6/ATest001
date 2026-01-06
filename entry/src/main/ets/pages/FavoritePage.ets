@@ -47,7 +47,18 @@ export struct FavoritePage {
 
     const set = await FavoriteStore.loadFavSet(ctx, this.uid);
     this.favIds = set;
-    this.favArticles = LocalArticles.filter(a => set.has(a.id));
+    // this.favArticles = LocalArticles.filter(a => set.has(a.id));
+    const cached = await FavoriteStore.pickCachedArticles(ctx, set);
+    const localHit = LocalArticles.filter(a => set.has(a.id));
+    // 去重合并：缓存 > 本地
+    const all = [...cached];
+    const cachedIds = new Set(cached.map(i => i.id));
+    localHit.forEach(item => {
+      if (!cachedIds.has(item.id)) {
+        all.push(item);
+      }
+    });
+    this.favArticles = all;
   }
 
   // ✅ 安全跳转（解决 ArkTSCheck：可能抛异常）
@@ -72,8 +83,9 @@ export struct FavoritePage {
     next.delete(id);
     this.favIds = next;
     await FavoriteStore.saveFavSet(ctx, this.uid, next);
-    this.favArticles = LocalArticles.filter(a => next.has(a.id));
-
+    // this.favArticles = LocalArticles.filter(a => next.has(a.id));
+    this.favArticles = this.favArticles.filter(item => item.id !== id);
+    await FavoriteStore.removeArticleSnapshot(ctx, id);
     // ✅ 同样广播一次（防止其他页面需要刷新）
     AppStorage.setOrCreate('fav_version', 0);
     const v = (AppStorage.get('fav_version') as number) ?? 0;
