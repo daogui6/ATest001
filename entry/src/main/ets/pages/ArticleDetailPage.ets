@@ -56,7 +56,6 @@ struct ArticleDetailPage {
     const rawId = params?.id;
     const id = typeof rawId === 'number' ? rawId : Number(rawId);
 
-    // 2) 查文章
     if ((!id || Number.isNaN(id)) && !paramArticle) {
       this.article = null;
       promptAction.showToast({ message: '文章参数缺失，无法打开' });
@@ -64,10 +63,30 @@ struct ArticleDetailPage {
       return;
     }
 
-    /// 2) 查文章（参数 > 缓存 > 本地 > 历史）
+    // 2) 查文章（参数 > 缓存 > 收藏缓存 > 本地 > 历史）
+    const resolvedById = await this.resolveArticleById(id);
     this.article = paramArticle
       ?? ArticleStore.getArticleById(id)
-      ?? await this.resolveArticleById(id);
+      ?? resolvedById;
+
+    // 收藏页传参可能缺少 link，这里用收藏/历史缓存补全
+    if (
+      this.article &&
+        resolvedById &&
+        (!this.article.link || this.article.link.trim().length === 0) &&
+      resolvedById.link &&
+        resolvedById.link.trim().length > 0
+    ) {
+      this.article = {
+        id: this.article.id,
+        title: this.article.title,
+        desc: this.article.desc,
+        author: this.article.author,
+        cid: this.article.cid,
+        link: resolvedById.link,
+        content: resolvedById.content,
+      };
+    }
 
     if (this.article) {
       ArticleStore.setArticle(this.article);
@@ -85,12 +104,22 @@ struct ArticleDetailPage {
   }
 
   private async resolveArticleById(id: number): Promise<Article | null> {
+    const ctx = this.hostCtx();
+
+    // 先查收藏缓存（最完整的数据来源）
+    const favList = await FavoriteStore.pickCachedArticles(ctx, new Set([id]));
+    if (favList.length > 0) {
+      return favList[0];
+    }
+
+    // 再查本地示例数据
     const hit = LocalArticles.find(a => a.id === id);
     if (hit) {
       return hit;
     }
 
-    const historyList = await HistoryStore.loadHistory(this.hostCtx());
+    // 最后查历史记录
+    const historyList = await HistoryStore.loadHistory(ctx);
     return historyList.find(item => item.id === id) ?? null;
   }
 
