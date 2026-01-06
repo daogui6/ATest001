@@ -19,6 +19,8 @@ export struct MinePage {
   @State regPassword: string = ''
   @State regNickname: string = ''
   @State message: string = ''
+  @State showRegister: boolean = false
+  @State rememberPassword: boolean = false
 
   private hostCtx(): common.UIAbilityContext { //从 ArkUI 页面获取宿主 UIAbility 的 Context，给 Preferences/数据库等系统能力提供稳定的上下文参数
     return this.getUIContext().getHostContext() as common.UIAbilityContext;
@@ -69,6 +71,7 @@ export struct MinePage {
     this.nickname = user.nickname || user.username;
     this.bio = user.bio ?? '这个人很懒，还没有签名～';
     this.isLogin = true;
+    this.showRegister = false;
     await this.saveAll();
     AppStorage.setOrCreate('session_version', 0);
     const v = (AppStorage.get('session_version') as number) ?? 0;
@@ -94,10 +97,28 @@ export struct MinePage {
     this.nickname = this.regNickname.trim() || this.regUsername.trim();
     this.bio = '这个人是新用户，快来打个招呼吧～';
     this.isLogin = true;
+    this.showRegister = false;
     await this.saveAll();
     AppStorage.setOrCreate('session_version', 0);
     const v = (AppStorage.get('session_version') as number) ?? 0;
     AppStorage.set('session_version', v + 1);
+  }
+
+  private resetRegisterForm() {
+    this.regUsername = '';
+    this.regPassword = '';
+    this.regNickname = '';
+  }
+
+  private handleLogoutState() {
+    this.uid = '0';
+    this.isLogin = false;
+    this.showRegister = false;
+    this.message = '';
+    this.resetRegisterForm();
+    if (!this.rememberPassword) {
+      this.loginPassword = '';
+    }
   }
 
   build() {
@@ -112,21 +133,31 @@ export struct MinePage {
           TextInput({ text: this.loginPassword, placeholder: '请输入密码' })
             .type(InputType.Password)
             .onChange((v) => { this.loginPassword = v; })
+          Checkbox({ name: 'rememberPassword', group: 'loginPrefs', selected: this.rememberPassword, label: '记住密码' })
+            .onChange((value: boolean) => { this.rememberPassword = value; })
           Button('登录', { type: ButtonType.Capsule })
             .onClick(async () => { await this.handleLogin(); })
 
           Divider().margin({ top: 6, bottom: 6 })
 
-          Text('注册').fontSize(16)
-          TextInput({ text: this.regUsername, placeholder: '设置用户名' })
-            .onChange((v) => { this.regUsername = v; })
-          TextInput({ text: this.regPassword, placeholder: '设置密码' })
-            .type(InputType.Password)
-            .onChange((v) => { this.regPassword = v; })
-          TextInput({ text: this.regNickname, placeholder: '昵称（可选）' })
-            .onChange((v) => { this.regNickname = v; })
-          Button('注册并登录', { type: ButtonType.Capsule })
-            .onClick(async () => { await this.handleRegister(); })
+          Button(this.showRegister ? '返回登录' : '注册', { type: ButtonType.Capsule })
+            .onClick(() => {
+              this.message = '';
+              this.showRegister = !this.showRegister;
+            })
+
+          if (this.showRegister) {
+            Text('注册').fontSize(16)
+            TextInput({ text: this.regUsername, placeholder: '设置用户名' })
+              .onChange((v) => { this.regUsername = v; })
+            TextInput({ text: this.regPassword, placeholder: '设置密码' })
+              .type(InputType.Password)
+              .onChange((v) => { this.regPassword = v; })
+            TextInput({ text: this.regNickname, placeholder: '昵称（可选）' })
+              .onChange((v) => { this.regNickname = v; })
+            Button('注册并登录', { type: ButtonType.Capsule })
+              .onClick(async () => { await this.handleRegister(); })
+          }
 
           if (this.message) {
             Text(this.message).fontSize(14).fontColor(Color.Red).margin({ top: 4 })
@@ -157,8 +188,7 @@ export struct MinePage {
 
           Button('退出登录', { type: ButtonType.Capsule })
             .onClick(async () => {
-              this.uid = '0';
-              this.isLogin = false;
+              this.handleLogoutState();
               await this.saveAll();
               await UserStore.logout(this.hostCtx());
               AppStorage.setOrCreate('session_version', 0);
