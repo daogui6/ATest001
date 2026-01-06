@@ -108,8 +108,8 @@ struct ArticleDetailPage {
     try {
       const text = await callZhipu(this.article.title, this.article.content, mode);
       this.aiText = text;
-    } catch (e) {
-      const msg = (e as Error)?.message ?? 'AI调用失败';
+    } catch (err: Error | object) {
+      const msg = err instanceof Error ? err.message : 'AI调用失败';
       promptAction.showToast({ message: msg });
     } finally {
       this.aiLoading = false;

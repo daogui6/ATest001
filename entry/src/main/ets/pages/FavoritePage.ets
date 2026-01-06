@@ -3,8 +3,8 @@ import promptAction from '@ohos.promptAction';
 import router from '@ohos.router';
 
 import type { Article } from '../model/Article';
-import { LocalArticles } from '../data/LocalArticles';
 import { FavoriteStore } from '../store/FavoriteStore';
+import { LocalArticles } from '../data/LocalArticles';
 
 // ✅ 确保 key 存在（避免首次 get 为 undefined）
 AppStorage.setOrCreate('fav_version', 0);
@@ -47,7 +47,17 @@ export struct FavoritePage {
 
     const set = await FavoriteStore.loadFavSet(ctx, this.uid);
     this.favIds = set;
-    this.favArticles = LocalArticles.filter(a => set.has(a.id));
+    const cached = await FavoriteStore.pickCachedArticles(ctx, set);
+    const localHit = LocalArticles.filter(a => set.has(a.id));
+    // 去重合并：缓存 > 本地
+    const all = [...cached];
+    const cachedIds = new Set(cached.map(i => i.id));
+    localHit.forEach(item => {
+      if (!cachedIds.has(item.id)) {
+        all.push(item);
+      }
+    });
+    this.favArticles = all;
   }
 
   // ✅ 安全跳转（解决 ArkTSCheck：可能抛异常）
@@ -57,7 +67,7 @@ export struct FavoritePage {
         url: 'pages/ArticleDetailPage',
         params: { id: id }
       });
-    } catch (e) {
+    } catch (_err: Error | object) {
       promptAction.showToast({ message: '跳转失败：页面不存在或参数错误' });
     }
   }
@@ -72,7 +82,8 @@ export struct FavoritePage {
     next.delete(id);
     this.favIds = next;
     await FavoriteStore.saveFavSet(ctx, this.uid, next);
-    this.favArticles = LocalArticles.filter(a => next.has(a.id));
+    this.favArticles = this.favArticles.filter(item => item.id !== id);
+    await FavoriteStore.removeArticleSnapshot(ctx, id);
 
     // ✅ 同样广播一次（防止其他页面需要刷新）
     AppStorage.setOrCreate('fav_version', 0);
@@ -117,7 +128,7 @@ export struct FavoritePage {
                 await this.openDetail(item.id);
               })
             }
-          })
+          }, (item: Article) => item.id.toString())
         }
         .width('100%')
         .layoutWeight(1)
