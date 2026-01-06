@@ -59,7 +59,7 @@ export struct SearchPage {
     this.favIds = await FavoriteStore.loadFavSet(ctx, uid);
   }
 
-  private palette(): ThemePalette {
+  private get colors(): ThemePalette {
     return ThemeStore.palette(this.isDarkMode);
   }
 
@@ -125,16 +125,15 @@ export struct SearchPage {
   }
 
   build() {
-    const colors = this.palette();
     Column() {
       Row() {
         Text('←')
           .fontSize(20)
-          .fontColor(colors.primaryText)
+          .fontColor(this.colors.primaryText)
           .onClick(() => router.back());
         Text('搜索')
           .fontSize(22)
-          .fontColor(colors.primaryText)
+           .fontColor(this.colors.primaryText)
           .fontWeight(FontWeight.Bold)
           .margin({ left: 10 })
       }
@@ -144,8 +143,8 @@ export struct SearchPage {
       Row({ space: 8 }) {
         TextInput({ placeholder: '输入关键词', text: this.keyword })
           .layoutWeight(1)
-          .backgroundColor(colors.inputBackground)
-          .fontColor(colors.primaryText)
+          .backgroundColor(this.colors.inputBackground)
+          .fontColor(this.colors.primaryText)
           .onChange((v) => { this.keyword = v; })
         Button('搜索', { type: ButtonType.Capsule })
           .onClick(async () => await this.performSearch())
@@ -155,7 +154,7 @@ export struct SearchPage {
       if (!this.hasSearched) {
         Text('支持远端搜索 WanAndroid 文章，试试输入“鸿蒙”或“AI”。')
           .fontSize(13)
-          .fontColor(colors.secondaryText)
+          .fontColor(this.colors.secondaryText)
           .opacity(0.7)
           .margin({ left: 16, right: 16, bottom: 8 })
       }
@@ -163,17 +162,17 @@ export struct SearchPage {
       if (this.loading) {
         Row({ space: 8 }) {
           LoadingProgress()
-          Text('正在搜索...').opacity(0.7).fontColor(colors.secondaryText)
+          Text('正在搜索...').opacity(0.7).fontColor(this.colors.secondaryText)
         }
         .padding(16)
       } else if (this.errorMsg) {
         Column({ space: 6 }) {
-          Text('搜索失败，请稍后重试').fontSize(13).opacity(0.7).fontColor(colors.secondaryText)
-          Text(this.errorMsg).fontSize(12).opacity(0.6).fontColor(colors.secondaryText)
+          Text('搜索失败，请稍后重试').fontSize(13).opacity(0.7).fontColor(this.colors.secondaryText)
+          Text(this.errorMsg).fontSize(12).opacity(0.6).fontColor(this.colors.secondaryText)
         }
         .padding({ left: 16, right: 16, bottom: 6 })
       } else if (this.hasSearched && this.results.length === 0) {
-        Text('未找到相关内容').margin({ left: 16, right: 16, bottom: 8 }).opacity(0.7).fontColor(colors.secondaryText)
+        Text('未找到相关内容').margin({ left: 16, right: 16, bottom: 8 }).opacity(0.7).fontColor(this.colors.secondaryText)
       }
 
       List() {
@@ -181,9 +180,9 @@ export struct SearchPage {
           ListItem() {
             Row() {
               Column({ space: 6 }) {
-                Text(item.title).fontSize(16).fontWeight(FontWeight.Medium).fontColor(colors.primaryText)
-                Text(item.desc).fontSize(13).opacity(0.7).fontColor(colors.secondaryText).maxLines(2)
-                Text(`作者：${item.author}`).fontSize(12).opacity(0.6).fontColor(colors.secondaryText)
+                Text(item.title).fontSize(16).fontWeight(FontWeight.Medium).fontColor(this.colors.primaryText)
+                Text(item.desc).fontSize(13).opacity(0.7).fontColor(this.colors.secondaryText).maxLines(2)
+                Text(`作者：${item.author}`).fontSize(12).opacity(0.6).fontColor(this.colors.secondaryText)
               }
               .layoutWeight(1)
 
@@ -199,7 +198,7 @@ export struct SearchPage {
             .padding(12)
             .margin({ left: 16, right: 16, bottom: 12 })
             .borderRadius(12)
-            .backgroundColor(colors.card)
+            .backgroundColor(this.colors.card)
             .onClick(async () => { await this.openDetail(item); })
           }
         }, (item: Article) => item.id.toString())
@@ -209,6 +208,6 @@ export struct SearchPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor(colors.background)
+    .backgroundColor(this.colors.background)
   }
 }

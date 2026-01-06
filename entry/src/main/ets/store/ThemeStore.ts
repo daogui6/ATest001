@@ -1,5 +1,6 @@
 import { ConfigurationConstant } from '@kit.AbilityKit';
 import type common from '@ohos.app.ability.common';
+import type { ResourceColor } from '@kit.ArkUI';
 
 import { Prefs } from './Prefs';
 

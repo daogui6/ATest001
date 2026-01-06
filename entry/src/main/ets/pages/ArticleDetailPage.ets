@@ -152,7 +152,7 @@ struct ArticleDetailPage {
     AppStorage.set('history_version', v + 1);
   }
 
-  private palette(): ThemePalette {
+  private get colors(): ThemePalette {
     return ThemeStore.palette(this.isDarkMode);
   }
 
@@ -203,20 +203,19 @@ struct ArticleDetailPage {
   }
 
   build() {
-    const colors = this.palette();
     Column() {
       // 顶部栏（左返回 + 标题 + 右收藏）
       Row() {
         Text('←')
           .fontSize(22)
-          .fontColor(colors.primaryText)
+           .fontColor(this.colors.primaryText)
           .margin({ left: 16 })
           .onClick(() => router.back());
 
         Text('正文')
           .fontSize(18)
           .fontWeight(FontWeight.Bold)
-          .fontColor(colors.primaryText)
+           .fontColor(this.colors.primaryText)
           .margin({ left: 10 })
           .layoutWeight(1);
 
@@ -232,17 +231,17 @@ struct ArticleDetailPage {
 
       // 内容区（可滚动）
       if (!this.article) {
-        Text('文章不存在或参数错误').margin(16).opacity(0.7).fontColor(colors.secondaryText)
+        Text('文章不存在或参数错误').margin(16).opacity(0.7).fontColor(this.colors.secondaryText)
       } else {
         Scroll() {
           Column({ space: 10 }) {
-            Text(this.article.title).fontSize(20).fontWeight(FontWeight.Bold).fontColor(colors.primaryText)
-            Text(`作者：${this.article.author}`).fontSize(12).opacity(0.6).fontColor(colors.secondaryText)
+            Text(this.article.title).fontSize(20).fontWeight(FontWeight.Bold).fontColor(this.colors.primaryText)
+            Text(`作者：${this.article.author}`).fontSize(12).opacity(0.6).fontColor(this.colors.secondaryText)
 
             Text(`原文链接：${this.article.link && this.article.link.trim().length > 0 ? this.article.link : '暂无链接'}`)
               .fontSize(12)
               .opacity(0.65)
-              .fontColor(colors.secondaryText)
+              .fontColor(this.colors.secondaryText)
               .lineHeight(18)
               .onClick(() => {
                 if (this.article?.link && this.article.link.trim().length > 0) {
@@ -271,36 +270,36 @@ struct ArticleDetailPage {
               if (this.aiLoading) {
                 Row({ space: 10 }) {
                   LoadingProgress()
-                  Text('AI生成中…').opacity(0.7).fontColor(colors.secondaryText)
+                  Text('AI生成中…').opacity(0.7).fontColor(this.colors.secondaryText)
                 }.padding(12)
               } else if (this.aiText) {
                 Text(this.aiMode === 'summary' ? 'AI总结' : 'AI锐评')
                   .fontSize(16)
                   .fontWeight(FontWeight.Bold)
-                  .fontColor(colors.primaryText)
+                   .fontColor(this.colors.primaryText)
                   .margin({ bottom: 8 })
 
                 Text(this.aiText)
                   .fontSize(14)
                   .lineHeight(20)
                   .opacity(0.85)
-                  .fontColor(colors.primaryText)
+                   .fontColor(this.colors.primaryText)
               } else {
                 Text('点击上方按钮生成 AI 总结/锐评')
                   .opacity(0.6)
-                  .fontColor(colors.primaryText)
+                   .fontColor(this.colors.primaryText)
                   .padding(12)
               }
             }
             .padding(12)
             .borderRadius(12)
-            .backgroundColor(colors.card)
+            .backgroundColor(this.colors.card)
 
             // 正文
             Text(this.article.content)
               .fontSize(15)
               .lineHeight(22)
-              .fontColor(colors.primaryText)
+               .fontColor(this.colors.primaryText)
               .width('100%')
               .margin({ top: 10 })
           }
@@ -312,6 +311,6 @@ struct ArticleDetailPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor(colors.background)
+    .backgroundColor(this.colors.background)
   }
 }

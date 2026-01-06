@@ -38,7 +38,7 @@ export struct HistoryPage {
     this.loading = false;
   }
 
-  private palette(): ThemePalette {
+  private get colors(): ThemePalette {
     return ThemeStore.palette(this.isDarkMode);
   }
 
@@ -60,10 +60,9 @@ export struct HistoryPage {
   }
 
   build() {
-    const colors = this.palette();
     Column() {
       Row() {
-        Text('阅读历史').fontSize(22).fontWeight(FontWeight.Bold).fontColor(colors.primaryText)
+        Text('阅读历史').fontSize(22).fontWeight(FontWeight.Bold).fontColor(this.colors.primaryText)
         Blank().layoutWeight(1)
         if (this.history.length > 0) {
           Button('清空', { type: ButtonType.Capsule })
@@ -75,27 +74,27 @@ export struct HistoryPage {
       if (this.loading) {
         Row({ space: 8 }) {
           LoadingProgress()
-          Text('正在加载历史...').opacity(0.7).fontColor(colors.secondaryText)
+          Text('正在加载历史...').opacity(0.7).fontColor(this.colors.secondaryText)
         }
         .padding(16)
       } else if (this.history.length === 0) {
-        Text('暂无阅读记录').margin(16).opacity(0.7).fontColor(colors.secondaryText)
+        Text('暂无阅读记录').margin(16).opacity(0.7).fontColor(this.colors.secondaryText)
       } else {
         List() {
           ForEach(this.history, (item: Article) => {
             ListItem() {
               Row() {
                 Column({ space: 6 }) {
-                  Text(item.title).fontSize(16).fontWeight(FontWeight.Medium).fontColor(colors.primaryText)
-                  Text(item.desc).fontSize(13).opacity(0.7).fontColor(colors.secondaryText).maxLines(2)
-                  Text(`作者：${item.author}`).fontSize(12).opacity(0.6).fontColor(colors.secondaryText)
+                  Text(item.title).fontSize(16).fontWeight(FontWeight.Medium).fontColor(this.colors.primaryText)
+                  Text(item.desc).fontSize(13).opacity(0.7).fontColor(this.colors.secondaryText).maxLines(2)
+                  Text(`作者：${item.author}`).fontSize(12).opacity(0.6).fontColor(this.colors.secondaryText)
                 }
                 .layoutWeight(1)
               }
               .padding(12)
               .margin({ left: 16, right: 16, bottom: 12 })
               .borderRadius(12)
-              .backgroundColor(colors.card)
+              .backgroundColor(this.colors.card)
               .onClick(async () => await this.openDetail(item.id))
             }
           })
@@ -106,6 +105,6 @@ export struct HistoryPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor(colors.background)
+    .backgroundColor(this.colors.card)
   }
 }

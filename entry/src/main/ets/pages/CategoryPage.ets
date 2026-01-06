@@ -96,7 +96,7 @@ export struct CategoryPage {
     this.favIds = await FavoriteStore.loadFavSet(ctx, uid);
   }
 
-  private palette(): ThemePalette {
+  private get colors(): ThemePalette {
     return ThemeStore.palette(this.isDarkMode);
   }
 
@@ -144,12 +144,11 @@ export struct CategoryPage {
   }
 
   build() {
-    const colors = this.palette();
     Column() {
       Text('分类')
         .fontSize(22)
         .fontWeight(FontWeight.Bold)
-        .fontColor(colors.primaryText)
+         .fontColor(this.colors.primaryText)
         .margin({ top: 16, left: 16, bottom: 12 })
 
       Row() {
@@ -161,9 +160,9 @@ export struct CategoryPage {
                 Text(c.name)
                   .fontSize(14)
                   .fontWeight(this.selectedCid === c.cid ? FontWeight.Bold : FontWeight.Normal)
-                  .fontColor(colors.primaryText)
+                  .fontColor(this.colors.primaryText)
                   .padding(12)
-                  .backgroundColor(this.selectedCid === c.cid ? colors.cardActive : colors.card)
+                  .backgroundColor(this.selectedCid === c.cid ? this.colors.cardActive : this.colors.card)
                   .borderRadius(8)
                   // .onClick(() => {
                   //   this.selectedCid = c.cid;
@@ -188,19 +187,19 @@ export struct CategoryPage {
           if (this.loadingCats || this.loadingArticles) {
             Row({ space: 8 }) {
               LoadingProgress()
-              Text('正在加载数据...').opacity(0.7).fontColor(colors.secondaryText)
+              Text('正在加载数据...').opacity(0.7).fontColor(this.colors.secondaryText)
             }
             .padding(12)
           } else if (this.errorMsg) {
             Column({ space: 6 }) {
-              Text('网络加载失败，数据暂不可用').fontSize(13).opacity(0.7).fontColor(colors.secondaryText)
-              Text(this.errorMsg).fontSize(12).opacity(0.6).fontColor(colors.secondaryText)
+              Text('网络加载失败，数据暂不可用').fontSize(13).opacity(0.7).fontColor(this.colors.secondaryText)
+              Text(this.errorMsg).fontSize(12).opacity(0.6).fontColor(this.colors.secondaryText)
             }
             .padding({ left: 12, right: 12, bottom: 6 })
           }
 
           if (this.articles.length === 0) {
-            Text('该分类暂无文章').margin(16).opacity(0.7).fontColor(colors.secondaryText)
+            Text('该分类暂无文章').margin(16).opacity(0.7).fontColor(this.colors.secondaryText)
           } else {
             List() {
               // ForEach(this.getFilteredArticles(), (item: Article) => {
@@ -208,8 +207,8 @@ export struct CategoryPage {
                 ListItem() {
                   Row() {
                     Column({ space: 6 }) {
-                      Text(item.title).fontSize(15).fontWeight(FontWeight.Medium).fontColor(colors.primaryText)
-                      Text(item.desc).fontSize(12).opacity(0.7).fontColor(colors.secondaryText).maxLines(2)
+                      Text(item.title).fontSize(15).fontWeight(FontWeight.Medium).fontColor(this.colors.primaryText)
+                      Text(item.desc).fontSize(12).opacity(0.7).fontColor(this.colors.secondaryText).maxLines(2)
                     }.layoutWeight(1)
 
                     // ✅ 收藏按钮用 gesture 隔离点击，防止触发卡片跳转
@@ -226,7 +225,7 @@ export struct CategoryPage {
                   .padding(12)
                   .margin({ left: 6, right: 12, bottom: 12 })
                   .borderRadius(12)
-                  .backgroundColor(colors.card)
+                  .backgroundColor(this.colors.card)
                   // ✅ 点卡片跳转正文页
                   .onClick(async () => {
                     await this.openDetail(item);
@@ -242,7 +241,7 @@ export struct CategoryPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor(colors.background)
+    .backgroundColor(this.colors.background)
     .onAppear(() => {
       // 切回分类页也刷新收藏状态
       this.refreshFav();

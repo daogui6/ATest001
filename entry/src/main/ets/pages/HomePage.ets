@@ -56,7 +56,7 @@ export struct HomePage {
     this.favIds = await FavoriteStore.loadFavSet(ctx, uid);
   }
 
-  private palette(): ThemePalette {
+  private get colors(): ThemePalette {
     return ThemeStore.palette(this.isDarkMode);
   }
 
@@ -127,13 +127,12 @@ export struct HomePage {
   }
 
   build() {
-    const colors = this.palette();
     Column() {
       Row() {
         Text('首页')
           .fontSize(22)
           .fontWeight(FontWeight.Bold)
-          .fontColor(colors.primaryText)
+          .fontColor(this.colors.primaryText)
           .margin({ top: 16, left: 16, bottom: 12 })
         Blank().layoutWeight(1)
         Text('🔍')
@@ -145,13 +144,13 @@ export struct HomePage {
       if (this.loading) {
         Row({ space: 8 }) {
           LoadingProgress()
-          Text('正在加载文章...').opacity(0.7).fontColor(colors.secondaryText)
+          Text('正在加载文章...').opacity(0.7).fontColor(this.colors.secondaryText)
         }
         .padding(16)
       } else if (this.errorMsg) {
         Column({ space: 6 }) {
-          Text('网络加载失败，数据暂不可用').fontSize(14).opacity(0.7).fontColor(colors.secondaryText)
-          Text(this.errorMsg).fontSize(12).opacity(0.6).fontColor(colors.secondaryText)
+          Text('网络加载失败，数据暂不可用').fontSize(14).opacity(0.7).fontColor(this.colors.secondaryText)
+          Text(this.errorMsg).fontSize(12).opacity(0.6).fontColor(this.colors.secondaryText)
         }
         .padding({ left: 16, right: 16, bottom: 6 })
       }
@@ -161,9 +160,9 @@ export struct HomePage {
           ListItem() {
             Row() {
               Column({ space: 6 }) {
-                Text(item.title).fontSize(16).fontWeight(FontWeight.Medium).fontColor(colors.primaryText)
-                Text(item.desc).fontSize(13).opacity(0.7).fontColor(colors.secondaryText).maxLines(2)
-                Text(`作者：${item.author}`).fontSize(12).opacity(0.6).fontColor(colors.secondaryText)
+                Text(item.title).fontSize(16).fontWeight(FontWeight.Medium).fontColor(this.colors.primaryText)
+                Text(item.desc).fontSize(13).opacity(0.7).fontColor(this.colors.secondaryText).maxLines(2)
+                Text(`作者：${item.author}`).fontSize(12).opacity(0.6).fontColor(this.colors.secondaryText)
               }
               .layoutWeight(1)
 
@@ -176,7 +175,7 @@ export struct HomePage {
             .padding(12)
             .margin({ left: 16, right: 16, bottom: 12 })
             .borderRadius(12)
-            .backgroundColor(colors.card)
+            .backgroundColor(this.colors.card)
             .onClick(() => {
               ArticleStore.setArticles(this.articles);
               router.pushUrl({
@@ -186,13 +185,13 @@ export struct HomePage {
             })
           }
         })
-      }
-      .width('100%')
+    }
+    .width('100%')
       .layoutWeight(1)
     }
     .width('100%')
     .height('100%')
-    .backgroundColor(colors.background)
+    .backgroundColor(this.colors.background)
     .onAppear(() => {
       // 进入首页时也刷新一次（更稳）
       this.refreshFav();
