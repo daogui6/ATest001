@@ -110,6 +110,7 @@ export struct FavoritePage {
           .textAlign(TextAlign.Center)
 
         Text(`共 ${this.favArticles.length} 条`)
+          .layoutWeight(1)
           .fontSize(14)
           .opacity(0.7)
           .textAlign(TextAlign.End)
