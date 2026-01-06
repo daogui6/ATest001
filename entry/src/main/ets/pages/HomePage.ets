@@ -130,7 +130,7 @@ export struct HomePage {
   }
 
   private scrollToTop() {
-    this.listScroller.scrollToIndex({ index: 0, smooth: true });
+    this.listScroller.scrollToIndex(0);
   }
 
   private async bumpFavVersion() {
