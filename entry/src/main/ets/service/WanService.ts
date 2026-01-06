@@ -86,6 +86,7 @@ function mapArticle(item: ArticlePayload): Article {
     desc,
     author,
     cid,
+    link,
     content
   };
 }

@@ -5,6 +5,8 @@ import router from '@ohos.router';
 import type { Article } from '../model/Article';
 import { HistoryStore } from '../store/HistoryStore';
 
+AppStorage.setOrCreate('history_version', 0);
+
 @Component
 export struct HistoryPage {
   private hostCtx(): common.UIAbilityContext {
@@ -13,9 +15,16 @@ export struct HistoryPage {
 
   @State history: Article[] = [];
   @State loading: boolean = false;
+  @StorageLink('history_version')
+  @Watch('onHistoryVersionChange')
+  historyVersion: number = 0;
 
   async aboutToAppear() {
     await this.loadHistory();
+  }
+
+  private onHistoryVersionChange() {
+    this.loadHistory();
   }
 
   private async loadHistory() {

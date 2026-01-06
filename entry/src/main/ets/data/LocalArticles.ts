@@ -7,6 +7,7 @@ export const LocalArticles: Article[] = [
     desc: '一周做完知识社区的关键路径。',
     author: '编辑部',
     cid: 101,
+    link: '',
     content:
     '111第一部分：目标拆解\n' +
       '一周内要完成首页、分类、收藏、账号资料体系。\n\n' +
@@ -21,6 +22,7 @@ export const LocalArticles: Article[] = [
     desc: 'List、Tabs、TextInput 的常见用法。',
     author: '小霖',
     cid: 102,
+    link: '',
     content:
     '222第一部分：目标拆解\n' +
       '一周内要完成首页、分类、收藏、账号资料体系。\n\n' +
@@ -35,6 +37,7 @@ export const LocalArticles: Article[] = [
     desc: '本地持久化 + 登录态拦截。',
     author: '开发者',
     cid: 101,
+    link: '',
     content:
     '333第一部分：目标拆解\n' +
       '一周内要完成首页、分类、收藏、账号资料体系。\n\n' +
@@ -49,6 +52,7 @@ export const LocalArticles: Article[] = [
     desc: '让智谱输出更像“元宝锐评”。',
     author: 'AI 助手',
     cid: 103,
+    link: '',
     content:
     '444第一部分：目标拆解\n' +
       '一周内要完成首页、分类、收藏、账号资料体系。\n\n' +

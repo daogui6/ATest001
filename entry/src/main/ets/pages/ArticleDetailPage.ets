@@ -17,6 +17,7 @@ interface DetailParams {
 // 确保全局 key 存在
 AppStorage.setOrCreate('fav_version', 0);
 AppStorage.setOrCreate('session_version', 0);
+AppStorage.setOrCreate('history_version', 0);
 
 @Entry
 @Component
@@ -74,6 +75,7 @@ struct ArticleDetailPage {
 
     if (this.article) {
       await HistoryStore.addVisit(this.hostCtx(), this.article);
+      this.bumpHistoryVersion();
     } else {
       promptAction.showToast({ message: '文章不存在或已被移除' });
     }
@@ -106,6 +108,11 @@ struct ArticleDetailPage {
   private bumpFavVersion() {
     const v = (AppStorage.get('fav_version') as number) ?? 0;
     AppStorage.set('fav_version', v + 1);
+  }
+
+  private bumpHistoryVersion() {
+    const v = (AppStorage.get('history_version') as number) ?? 0;
+    AppStorage.set('history_version', v + 1);
   }
 
   private async toggleFav(id: number) {
@@ -187,6 +194,16 @@ struct ArticleDetailPage {
           Column({ space: 10 }) {
             Text(this.article.title).fontSize(20).fontWeight(FontWeight.Bold)
             Text(`作者：${this.article.author}`).fontSize(12).opacity(0.6)
+
+            Text(`原文链接：${this.article.link && this.article.link.trim().length > 0 ? this.article.link : '暂无链接'}`)
+              .fontSize(12)
+              .opacity(0.65)
+              .lineHeight(18)
+              .onClick(() => {
+                if (this.article?.link && this.article.link.trim().length > 0) {
+                  promptAction.showToast({ message: '请复制链接到浏览器打开：' + this.article!.link });
+                }
+              })
 
             Divider().margin({ top: 8, bottom: 8 })
 
