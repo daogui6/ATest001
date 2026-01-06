@@ -296,7 +296,7 @@ struct ArticleDetailPage {
           .layoutWeight(1);
 
         if (this.article) {
-          Text(this.favIds.has(this.article.id) ? '❤️' : '🤍')
+          Text(this.favIds.has(this.article.id) ? '★' : '☆')
             .fontSize(22)
             .margin({ right: 16 })
             .onClick(async () => await this.toggleFav(this.article!.id));
@@ -398,14 +398,6 @@ struct ArticleDetailPage {
                     Text(`${this.likeCount}`).fontSize(14).opacity(0.8)
                   }
                   .onClick(async () => await this.toggleLikeStatus())
-
-                  if (this.article) {
-                    Row({ space: 4 }) {
-                      Text(this.favIds.has(this.article.id) ? '★' : '☆').fontSize(22)
-                      Text('收藏').fontSize(14).opacity(0.8)
-                    }
-                    .onClick(async () => await this.toggleFav(this.article!.id))
-                  }
 
                   Row({ space: 4 }) {
                     Text('💬').fontSize(22)

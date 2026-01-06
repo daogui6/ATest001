@@ -178,7 +178,7 @@ export struct SearchPage {
               }
               .layoutWeight(1)
 
-              Text(this.favIds.has(item.id) ? '❤️' : '🤍')
+              Text(this.favIds.has(item.id) ? '★' : '☆')
                 .fontSize(22)
                 .margin({ left: 10 })
                 .gesture(

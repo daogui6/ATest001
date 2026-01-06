@@ -217,7 +217,7 @@ export struct HomePage {
                   }
                   .layoutWeight(1)
 
-                  Text(this.favIds.has(item.id) ? '❤️' : '🤍')
+                  Text(this.favIds.has(item.id) ? '★' : '☆')
                     .fontSize(22)
                     .margin({ left: 10 })
                   // .onClick(async () => await this.toggleFav(item.id))

@@ -135,7 +135,7 @@ export struct FavoritePage {
                 }.layoutWeight(1)
 
                 // ✅ 取消收藏（用 gesture 更稳，避免触发卡片跳转）
-                Text('❤️')
+                Text('★')
                   .fontSize(22)
                   .margin({ left: 10 })
                   .gesture(
