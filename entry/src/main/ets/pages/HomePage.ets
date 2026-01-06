@@ -6,6 +6,8 @@ import type { Article } from '../model/Article';
 import { FavoriteStore } from '../store/FavoriteStore';
 import { fetchLatestArticles, fetchTopArticles } from '../service/WanService';
 import { ArticleStore } from '../store/ArticleStore';
+import type { ThemePalette } from '../store/ThemeStore';
+import { DARK_MODE_STORAGE_KEY, ThemeStore } from '../store/ThemeStore';
 
 // ✅ 确保 key 存在（避免首次为 undefined）
 AppStorage.setOrCreate('fav_version', 0);
@@ -29,6 +31,8 @@ export struct HomePage {
   @State errorMsg: string = '';
   @State uid: string = '0';
   @State favIds: Set<number> = new Set<number>();
+  @StorageLink(DARK_MODE_STORAGE_KEY)
+  isDarkMode: boolean = false;
 
   private onFavVersionChange() {
     this.refreshFav();
@@ -50,6 +54,10 @@ export struct HomePage {
     }
 
     this.favIds = await FavoriteStore.loadFavSet(ctx, uid);
+  }
+
+  private palette(): ThemePalette {
+    return ThemeStore.palette(this.isDarkMode);
   }
 
   async aboutToAppear() {
@@ -119,11 +127,13 @@ export struct HomePage {
   }
 
   build() {
+    const colors = this.palette();
     Column() {
       Row() {
         Text('首页')
           .fontSize(22)
           .fontWeight(FontWeight.Bold)
+          .fontColor(colors.primaryText)
           .margin({ top: 16, left: 16, bottom: 12 })
         Blank().layoutWeight(1)
         Text('🔍')
@@ -135,13 +145,13 @@ export struct HomePage {
       if (this.loading) {
         Row({ space: 8 }) {
           LoadingProgress()
-          Text('正在加载文章...').opacity(0.7)
+          Text('正在加载文章...').opacity(0.7).fontColor(colors.secondaryText)
         }
         .padding(16)
       } else if (this.errorMsg) {
         Column({ space: 6 }) {
-          Text('网络加载失败，数据暂不可用').fontSize(14).opacity(0.7)
-          Text(this.errorMsg).fontSize(12).opacity(0.6)
+          Text('网络加载失败，数据暂不可用').fontSize(14).opacity(0.7).fontColor(colors.secondaryText)
+          Text(this.errorMsg).fontSize(12).opacity(0.6).fontColor(colors.secondaryText)
         }
         .padding({ left: 16, right: 16, bottom: 6 })
       }
@@ -151,9 +161,9 @@ export struct HomePage {
           ListItem() {
             Row() {
               Column({ space: 6 }) {
-                Text(item.title).fontSize(16).fontWeight(FontWeight.Medium)
-                Text(item.desc).fontSize(13).opacity(0.7).maxLines(2)
-                Text(`作者：${item.author}`).fontSize(12).opacity(0.6)
+                Text(item.title).fontSize(16).fontWeight(FontWeight.Medium).fontColor(colors.primaryText)
+                Text(item.desc).fontSize(13).opacity(0.7).fontColor(colors.secondaryText).maxLines(2)
+                Text(`作者：${item.author}`).fontSize(12).opacity(0.6).fontColor(colors.secondaryText)
               }
               .layoutWeight(1)
 
@@ -166,7 +176,7 @@ export struct HomePage {
             .padding(12)
             .margin({ left: 16, right: 16, bottom: 12 })
             .borderRadius(12)
-            .backgroundColor('#F5F5F5')
+            .backgroundColor(colors.card)
             .onClick(() => {
               ArticleStore.setArticles(this.articles);
               router.pushUrl({
@@ -182,6 +192,7 @@ export struct HomePage {
     }
     .width('100%')
     .height('100%')
+    .backgroundColor(colors.background)
     .onAppear(() => {
       // 进入首页时也刷新一次（更稳）
       this.refreshFav();

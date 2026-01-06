@@ -6,6 +6,8 @@ import type { Article } from '../model/Article';
 import { FavoriteStore } from '../store/FavoriteStore';
 import { ArticleStore } from '../store/ArticleStore';
 import { fetchArticlesByIds } from '../service/WanService';
+import type { ThemePalette } from '../store/ThemeStore';
+import { DARK_MODE_STORAGE_KEY, ThemeStore } from '../store/ThemeStore';
 
 // ✅ 确保 key 存在（避免首次 get 为 undefined）
 AppStorage.setOrCreate('fav_version', 0);
@@ -27,6 +29,8 @@ export struct FavoritePage {
   @State uid: string = '0';
   @State favIds: Set<number> = new Set<number>();
   @State favArticles: Article[] = [];
+  @StorageLink(DARK_MODE_STORAGE_KEY)
+  isDarkMode: boolean = false;
 
   private onFavVersionChange() {
     this.refresh();
@@ -34,6 +38,10 @@ export struct FavoritePage {
 
   private onSessionVersionChange() {
     this.refresh();
+  }
+
+  private palette(): ThemePalette {
+    return ThemeStore.palette(this.isDarkMode);
   }
 
   private async refresh() {
@@ -97,21 +105,22 @@ export struct FavoritePage {
   }
 
   build() {
+    const colors = this.palette();
     Column() {
-      Text('收藏').fontSize(22).fontWeight(FontWeight.Bold).margin({ top: 16, left: 16, bottom: 12 })
+      Text('收藏').fontSize(22).fontWeight(FontWeight.Bold).fontColor(colors.primaryText).margin({ top: 16, left: 16, bottom: 12 })
 
       if (this.uid === '0') {
-        Text('请先去【我的】页登录').margin(16).opacity(0.7)
+        Text('请先去【我的】页登录').margin(16).opacity(0.7).fontColor(colors.secondaryText)
       } else if (this.favArticles.length === 0) {
-        Text('暂无收藏').margin(16).opacity(0.7)
+        Text('暂无收藏').margin(16).opacity(0.7).fontColor(colors.secondaryText)
       } else {
         List() {
           ForEach(this.favArticles, (item: Article) => {
             ListItem() {
               Row() {
                 Column({ space: 6 }) {
-                  Text(item.title).fontSize(16).fontWeight(FontWeight.Medium)
-                  Text(item.desc).fontSize(13).opacity(0.7).maxLines(2)
+                  Text(item.title).fontSize(16).fontWeight(FontWeight.Medium).fontColor(colors.primaryText)
+                  Text(item.desc).fontSize(13).opacity(0.7).fontColor(colors.secondaryText).maxLines(2)
                 }.layoutWeight(1)
 
                 // ✅ 取消收藏（用 gesture 更稳，避免触发卡片跳转）
@@ -127,7 +136,7 @@ export struct FavoritePage {
               .padding(12)
               .margin({ left: 16, right: 16, bottom: 12 })
               .borderRadius(12)
-              .backgroundColor('#F5F5F5')
+              .backgroundColor(colors.card)
               // ✅ 点卡片进正文
               .onClick(async () => {
                 await this.openDetail(item);
@@ -141,6 +150,7 @@ export struct FavoritePage {
     }
     .width('100%')
     .height('100%')
+    .backgroundColor(colors.background)
     .onAppear(() => {
       this.refresh();
     })

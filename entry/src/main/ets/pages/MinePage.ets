@@ -1,6 +1,8 @@
 import type common from '@ohos.app.ability.common';
 import { Prefs } from '../store/Prefs';
 import { UserStore } from '../store/UserStore';
+import type { ThemePalette } from '../store/ThemeStore';
+import { DARK_MODE_STORAGE_KEY, ThemeStore } from '../store/ThemeStore';
 
 @Component
 export struct MinePage {
@@ -21,9 +23,15 @@ export struct MinePage {
   @State message: string = ''
   @State showRegister: boolean = false
   @State rememberPassword: boolean = false
+  @StorageLink(DARK_MODE_STORAGE_KEY)
+  isDarkMode: boolean = false
 
   private hostCtx(): common.UIAbilityContext { //从 ArkUI 页面获取宿主 UIAbility 的 Context，给 Preferences/数据库等系统能力提供稳定的上下文参数
     return this.getUIContext().getHostContext() as common.UIAbilityContext;
+  }
+
+  private palette(): ThemePalette {
+    return ThemeStore.palette(this.isDarkMode);
   }
 
   async aboutToAppear() {
@@ -46,6 +54,10 @@ export struct MinePage {
     this.nickname = await Prefs.getString(this.hostCtx(), this.KEY_NICK, '用户1');
     this.bio = await Prefs.getString(this.hostCtx(), this.KEY_BIO, '这个人很懒，还没有签名～');
     this.uid = uid;
+  }
+
+  private async updateDarkMode(enabled: boolean) {
+    await ThemeStore.setDarkMode(this.hostCtx(), enabled);
   }
 
   private async saveAll() {
@@ -122,22 +134,40 @@ export struct MinePage {
   }
 
   build() {
+    const colors = this.palette();
     Column() {
-      Text('我的').fontSize(22).fontWeight(FontWeight.Bold).margin({ top: 16, left: 16, bottom: 12 })
+      Text('我的').fontSize(22).fontWeight(FontWeight.Bold).fontColor(colors.primaryText).margin({ top: 16, left: 16, bottom: 12 })
+
+      Row() {
+        Text('夜间模式').fontSize(14).fontColor(colors.primaryText)
+        Blank().layoutWeight(1)
+        Checkbox({ name: 'darkMode', group: 'settings' })
+          .select(this.isDarkMode)
+          .onChange(async (value: boolean) => {
+            this.isDarkMode = value;
+            await this.updateDarkMode(value);
+          })
+      }
+      .alignItems(VerticalAlign.Center)
+      .padding({ left: 16, right: 16, bottom: 8 })
 
       if (!this.isLogin) {
         Column({ space: 12 }) {
-          Text('登录').fontSize(16)
+          Text('登录').fontSize(16).fontColor(colors.primaryText)
           TextInput({ text: this.loginUsername, placeholder: '请输入用户名' })
+            .backgroundColor(colors.inputBackground)
+            .fontColor(colors.primaryText)
             .onChange((v) => { this.loginUsername = v; })
           TextInput({ text: this.loginPassword, placeholder: '请输入密码' })
             .type(InputType.Password)
+            .backgroundColor(colors.inputBackground)
+            .fontColor(colors.primaryText)
             .onChange((v) => { this.loginPassword = v; })
           Row({ space: 8 }) {
             Checkbox({ name: 'rememberPassword', group: 'loginPrefs' })
               .select(this.rememberPassword)
               .onChange((value: boolean) => { this.rememberPassword = value; })
-            Text('记住密码').fontSize(14)
+            Text('记住密码').fontSize(14).fontColor(colors.primaryText)
           }
           .alignItems(VerticalAlign.Center)
           Button('登录', { type: ButtonType.Capsule })
@@ -152,13 +182,19 @@ export struct MinePage {
             })
 
           if (this.showRegister) {
-            Text('注册').fontSize(16)
+            Text('注册').fontSize(16).fontColor(colors.primaryText)
             TextInput({ text: this.regUsername, placeholder: '设置用户名' })
+              .backgroundColor(colors.inputBackground)
+              .fontColor(colors.primaryText)
               .onChange((v) => { this.regUsername = v; })
             TextInput({ text: this.regPassword, placeholder: '设置密码' })
               .type(InputType.Password)
+              .backgroundColor(colors.inputBackground)
+              .fontColor(colors.primaryText)
               .onChange((v) => { this.regPassword = v; })
             TextInput({ text: this.regNickname, placeholder: '昵称（可选）' })
+              .backgroundColor(colors.inputBackground)
+              .fontColor(colors.primaryText)
               .onChange((v) => { this.regNickname = v; })
             Button('注册并登录', { type: ButtonType.Capsule })
               .onClick(async () => { await this.handleRegister(); })
@@ -171,21 +207,25 @@ export struct MinePage {
         .padding(16)
         .margin(16)
         .borderRadius(12)
-        .backgroundColor('#F5F5F5')
+        .backgroundColor(colors.card)
       } else {
         Column({ space: 12 }) {
-          Text(`昵称：${this.nickname}`).fontSize(18)
-          Text(`签名：${this.bio}`).fontSize(14).opacity(0.7)
+          Text(`昵称：${this.nickname}`).fontSize(18).fontColor(colors.primaryText)
+          Text(`签名：${this.bio}`).fontSize(14).opacity(0.7).fontColor(colors.secondaryText)
 
-          Text('编辑昵称').fontSize(14).opacity(0.7)
+          Text('编辑昵称').fontSize(14).opacity(0.7).fontColor(colors.secondaryText)
           TextInput({ text: this.nickname, placeholder: '请输入昵称' })
+            .backgroundColor(colors.inputBackground)
+            .fontColor(colors.primaryText)
             .onChange(async (v) => { //边输入边保存数据防止丢失
               this.nickname = v;
               await this.saveAll();
             })
 
-          Text('编辑签名').fontSize(14).opacity(0.7).margin({ top: 6 })
+          Text('编辑签名').fontSize(14).opacity(0.7).fontColor(colors.secondaryText).margin({ top: 6 })
           TextInput({ text: this.bio, placeholder: '请输入签名' })
+            .backgroundColor(colors.inputBackground)
+            .fontColor(colors.primaryText)
             .onChange(async (v) => {
               this.bio = v;
               await this.saveAll();
@@ -205,10 +245,11 @@ export struct MinePage {
         .padding(16)
         .margin(16)
         .borderRadius(12)
-        .backgroundColor('#F5F5F5')
+        .backgroundColor(colors.card)
       }
     }
     .width('100%')
     .height('100%')
+    .backgroundColor(colors.background)
   }
 }

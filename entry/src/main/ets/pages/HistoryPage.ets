@@ -4,6 +4,8 @@ import router from '@ohos.router';
 
 import type { Article } from '../model/Article';
 import { HistoryStore } from '../store/HistoryStore';
+import type { ThemePalette } from '../store/ThemeStore';
+import { DARK_MODE_STORAGE_KEY, ThemeStore } from '../store/ThemeStore';
 
 AppStorage.setOrCreate('history_version', 0);
 
@@ -18,6 +20,8 @@ export struct HistoryPage {
   @StorageLink('history_version')
   @Watch('onHistoryVersionChange')
   historyVersion: number = 0;
+  @StorageLink(DARK_MODE_STORAGE_KEY)
+  isDarkMode: boolean = false;
 
   async aboutToAppear() {
     await this.loadHistory();
@@ -32,6 +36,10 @@ export struct HistoryPage {
     const list = await HistoryStore.loadHistory(this.hostCtx());
     this.history = list;
     this.loading = false;
+  }
+
+  private palette(): ThemePalette {
+    return ThemeStore.palette(this.isDarkMode);
   }
 
   private async clearHistory() {
@@ -52,9 +60,10 @@ export struct HistoryPage {
   }
 
   build() {
+    const colors = this.palette();
     Column() {
       Row() {
-        Text('阅读历史').fontSize(22).fontWeight(FontWeight.Bold)
+        Text('阅读历史').fontSize(22).fontWeight(FontWeight.Bold).fontColor(colors.primaryText)
         Blank().layoutWeight(1)
         if (this.history.length > 0) {
           Button('清空', { type: ButtonType.Capsule })
@@ -66,27 +75,27 @@ export struct HistoryPage {
       if (this.loading) {
         Row({ space: 8 }) {
           LoadingProgress()
-          Text('正在加载历史...').opacity(0.7)
+          Text('正在加载历史...').opacity(0.7).fontColor(colors.secondaryText)
         }
         .padding(16)
       } else if (this.history.length === 0) {
-        Text('暂无阅读记录').margin(16).opacity(0.7)
+        Text('暂无阅读记录').margin(16).opacity(0.7).fontColor(colors.secondaryText)
       } else {
         List() {
           ForEach(this.history, (item: Article) => {
             ListItem() {
               Row() {
                 Column({ space: 6 }) {
-                  Text(item.title).fontSize(16).fontWeight(FontWeight.Medium)
-                  Text(item.desc).fontSize(13).opacity(0.7).maxLines(2)
-                  Text(`作者：${item.author}`).fontSize(12).opacity(0.6)
+                  Text(item.title).fontSize(16).fontWeight(FontWeight.Medium).fontColor(colors.primaryText)
+                  Text(item.desc).fontSize(13).opacity(0.7).fontColor(colors.secondaryText).maxLines(2)
+                  Text(`作者：${item.author}`).fontSize(12).opacity(0.6).fontColor(colors.secondaryText)
                 }
                 .layoutWeight(1)
               }
               .padding(12)
               .margin({ left: 16, right: 16, bottom: 12 })
               .borderRadius(12)
-              .backgroundColor('#F5F5F5')
+              .backgroundColor(colors.card)
               .onClick(async () => await this.openDetail(item.id))
             }
           })
@@ -97,5 +106,6 @@ export struct HistoryPage {
     }
     .width('100%')
     .height('100%')
+    .backgroundColor(colors.background)
   }
 }

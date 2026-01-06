@@ -7,6 +7,8 @@ import type { Category } from '../model/Category';
 import { FavoriteStore } from '../store/FavoriteStore';
 import { fetchArticlesByCid, fetchCategories } from '../service/WanService';
 import { ArticleStore } from '../store/ArticleStore';
+import type { ThemePalette } from '../store/ThemeStore';
+import { DARK_MODE_STORAGE_KEY, ThemeStore } from '../store/ThemeStore';
 
 @Component
 export struct CategoryPage {
@@ -22,6 +24,8 @@ export struct CategoryPage {
   @State errorMsg: string = '';
   @State uid: string = '0';
   @State favIds: Set<number> = new Set<number>();
+  @StorageLink(DARK_MODE_STORAGE_KEY)
+  isDarkMode: boolean = false;
   // 监听全局变化：收藏变化 / 登录变化（和你首页/收藏页同一套机制）
   @StorageLink('fav_version')
   @Watch('onFavVersionChange')
@@ -92,6 +96,10 @@ export struct CategoryPage {
     this.favIds = await FavoriteStore.loadFavSet(ctx, uid);
   }
 
+  private palette(): ThemePalette {
+    return ThemeStore.palette(this.isDarkMode);
+  }
+
   private async bumpFavVersion() {
     AppStorage.setOrCreate('fav_version', 0);
     const v = (AppStorage.get('fav_version') as number) ?? 0;
@@ -136,10 +144,12 @@ export struct CategoryPage {
   }
 
   build() {
+    const colors = this.palette();
     Column() {
       Text('分类')
         .fontSize(22)
         .fontWeight(FontWeight.Bold)
+        .fontColor(colors.primaryText)
         .margin({ top: 16, left: 16, bottom: 12 })
 
       Row() {
@@ -151,8 +161,9 @@ export struct CategoryPage {
                 Text(c.name)
                   .fontSize(14)
                   .fontWeight(this.selectedCid === c.cid ? FontWeight.Bold : FontWeight.Normal)
+                  .fontColor(colors.primaryText)
                   .padding(12)
-                  .backgroundColor(this.selectedCid === c.cid ? '#EDEDED' : '#FFFFFF')
+                  .backgroundColor(this.selectedCid === c.cid ? colors.cardActive : colors.card)
                   .borderRadius(8)
                   // .onClick(() => {
                   //   this.selectedCid = c.cid;
@@ -177,19 +188,19 @@ export struct CategoryPage {
           if (this.loadingCats || this.loadingArticles) {
             Row({ space: 8 }) {
               LoadingProgress()
-              Text('正在加载数据...').opacity(0.7)
+              Text('正在加载数据...').opacity(0.7).fontColor(colors.secondaryText)
             }
             .padding(12)
           } else if (this.errorMsg) {
             Column({ space: 6 }) {
-              Text('网络加载失败，数据暂不可用').fontSize(13).opacity(0.7)
-              Text(this.errorMsg).fontSize(12).opacity(0.6)
+              Text('网络加载失败，数据暂不可用').fontSize(13).opacity(0.7).fontColor(colors.secondaryText)
+              Text(this.errorMsg).fontSize(12).opacity(0.6).fontColor(colors.secondaryText)
             }
             .padding({ left: 12, right: 12, bottom: 6 })
           }
 
           if (this.articles.length === 0) {
-            Text('该分类暂无文章').margin(16).opacity(0.7)
+            Text('该分类暂无文章').margin(16).opacity(0.7).fontColor(colors.secondaryText)
           } else {
             List() {
               // ForEach(this.getFilteredArticles(), (item: Article) => {
@@ -197,8 +208,8 @@ export struct CategoryPage {
                 ListItem() {
                   Row() {
                     Column({ space: 6 }) {
-                      Text(item.title).fontSize(15).fontWeight(FontWeight.Medium)
-                      Text(item.desc).fontSize(12).opacity(0.7).maxLines(2)
+                      Text(item.title).fontSize(15).fontWeight(FontWeight.Medium).fontColor(colors.primaryText)
+                      Text(item.desc).fontSize(12).opacity(0.7).fontColor(colors.secondaryText).maxLines(2)
                     }.layoutWeight(1)
 
                     // ✅ 收藏按钮用 gesture 隔离点击，防止触发卡片跳转
@@ -215,7 +226,7 @@ export struct CategoryPage {
                   .padding(12)
                   .margin({ left: 6, right: 12, bottom: 12 })
                   .borderRadius(12)
-                  .backgroundColor('#F5F5F5')
+                  .backgroundColor(colors.card)
                   // ✅ 点卡片跳转正文页
                   .onClick(async () => {
                     await this.openDetail(item);
@@ -231,6 +242,7 @@ export struct CategoryPage {
     }
     .width('100%')
     .height('100%')
+    .backgroundColor(colors.background)
     .onAppear(() => {
       // 切回分类页也刷新收藏状态
       this.refreshFav();
