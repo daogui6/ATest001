@@ -54,13 +54,20 @@ export struct HistoryPage {
   build() {
     Column() {
       Row() {
-        Text('阅读历史').fontSize(22).fontWeight(FontWeight.Bold)
-        Blank().layoutWeight(1)
+        Blank().width(78)
+        Text('阅读历史')
+          .fontSize(22)
+          .fontWeight(FontWeight.Bold)
+          .layoutWeight(1)
+          .textAlign(TextAlign.Center)
         if (this.history.length > 0) {
           Button('清空', { type: ButtonType.Capsule })
             .onClick(async () => await this.clearHistory());
+        } else {
+          Blank().width(78)
         }
       }
+      .alignItems(VerticalAlign.Center)
       .padding({ top: 16, left: 16, right: 16, bottom: 12 })
 
       if (this.loading) {

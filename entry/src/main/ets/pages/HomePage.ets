@@ -121,16 +121,18 @@ export struct HomePage {
   build() {
     Column() {
       Row() {
+        Blank().width(36)
         Text('首页')
           .fontSize(22)
           .fontWeight(FontWeight.Bold)
-          .margin({ top: 16, left: 16, bottom: 12 })
-        Blank().layoutWeight(1)
+          .layoutWeight(1)
+          .textAlign(TextAlign.Center)
         Text('🔍')
           .fontSize(22)
-          .margin({ top: 16, right: 16, bottom: 12 })
           .onClick(async () => await this.openSearchPage())
       }
+      .alignItems(VerticalAlign.Center)
+      .padding({ top: 16, left: 16, right: 16, bottom: 12 })
 
       if (this.loading) {
         Row({ space: 8 }) {
