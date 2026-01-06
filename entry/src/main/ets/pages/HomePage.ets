@@ -26,9 +26,13 @@ export struct HomePage {
   sessionVersion: number = 0;
   @State articles: Article[] = [];
   @State loading: boolean = true;
+  @State refreshing: boolean = false;
+  @State loadingMore: boolean = false;
   @State errorMsg: string = '';
   @State uid: string = '0';
   @State favIds: Set<number> = new Set<number>();
+  @State nextPage: number = 0;
+  @State hasMore: boolean = true;
 
   private onFavVersionChange() {
     this.refreshFav();
@@ -53,27 +57,71 @@ export struct HomePage {
   }
 
   async aboutToAppear() {
-    await this.loadArticles();
+    await this.reloadArticles();
     await this.refreshFav();
   }
 
-  private async loadArticles() {
+  private dedupArticles(list: Article[]): Article[] {
+    const seen = new Set<number>();
+    const result: Article[] = [];
+    list.forEach(item => {
+      if (!seen.has(item.id)) {
+        seen.add(item.id);
+        result.push(item);
+      }
+    });
+    return result;
+  }
+
+  private async reloadArticles() {
     this.loading = true;
     this.errorMsg = '';
+    this.hasMore = true;
+    this.nextPage = 0;
     try {
-      const requests: Promise<Article[]>[] = [fetchTopArticles(), fetchLatestArticles()];
-      const results = await Promise.all(requests);
-      const merged: Article[] = [...results[0], ...results[1]];
-      // 去重合并，保证列表至少有几条
-      const uniqMap = new Map<number, Article>();
-      merged.forEach(item => uniqMap.set(item.id, item));
-      const uniq = Array.from(uniqMap.values());
-      this.articles = uniq;
+      const [top, latest] = await Promise.all([fetchTopArticles(), fetchLatestArticles(0)]);
+      const merged: Article[] = [...top, ...latest];
+      this.articles = this.dedupArticles(merged);
+      this.hasMore = latest.length > 0;
+      this.nextPage = 1;
     } catch (e) {
       this.errorMsg = (e as Error)?.message ?? '加载失败';
       this.articles = [];
+      this.hasMore = false;
     } finally {
       this.loading = false;
+    }
+  }
+
+  private async refreshArticles() {
+    if (this.refreshing) {
+      return;
+    }
+    this.refreshing = true;
+    await this.reloadArticles();
+    this.refreshing = false;
+  }
+
+  private async loadMoreArticles() {
+    if (this.loadingMore || this.loading || !this.hasMore) {
+      return;
+    }
+
+    this.loadingMore = true;
+    this.errorMsg = '';
+    try {
+      const latest = await fetchLatestArticles(this.nextPage);
+      if (latest.length === 0) {
+        this.hasMore = false;
+        return;
+      }
+      const merged = [...this.articles, ...latest];
+      this.articles = this.dedupArticles(merged);
+      this.nextPage += 1;
+    } catch (e) {
+      this.errorMsg = (e as Error)?.message ?? '加载失败';
+    } finally {
+      this.loadingMore = false;
     }
   }
 
@@ -148,39 +196,65 @@ export struct HomePage {
         .padding({ left: 16, right: 16, bottom: 6 })
       }
 
-      List() {
-        ForEach(this.articles, (item: Article) => {
-          ListItem() {
-            Row() {
-              Column({ space: 6 }) {
-                Text(item.title).fontSize(16).fontWeight(FontWeight.Medium)
-                Text(item.desc).fontSize(13).opacity(0.7).maxLines(2)
-                Text(`作者：${item.author}`).fontSize(12).opacity(0.6)
-              }
-              .layoutWeight(1)
+      Refresh({ refreshing: this.refreshing }) {
+        List() {
+          ForEach(this.articles, (item: Article) => {
+            ListItem() {
+              Row() {
+                Column({ space: 6 }) {
+                  Text(item.title).fontSize(16).fontWeight(FontWeight.Medium)
+                  Text(item.desc).fontSize(13).opacity(0.7).maxLines(2)
+                  Text(`作者：${item.author}`).fontSize(12).opacity(0.6)
+                }
+                .layoutWeight(1)
 
-              Text(this.favIds.has(item.id) ? '❤️' : '🤍')
-                .fontSize(22)
-                .margin({ left: 10 })
-                // .onClick(async () => await this.toggleFav(item.id))
-                .onClick(async () => await this.toggleFav(item))
-            }
-            .padding(12)
-            .margin({ left: 16, right: 16, bottom: 12 })
-            .borderRadius(12)
-            .backgroundColor('#F5F5F5')
-            .onClick(() => {
-              ArticleStore.setArticles(this.articles);
-              router.pushUrl({
-                url: 'pages/ArticleDetailPage',
-                params: { id: item.id, article: item }
+                Text(this.favIds.has(item.id) ? '❤️' : '🤍')
+                  .fontSize(22)
+                  .margin({ left: 10 })
+                  // .onClick(async () => await this.toggleFav(item.id))
+                  .onClick(async () => await this.toggleFav(item))
+              }
+              .padding(12)
+              .margin({ left: 16, right: 16, bottom: 12 })
+              .borderRadius(12)
+              .backgroundColor('#F5F5F5')
+              .onClick(() => {
+                ArticleStore.setArticles(this.articles);
+                router.pushUrl({
+                  url: 'pages/ArticleDetailPage',
+                  params: { id: item.id, article: item }
+                })
               })
-            })
+            }
+          })
+
+          ListItem() {
+            if (this.loadingMore) {
+              Row({ space: 8 }) {
+                LoadingProgress().width(20).height(20)
+                Text('加载中...').fontSize(13).opacity(0.7)
+              }
+              .padding(12)
+              .justifyContent(FlexAlign.Center)
+            } else if (!this.hasMore) {
+              Text('已经到底了').fontSize(12).opacity(0.6).padding(12)
+            } else {
+              Text('上拉加载更多').fontSize(12).opacity(0.5).padding(12)
+            }
+          }
+        }
+        .width('100%')
+        .layoutWeight(1)
+        .onScrollIndex((_, last) => {
+          // 靠近底部时触发加载
+          if (last >= this.articles.length - 1) {
+            this.loadMoreArticles();
           }
         })
       }
-      .width('100%')
-      .layoutWeight(1)
+      .onRefresh(async () => {
+        await this.refreshArticles();
+      })
     }
     .width('100%')
     .height('100%')

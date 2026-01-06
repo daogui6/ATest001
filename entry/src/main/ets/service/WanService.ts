@@ -132,15 +132,15 @@ export async function fetchTopArticles(): Promise<Article[]> {
   return data.map(mapArticle);
 }
 
-export async function fetchLatestArticles(): Promise<Article[]> {
-  const payload = await getJson<ArticleListPayload>('/article/list/0/json');
+export async function fetchLatestArticles(page: number = 0): Promise<Article[]> {
+  const payload = await getJson<ArticleListPayload>(`/article/list/${page}/json`);
   const datas = payload.datas ?? [];
   return datas.map(mapArticle);
 }
 
-export async function fetchArticlesByCid(cid: number): Promise<Article[]> {
+export async function fetchArticlesByCid(cid: number, page: number = 0): Promise<Article[]> {
   const encoded = encodeURIComponent(String(cid));
-  const payload = await getJson<ArticleListPayload>(`/article/list/0/json?cid=${encoded}`);
+  const payload = await getJson<ArticleListPayload>(`/article/list/${page}/json?cid=${encoded}`);
   const datas = payload.datas ?? [];
   return datas.map(mapArticle);
 }
