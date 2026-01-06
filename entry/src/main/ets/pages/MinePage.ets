@@ -13,6 +13,9 @@ export struct MinePage {
   @State nickname: string = '用户1'
   @State bio: string = '这个人很懒，还没有签名～'
   @State uid: string = '0'
+  @State username: string = ''
+  @State publicName: string = ''
+  @State token: string = ''
   @State loginUsername: string = ''
   @State loginPassword: string = ''
   @State regUsername: string = ''
@@ -36,6 +39,9 @@ export struct MinePage {
       this.uid = String(user.id);
       this.nickname = user.nickname || user.username;
       this.bio = user.bio ?? '这个人很懒，还没有签名～';
+      this.username = user.username;
+      this.publicName = user.publicName;
+      this.token = user.token ?? '';
       this.isLogin = true;
       return;
     }
@@ -71,6 +77,9 @@ export struct MinePage {
     this.uid = String(user.id);
     this.nickname = user.nickname || user.username;
     this.bio = user.bio ?? '这个人很懒，还没有签名～';
+    this.username = user.username;
+    this.publicName = user.publicName;
+    this.token = user.token ?? '';
     this.isLogin = true;
     this.showRegister = false;
     await this.saveAll();
@@ -98,6 +107,9 @@ export struct MinePage {
     this.uid = String(user.id);
     this.nickname = user.nickname || user.username;
     this.bio = user.bio ?? '这个人是新用户，快来打个招呼吧～';
+    this.username = user.username;
+    this.publicName = user.publicName;
+    this.token = user.token ?? '';
     this.isLogin = true;
     this.showRegister = false;
     await this.saveAll();
@@ -114,6 +126,9 @@ export struct MinePage {
 
   private handleLogoutState() {
     this.uid = '0';
+    this.username = '';
+    this.publicName = '';
+    this.token = '';
     this.isLogin = false;
     this.showRegister = false;
     this.message = '';
@@ -176,8 +191,15 @@ export struct MinePage {
         .backgroundColor('#F5F5F5')
       } else {
         Column({ space: 12 }) {
-          Text(`昵称：${this.nickname}`).fontSize(18)
-          Text(`签名：${this.bio}`).fontSize(14).opacity(0.7)
+          Text('账号信息').fontSize(16).fontWeight(FontWeight.Medium)
+          Column({ space: 6 }) {
+            Text(`用户ID：${this.uid}`).fontSize(14)
+            Text(`用户名：${this.username || '未获取'}`).fontSize(14)
+            Text(`公开昵称：${this.publicName || this.nickname}`).fontSize(14)
+            Text(`Token：${this.token || '暂无'}`).fontSize(14).opacity(0.7)
+            Text(`昵称：${this.nickname}`).fontSize(14)
+            Text(`签名：${this.bio}`).fontSize(14).opacity(0.7)
+          }
 
           Text('编辑昵称').fontSize(14).opacity(0.7)
           TextInput({ text: this.nickname, placeholder: '请输入昵称' })
