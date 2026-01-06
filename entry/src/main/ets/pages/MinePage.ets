@@ -31,7 +31,7 @@ export struct MinePage {
   }
 
   private get colors(): ThemePalette {
-    return ThemeStore.palette(this.isDarkMode);
+    return ThemeStore.safePalette(this.isDarkMode);
   }
 
   async aboutToAppear() {

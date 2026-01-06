@@ -50,6 +50,32 @@ export class ThemeStore {
     return isDark ? darkPalette : lightPalette;
   }
 
+  /**
+   * 兜底返回完整的配色，避免 ThemeStore 调用异常或字段缺失导致 UI 崩溃。
+   */
+  static safePalette(isDark: boolean): ThemePalette {
+    const palette = (() => {
+      try {
+        return ThemeStore.palette(isDark) as ThemePalette | undefined;
+      } catch (_) {
+        return undefined;
+      }
+    })();
+
+    // 显式逐字段合并，避免 Object.assign / 展开运算符在 ArkTS 下的兼容性问题
+    return {
+      background: palette?.background ?? lightPalette.background,
+      card: palette?.card ?? lightPalette.card,
+      cardActive: palette?.cardActive ?? lightPalette.cardActive,
+      primaryText: palette?.primaryText ?? lightPalette.primaryText,
+      secondaryText: palette?.secondaryText ?? lightPalette.secondaryText,
+      hintText: palette?.hintText ?? lightPalette.hintText,
+      accent: palette?.accent ?? lightPalette.accent,
+      divider: palette?.divider ?? lightPalette.divider,
+      inputBackground: palette?.inputBackground ?? lightPalette.inputBackground,
+    };
+  }
+
   static async init(ctx: common.UIAbilityContext): Promise<void> {
     const saved = await Prefs.getBool(ctx, DARK_MODE_PREF_KEY, false);
     AppStorage.set(DARK_MODE_KEY, saved);

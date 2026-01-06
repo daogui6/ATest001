@@ -153,7 +153,7 @@ struct ArticleDetailPage {
   }
 
   private get colors(): ThemePalette {
-    return ThemeStore.palette(this.isDarkMode);
+    return ThemeStore.safePalette(this.isDarkMode);
   }
 
   private async toggleFav(id: number) {
