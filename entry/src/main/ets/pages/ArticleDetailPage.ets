@@ -8,6 +8,9 @@ import { callZhipu, type AiMode } from '../service/ZhipuAI';
 import { HistoryStore } from '../store/HistoryStore';
 import { ArticleStore } from '../store/ArticleStore';
 import { fetchArticleById } from '../service/WanService';
+import type { Comment } from '../model/Comment';
+import { InteractionStore } from '../store/InteractionStore';
+import { UserStore } from '../store/UserStore';
 
 interface DetailParams {
   id?: number | string;
@@ -40,13 +43,19 @@ struct ArticleDetailPage {
   @StorageLink('session_version')
   @Watch('onSessionVersionChange')
   sessionVersion: number = 0;
+  @State comments: Comment[] = [];
+  @State newComment: string = '';
+  @State likeCount: number = 0;
+  @State liked: boolean = false;
 
   private onFavVersionChange() {
     this.refreshFav();
+    this.refreshInteractions();
   }
 
   private onSessionVersionChange() {
     this.refreshFav();
+    this.refreshInteractions();
   }
 
   async aboutToAppear() {
@@ -60,6 +69,7 @@ struct ArticleDetailPage {
       this.article = null;
       promptAction.showToast({ message: '文章参数缺失，无法打开' });
       await this.refreshFav();
+      await this.refreshInteractions();
       return;
     }
 
@@ -99,8 +109,9 @@ struct ArticleDetailPage {
       promptAction.showToast({ message: '文章不存在或已被移除' });
     }
 
-    // 3) 刷新收藏状态
+    // 3) 刷新收藏状态 + 点赞/评论数据
     await this.refreshFav();
+    await this.refreshInteractions();
   }
 
   private async resolveArticleById(id: number): Promise<Article | null> {
@@ -138,6 +149,21 @@ struct ArticleDetailPage {
     this.favIds = await FavoriteStore.loadFavSet(ctx, uid);
   }
 
+  private async refreshInteractions() {
+    if (!this.article) {
+      this.comments = [];
+      this.likeCount = 0;
+      this.liked = false;
+      return;
+    }
+
+    const ctx = this.hostCtx();
+    this.comments = await InteractionStore.loadComments(ctx, this.article.id);
+    const likeState = await InteractionStore.loadLikeState(ctx, this.article.id, this.uid);
+    this.likeCount = likeState.count;
+    this.liked = likeState.liked;
+  }
+
   private bumpFavVersion() {
     const v = (AppStorage.get('fav_version') as number) ?? 0;
     AppStorage.set('fav_version', v + 1);
@@ -170,6 +196,66 @@ struct ArticleDetailPage {
     this.favIds = next;
     await FavoriteStore.saveFavSet(ctx, uid, next);
     this.bumpFavVersion();
+  }
+
+  private formatTime(ts: number): string {
+    const d = new Date(ts);
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  private async submitComment() {
+    if (!this.article) {
+      promptAction.showToast({ message: '文章未加载' });
+      return;
+    }
+
+    const content = this.newComment.trim();
+    if (content.length === 0) {
+      promptAction.showToast({ message: '请输入评论内容' });
+      return;
+    }
+
+    const ctx = this.hostCtx();
+    const currentUser = await UserStore.currentUser(ctx);
+    const uid = currentUser?.username ?? this.uid;
+    if (!uid || uid === '0') {
+      promptAction.showToast({ message: '请先登录后再评论' });
+      return;
+    }
+
+    const nickname = currentUser?.nickname ?? currentUser?.username ?? '匿名用户';
+    const comment: Comment = {
+      id: `${this.article.id}-${Date.now()}`,
+      articleId: this.article.id,
+      userId: uid,
+      nickname,
+      content,
+      createdAt: Date.now()
+    };
+
+    this.comments = await InteractionStore.addComment(ctx, this.article.id, comment);
+    this.newComment = '';
+    promptAction.showToast({ message: '评论成功' });
+  }
+
+  private async toggleLikeStatus() {
+    if (!this.article) {
+      promptAction.showToast({ message: '文章未加载' });
+      return;
+    }
+
+    const ctx = this.hostCtx();
+    const uid = await FavoriteStore.getUid(ctx);
+    this.uid = uid;
+    if (uid === '0') {
+      promptAction.showToast({ message: '请先在【我的】里登录' });
+      return;
+    }
+
+    const state = await InteractionStore.toggleLike(ctx, this.article.id, uid);
+    this.liked = state.liked;
+    this.likeCount = state.count;
   }
 
   // ✅ AI 调用（总结/锐评）
@@ -280,6 +366,55 @@ struct ArticleDetailPage {
             .padding(12)
             .borderRadius(12)
             .backgroundColor('#F5F5F5')
+
+            // 点赞 + 评论
+            Column({ space: 10 }) {
+              Row({ space: 8 }) {
+                Button(this.liked ? `👍 已赞（${this.likeCount}）` : `👍 点赞（${this.likeCount}）`, { type: ButtonType.Capsule })
+                  .onClick(async () => await this.toggleLikeStatus())
+
+                Text(`评论 ${this.comments.length}`)
+                  .fontSize(14)
+                  .opacity(0.7)
+              }
+
+              Column({ space: 8 }) {
+                Text('发表评论').fontSize(16).fontWeight(FontWeight.Medium)
+                TextInput({ text: this.newComment, placeholder: '写下你的想法...' })
+                  .onChange((v: string) => { this.newComment = v; })
+                Button('发表', { type: ButtonType.Capsule })
+                  .onClick(async () => await this.submitComment())
+              }
+              .padding(12)
+              .borderRadius(12)
+              .backgroundColor('#F7F7F7')
+
+              Column({ space: 10 }) {
+                Text('最新评论').fontSize(16).fontWeight(FontWeight.Medium)
+                if (this.comments.length === 0) {
+                  Text('暂时还没有评论，快来抢沙发～').opacity(0.6)
+                } else {
+                  ForEach(this.comments, (c: Comment) => {
+                    Column({ space: 4 }) {
+                      Row({ space: 6 }) {
+                        Text(c.nickname || '匿名用户').fontSize(14).fontWeight(FontWeight.Medium)
+                        Text(this.formatTime(c.createdAt)).fontSize(12).opacity(0.6)
+                      }
+                      Text(c.content).fontSize(14).lineHeight(20)
+                    }
+                    .padding(10)
+                    .borderRadius(10)
+                    .backgroundColor('#FAFAFA')
+                  })
+                }
+              }
+              .padding(12)
+              .borderRadius(12)
+              .backgroundColor('#F5F5F5')
+            }
+            .padding({ top: 8, bottom: 4 })
+
+            Divider().margin({ top: 4, bottom: 4 })
 
             // 正文
             Text(this.article.content)
