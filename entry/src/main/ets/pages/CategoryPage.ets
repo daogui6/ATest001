@@ -176,7 +176,7 @@ export struct CategoryPage {
                   await this.loadArticlesByCid(c.cid);
                 }
               })
-            }, (c: Category) => c.cid)
+            }, (c: Category) => c.cid.toString())
           }
         }
         .width('34%')

@@ -5,7 +5,7 @@ import router from '@ohos.router';
 import type { Article } from '../model/Article';
 import { LocalArticles } from '../data/LocalArticles';
 import { FavoriteStore } from '../store/FavoriteStore';
-import { fetchTopArticles } from '../service/WanService';
+import { fetchLatestArticles, fetchTopArticles } from '../service/WanService';
 
 // ✅ 确保 key 存在（避免首次为 undefined）
 AppStorage.setOrCreate('fav_version', 0);
@@ -61,8 +61,9 @@ export struct HomePage {
     this.loading = true;
     this.errorMsg = '';
     try {
-      const [tops, latest] = await Promise.all([fetchTopArticles(), fetchLatestArticles()]);
-      const merged = [...tops, ...latest];
+      const requests: Promise<Article[]>[] = [fetchTopArticles(), fetchLatestArticles()];
+      const results = await Promise.all(requests);
+      const merged: Article[] = [...results[0], ...results[1]];
       // 去重合并，保证列表至少有几条
       const uniqMap = new Map<number, Article>();
       merged.forEach(item => uniqMap.set(item.id, item));
