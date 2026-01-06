@@ -29,6 +29,23 @@ interface CategoryPayload {
   name?: string;
 }
 
+interface UserPayload {
+  id?: number;
+  username?: string;
+  nickname?: string;
+  publicName?: string;
+  token?: string;
+}
+
+export interface WanUser {
+  id: number;
+  username: string;
+  nickname: string;
+  publicName: string;
+  token?: string;
+  bio?: string;
+}
+
 const BASE = 'https://www.wanandroid.com';
 const HTTP_TIMEOUT = 12000;
 
@@ -62,14 +79,33 @@ function parseApiResult<T>(status: number, raw: string): T {
   return parsed.data;
 }
 
-async function getJson<T>(path: string): Promise<T> {
+function extractCookies(resp: http.HttpResponse): string {
+  const rawCookies = (resp as http.HttpResponse & { cookies?: string[] }).cookies;
+  if (rawCookies && Array.isArray(rawCookies)) {
+    return rawCookies.join('; ');
+  }
+
+  const header = (resp as { header?: Record<string, unknown> }).header;
+  const setCookie = header?.['Set-Cookie'] ?? header?.['set-cookie'];
+  if (Array.isArray(setCookie)) {
+    return setCookie.join('; ');
+  }
+  if (typeof setCookie === 'string') {
+    return setCookie;
+  }
+
+  return '';
+}
+
+async function getJson<T>(path: string, cookie?: string): Promise<T> {
   const client = http.createHttp();
   try {
     const resp = await client.request(`${BASE}${path}`, {
       method: http.RequestMethod.GET,
       connectTimeout: HTTP_TIMEOUT,
       readTimeout: HTTP_TIMEOUT,
-      expectDataType: http.HttpDataType.STRING
+      expectDataType: http.HttpDataType.STRING,
+      header: cookie ? { Cookie: cookie } : undefined
     });
 
     const status = resp.responseCode ?? 0;
@@ -80,7 +116,7 @@ async function getJson<T>(path: string): Promise<T> {
   }
 }
 
-async function postJson<T>(path: string, body: string): Promise<T> {
+async function postJson<T>(path: string, body: string, cookie?: string): Promise<T> {
   const client = http.createHttp();
   try {
     const resp = await client.request(`${BASE}${path}`, {
@@ -89,7 +125,8 @@ async function postJson<T>(path: string, body: string): Promise<T> {
       readTimeout: HTTP_TIMEOUT,
       expectDataType: http.HttpDataType.STRING,
       header: {
-        'Content-Type': 'application/x-www-form-urlencoded'
+        'Content-Type': 'application/x-www-form-urlencoded',
+        ...(cookie ? { Cookie: cookie } : {})
       },
       extraData: body
     });
@@ -100,6 +137,44 @@ async function postJson<T>(path: string, body: string): Promise<T> {
   } finally {
     client.destroy();
   }
+}
+
+async function postJsonWithCookie<T>(path: string, body: string, cookie?: string): Promise<{ data: T; cookie: string }> {
+  const client = http.createHttp();
+  try {
+    const resp = await client.request(`${BASE}${path}`, {
+      method: http.RequestMethod.POST,
+      connectTimeout: HTTP_TIMEOUT,
+      readTimeout: HTTP_TIMEOUT,
+      expectDataType: http.HttpDataType.STRING,
+      header: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        ...(cookie ? { Cookie: cookie } : {})
+      },
+      extraData: body
+    });
+
+    const status = resp.responseCode ?? 0;
+    const raw = String(resp.result ?? '');
+    const data = parseApiResult<T>(status, raw);
+    const cookieStr = extractCookies(resp);
+    return { data, cookie: cookieStr };
+  } finally {
+    client.destroy();
+  }
+}
+
+function normalizeUser(payload: UserPayload): WanUser {
+  const username = payload.username ?? '';
+  const nickname = payload.nickname ?? payload.publicName ?? username;
+  const publicName = payload.publicName ?? nickname ?? username;
+  return {
+    id: payload.id ?? 0,
+    username,
+    nickname: nickname || '未知用户',
+    publicName: publicName || '未知用户',
+    token: payload.token
+  };
 }
 
 function mapArticle(item: ArticlePayload): Article {
@@ -122,6 +197,22 @@ function mapArticle(item: ArticlePayload): Article {
     link,
     content
   };
+}
+
+export async function registerUser(username: string, password: string, rePassword: string): Promise<{ user: WanUser; cookie: string }> {
+  const encodedBody = `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}&repassword=${encodeURIComponent(rePassword)}`;
+  const { data, cookie } = await postJsonWithCookie<UserPayload>('/user/register', encodedBody);
+  return { user: normalizeUser(data), cookie };
+}
+
+export async function loginUser(username: string, password: string): Promise<{ user: WanUser; cookie: string }> {
+  const encodedBody = `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`;
+  const { data, cookie } = await postJsonWithCookie<UserPayload>('/user/login', encodedBody);
+  return { user: normalizeUser(data), cookie };
+}
+
+export async function logoutUser(cookie?: string): Promise<void> {
+  await getJson('/user/logout/json', cookie);
 }
 
 export async function fetchTopArticles(): Promise<Article[]> {

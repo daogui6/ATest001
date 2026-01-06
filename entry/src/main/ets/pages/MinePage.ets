@@ -33,7 +33,7 @@ export struct MinePage {
   private async loadSession() {
     const user = await UserStore.currentUser(this.hostCtx());
     if (user) {
-      this.uid = user.username;
+      this.uid = String(user.id);
       this.nickname = user.nickname || user.username;
       this.bio = user.bio ?? '这个人很懒，还没有签名～';
       this.isLogin = true;
@@ -55,19 +55,20 @@ export struct MinePage {
     await Prefs.putString(this.hostCtx(), this.KEY_BIO, this.bio);
 
     if (this.isLogin && this.uid !== '0') {
-      await UserStore.updateProfile(this.hostCtx(), this.uid, { nickname: this.nickname, bio: this.bio });
+      await UserStore.updateProfile(this.hostCtx(), { nickname: this.nickname, bio: this.bio });
     }
   }
 
   private async handleLogin() {
     this.message = '';
-    const user = await UserStore.login(this.hostCtx(), this.loginUsername.trim(), this.loginPassword);
-    if (!user) {
-      this.message = '用户名或密码错误';
+    const result = await UserStore.login(this.hostCtx(), this.loginUsername.trim(), this.loginPassword);
+    if (result.ok === false) {
+      this.message = result.message;
       return;
     }
 
-    this.uid = user.username;
+    const user = result.user;
+    this.uid = String(user.id);
     this.nickname = user.nickname || user.username;
     this.bio = user.bio ?? '这个人很懒，还没有签名～';
     this.isLogin = true;
@@ -93,9 +94,10 @@ export struct MinePage {
       return;
     }
 
-    this.uid = this.regUsername.trim();
-    this.nickname = this.regNickname.trim() || this.regUsername.trim();
-    this.bio = '这个人是新用户，快来打个招呼吧～';
+    const user = result.user;
+    this.uid = String(user.id);
+    this.nickname = user.nickname || user.username;
+    this.bio = user.bio ?? '这个人是新用户，快来打个招呼吧～';
     this.isLogin = true;
     this.showRegister = false;
     await this.saveAll();
