@@ -367,6 +367,15 @@ struct ArticleDetailPage {
             .borderRadius(12)
             .backgroundColor('#F5F5F5')
 
+            // 正文
+            Text(this.article.content)
+              .fontSize(15)
+              .lineHeight(22)
+              .width('100%')
+              .margin({ top: 10 })
+
+            Divider().margin({ top: 12, bottom: 4 })
+
             // 点赞 + 评论
             Column({ space: 10 }) {
               Row({ space: 8 }) {
@@ -413,15 +422,6 @@ struct ArticleDetailPage {
               .backgroundColor('#F5F5F5')
             }
             .padding({ top: 8, bottom: 4 })
-
-            Divider().margin({ top: 4, bottom: 4 })
-
-            // 正文
-            Text(this.article.content)
-              .fontSize(15)
-              .lineHeight(22)
-              .width('100%')
-              .margin({ top: 10 })
           }
           .padding(16)
           .width('100%')

@@ -98,7 +98,18 @@ export struct FavoritePage {
 
   build() {
     Column() {
-      Text('收藏').fontSize(22).fontWeight(FontWeight.Bold).margin({ top: 16, left: 16, bottom: 12 })
+      Row() {
+        Text('收藏')
+          .fontSize(22)
+          .fontWeight(FontWeight.Bold)
+          .layoutWeight(1)
+
+        Text(`共 ${this.favArticles.length} 条`)
+          .fontSize(14)
+          .opacity(0.7)
+      }
+      .margin({ top: 16, left: 16, right: 16, bottom: 12 })
+      .width('100%')
 
       if (this.uid === '0') {
         Text('请先去【我的】页登录').margin(16).opacity(0.7)
