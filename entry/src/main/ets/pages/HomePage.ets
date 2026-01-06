@@ -274,15 +274,17 @@ export struct HomePage {
       })
 
       if (this.showBackToTop) {
-        Button('↑')
-          .backgroundColor('#F5F5F5')
-          .fontColor('#444444')
-          .borderRadius(18)
-          .padding({ left: 10, right: 10, top: 8, bottom: 8 })
-          .margin({ bottom: 24, right: 16 })
-          .align(Alignment.BottomEnd)
-          .onClick(() => this.scrollToTop())
+        Positioned({ bottom: 24, right: 16 }) {
+          Button('↑')
+            .backgroundColor('#F5F5F5')
+            .fontColor('#444444')
+            .borderRadius(18)
+            .padding({ left: 10, right: 10, top: 8, bottom: 8 })
+            .onClick(() => this.scrollToTop())
+        }
       }
     }
+    .width('100%')
+    .height('100%')
   }
 }
