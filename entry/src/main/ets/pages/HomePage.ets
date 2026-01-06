@@ -57,7 +57,9 @@ export struct HomePage {
   }
 
   private get colors(): ThemePalette {
-    return ThemeStore.palette(this.isDarkMode);
+    const palette = ThemeStore.palette(!!this.isDarkMode);
+    // 在极端情况下（主题存储尚未完成初始化）保证有默认配色，避免 undefined 访问
+    return palette ?? ThemeStore.palette(false);
   }
 
   async aboutToAppear() {

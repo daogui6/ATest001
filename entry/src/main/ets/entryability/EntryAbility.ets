@@ -16,7 +16,7 @@ export default class EntryAbility extends UIAbility {
     }
     hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onCreate');
 
-    ThemeStore.init(this.context as common.UIAbilityContext).catch((err) => {
+    ThemeStore.init(this.context as common.UIAbilityContext).catch((err: Error) => {
       hilog.error(DOMAIN, 'testTag', 'init theme failed %{public}s', JSON.stringify(err));
     });
   }
