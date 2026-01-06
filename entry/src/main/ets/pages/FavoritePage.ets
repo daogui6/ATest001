@@ -99,16 +99,24 @@ export struct FavoritePage {
   build() {
     Column() {
       Row() {
+        // 左侧空占位，确保中间标题被左右均衡
+        Text('')
+          .layoutWeight(1)
+
         Text('收藏')
+          .layoutWeight(1)
           .fontSize(22)
           .fontWeight(FontWeight.Bold)
-          .layoutWeight(1)
+          .textAlign(TextAlign.Center)
 
         Text(`共 ${this.favArticles.length} 条`)
           .fontSize(14)
           .opacity(0.7)
+          .textAlign(TextAlign.End)
+          .padding({ right: 8 })
       }
-      .margin({ top: 16, left: 16, right: 16, bottom: 12 })
+      .alignItems(VerticalAlign.Center)
+      .padding({ top: 16, left: 16, right: 16, bottom: 12 })
       .width('100%')
 
       if (this.uid === '0') {
