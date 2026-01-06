@@ -33,6 +33,8 @@ export struct HomePage {
   @State favIds: Set<number> = new Set<number>();
   @State nextPage: number = 0;
   @State hasMore: boolean = true;
+  @State showBackToTop: boolean = false;
+  private listScroller: Scroller = new Scroller();
 
   private onFavVersionChange() {
     this.refreshFav();
@@ -127,6 +129,10 @@ export struct HomePage {
     }
   }
 
+  private scrollToTop() {
+    this.listScroller.scrollTo({ index: 0, smooth: true });
+  }
+
   private async bumpFavVersion() {
     const v = (AppStorage.get('fav_version') as number) ?? 0;
     AppStorage.set('fav_version', v + 1);
@@ -169,50 +175,51 @@ export struct HomePage {
   }
 
   build() {
-    Column() {
-      Row() {
-        Blank().width(36)
-        Text('首页')
-          .fontSize(22)
-          .fontWeight(FontWeight.Bold)
-          .layoutWeight(1)
-          .textAlign(TextAlign.Center)
-        Text('🔍')
-          .fontSize(22)
-          .onClick(async () => await this.openSearchPage())
-      }
-      .alignItems(VerticalAlign.Center)
-      .padding({ top: 16, left: 16, right: 16, bottom: 12 })
-
-      if (this.loading) {
-        Row({ space: 8 }) {
-          LoadingProgress()
-          Text('正在加载文章...').opacity(0.7)
+    Stack() {
+      Column() {
+        Row() {
+          Blank().width(36)
+          Text('首页')
+            .fontSize(22)
+            .fontWeight(FontWeight.Bold)
+            .layoutWeight(1)
+            .textAlign(TextAlign.Center)
+          Text('🔍')
+            .fontSize(22)
+            .onClick(async () => await this.openSearchPage())
         }
-        .padding(16)
-      } else if (this.errorMsg) {
-        Column({ space: 6 }) {
-          Text('网络加载失败，数据暂不可用').fontSize(14).opacity(0.7)
-          Text(this.errorMsg).fontSize(12).opacity(0.6)
+        .alignItems(VerticalAlign.Center)
+        .padding({ top: 16, left: 16, right: 16, bottom: 12 })
+
+        if (this.loading) {
+          Row({ space: 8 }) {
+            LoadingProgress()
+            Text('正在加载文章...').opacity(0.7)
+          }
+          .padding(16)
+        } else if (this.errorMsg) {
+          Column({ space: 6 }) {
+            Text('网络加载失败，数据暂不可用').fontSize(14).opacity(0.7)
+            Text(this.errorMsg).fontSize(12).opacity(0.6)
+          }
+          .padding({ left: 16, right: 16, bottom: 6 })
         }
-        .padding({ left: 16, right: 16, bottom: 6 })
-      }
 
-      Refresh({ refreshing: this.refreshing }) {
-        List() {
-          ForEach(this.articles, (item: Article) => {
-            ListItem() {
-              Row() {
-                Column({ space: 6 }) {
-                  Text(item.title).fontSize(16).fontWeight(FontWeight.Medium)
-                  Text(item.desc).fontSize(13).opacity(0.7).maxLines(2)
-                  Text(`作者：${item.author}`).fontSize(12).opacity(0.6)
-                }
-                .layoutWeight(1)
+        Refresh({ refreshing: this.refreshing }) {
+          List({ scroller: this.listScroller }) {
+            ForEach(this.articles, (item: Article) => {
+              ListItem() {
+                Row() {
+                  Column({ space: 6 }) {
+                    Text(item.title).fontSize(16).fontWeight(FontWeight.Medium)
+                    Text(item.desc).fontSize(13).opacity(0.7).maxLines(2)
+                    Text(`作者：${item.author}`).fontSize(12).opacity(0.6)
+                  }
+                  .layoutWeight(1)
 
-                Text(this.favIds.has(item.id) ? '❤️' : '🤍')
-                  .fontSize(22)
-                  .margin({ left: 10 })
+                  Text(this.favIds.has(item.id) ? '❤️' : '🤍')
+                    .fontSize(22)
+                    .margin({ left: 10 })
                   // .onClick(async () => await this.toggleFav(item.id))
                   .onClick(async () => await this.toggleFav(item))
               }
@@ -244,25 +251,38 @@ export struct HomePage {
               Text('上拉加载更多').fontSize(12).opacity(0.5).padding(12)
             }
           }
-        }
-        .width('100%')
-        .layoutWeight(1)
-        .onScrollIndex((_, last) => {
-          // 靠近底部时触发加载
-          if (last >= this.articles.length - 1) {
-            this.loadMoreArticles();
           }
+          .width('100%')
+          .layoutWeight(1)
+          .onScrollIndex((first, last) => {
+            // 靠近底部时触发加载
+            if (last >= this.articles.length - 1) {
+              this.loadMoreArticles();
+            }
+            this.showBackToTop = first > 0;
+          })
+        }
+        .onRefreshing(async () => {
+          await this.refreshArticles();
         })
       }
-      .onRefreshing(async () => {
-        await this.refreshArticles();
+      .width('100%')
+      .height('100%')
+      .onAppear(() => {
+        // 进入首页时也刷新一次（更稳）
+        this.refreshFav();
       })
+
+      if (this.showBackToTop) {
+        Positioned({ bottom: 26, right: 20 }) {
+          Button('↑ 顶部')
+            .backgroundColor('#007DFF')
+            .fontColor(Color.White)
+            .borderRadius(18)
+            .padding({ left: 12, right: 12 })
+            .onClick(() => this.scrollToTop())
+        }
+      }
     }
-    .width('100%')
-    .height('100%')
-    .onAppear(() => {
-      // 进入首页时也刷新一次（更稳）
-      this.refreshFav();
-    })
   }
 }

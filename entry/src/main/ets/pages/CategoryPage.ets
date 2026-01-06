@@ -22,6 +22,12 @@ export struct CategoryPage {
   @State errorMsg: string = '';
   @State uid: string = '0';
   @State favIds: Set<number> = new Set<number>();
+  @State refreshing: boolean = false;
+  @State loadingMore: boolean = false;
+  @State nextPage: number = 0;
+  @State hasMore: boolean = true;
+  @State showBackToTop: boolean = false;
+  private articleScroller: Scroller = new Scroller();
   // 监听全局变化：收藏变化 / 登录变化（和你首页/收藏页同一套机制）
   @StorageLink('fav_version')
   @Watch('onFavVersionChange')
@@ -46,6 +52,18 @@ export struct CategoryPage {
     await this.loadCategories();
   }
 
+  private dedupArticles(list: Article[]): Article[] {
+    const seen = new Set<number>();
+    const result: Article[] = [];
+    list.forEach(item => {
+      if (!seen.has(item.id)) {
+        seen.add(item.id);
+        result.push(item);
+      }
+    });
+    return result;
+  }
+
   private async loadCategories() {
     this.loadingCats = true;
     this.errorMsg = '';
@@ -60,25 +78,64 @@ export struct CategoryPage {
     } finally {
       this.loadingCats = false;
       if (this.selectedCid !== 0) {
-        await this.loadArticlesByCid(this.selectedCid);
+        await this.loadArticlesByCid(this.selectedCid, true);
       } else {
         this.loadingArticles = false;
       }
     }
   }
 
-  private async loadArticlesByCid(cid: number) {
-    this.loadingArticles = true;
+  private async loadArticlesByCid(cid: number, reset: boolean = true) {
+    if (!reset && (this.loadingMore || !this.hasMore || this.loadingArticles)) {
+      return;
+    }
+
+    if (reset) {
+      this.loadingArticles = true;
+      this.hasMore = true;
+      this.nextPage = 0;
+      this.articles = [];
+    } else {
+      this.loadingMore = true;
+    }
+
     this.errorMsg = '';
     try {
-      const remote = await fetchArticlesByCid(cid);
-      this.articles = remote;
+      const page = reset ? 0 : this.nextPage;
+      const remote = await fetchArticlesByCid(cid, page);
+      const merged = reset ? remote : this.dedupArticles([...this.articles, ...remote]);
+      this.articles = merged;
+      if (remote.length === 0) {
+        this.hasMore = false;
+      } else {
+        this.nextPage = page + 1;
+      }
     } catch (e) {
       this.errorMsg = (e as Error)?.message ?? '文章加载失败';
-      this.articles = [];
+      if (reset) {
+        this.articles = [];
+      }
+      this.hasMore = false;
     } finally {
-      this.loadingArticles = false;
+      if (reset) {
+        this.loadingArticles = false;
+        this.refreshing = false;
+      } else {
+        this.loadingMore = false;
+      }
     }
+  }
+
+  private async refreshArticles() {
+    if (this.refreshing) {
+      return;
+    }
+    this.refreshing = true;
+    await this.loadArticlesByCid(this.selectedCid, true);
+  }
+
+  private async loadMoreArticles() {
+    await this.loadArticlesByCid(this.selectedCid, false);
   }
 
   private async refreshFav() {
@@ -136,104 +193,137 @@ export struct CategoryPage {
   }
 
   build() {
-    Column() {
-      Text('分类')
-        .fontSize(22)
-        .fontWeight(FontWeight.Bold)
-        .margin({ top: 16, left: 16, bottom: 12 })
+    Stack() {
+      Column() {
+        Text('分类')
+          .fontSize(22)
+          .fontWeight(FontWeight.Bold)
+          .margin({ top: 16, left: 16, bottom: 12 })
 
-      Row() {
-        // 左侧：分类列表
-        Column() {
-          List() {
-            ForEach(this.categories, (c: Category) => {
-              ListItem() {
-                Text(c.name)
-                  .fontSize(14)
-                  .fontWeight(this.selectedCid === c.cid ? FontWeight.Bold : FontWeight.Normal)
-                  .padding(12)
-                  .backgroundColor(this.selectedCid === c.cid ? '#EDEDED' : '#FFFFFF')
-                  .borderRadius(8)
-                  // .onClick(() => {
-                  //   this.selectedCid = c.cid;
-                  // })
-              }
-            // })
-              .onClick(async () => {
-                if (this.selectedCid !== c.cid) {
-                  this.selectedCid = c.cid;
-                  await this.loadArticlesByCid(c.cid);
-                }
-              })
-            }, (c: Category) => c.cid.toString())
-          }
-        }
-        .width('34%')
-        .padding({ left: 12, right: 6 })
-
-        // 右侧：文章列表（按 selectedCid 筛选）
-        Column() {
-          // if (this.getFilteredArticles().length === 0) {
-          if (this.loadingCats || this.loadingArticles) {
-            Row({ space: 8 }) {
-              LoadingProgress()
-              Text('正在加载数据...').opacity(0.7)
-            }
-            .padding(12)
-          } else if (this.errorMsg) {
-            Column({ space: 6 }) {
-              Text('网络加载失败，数据暂不可用').fontSize(13).opacity(0.7)
-              Text(this.errorMsg).fontSize(12).opacity(0.6)
-            }
-            .padding({ left: 12, right: 12, bottom: 6 })
-          }
-
-          if (this.articles.length === 0) {
-            Text('该分类暂无文章').margin(16).opacity(0.7)
-          } else {
+        Row() {
+          // 左侧：分类列表
+          Column() {
             List() {
-              // ForEach(this.getFilteredArticles(), (item: Article) => {
-              ForEach(this.articles, (item: Article) => {
+              ForEach(this.categories, (c: Category) => {
                 ListItem() {
-                  Row() {
-                    Column({ space: 6 }) {
-                      Text(item.title).fontSize(15).fontWeight(FontWeight.Medium)
-                      Text(item.desc).fontSize(12).opacity(0.7).maxLines(2)
-                    }.layoutWeight(1)
-
-                    // ✅ 收藏按钮用 gesture 隔离点击，防止触发卡片跳转
-                    Text(this.favIds.has(item.id) ? '❤️' : '🤍')
-                      .fontSize(20)
-                      .margin({ left: 8 })
-                      .gesture(
-                        TapGesture().onAction(async () => {
-                          // await this.toggleFav(item.id);
-                          await this.toggleFav(item);
-                        })
-                      )
-                  }
-                  .padding(12)
-                  .margin({ left: 6, right: 12, bottom: 12 })
-                  .borderRadius(12)
-                  .backgroundColor('#F5F5F5')
-                  // ✅ 点卡片跳转正文页
-                  .onClick(async () => {
-                    await this.openDetail(item);
-                  })
+                  Text(c.name)
+                    .fontSize(14)
+                    .fontWeight(this.selectedCid === c.cid ? FontWeight.Bold : FontWeight.Normal)
+                    .padding(12)
+                    .backgroundColor(this.selectedCid === c.cid ? '#EDEDED' : '#FFFFFF')
+                    .borderRadius(8)
                 }
-              })
+                .onClick(async () => {
+                  if (this.selectedCid !== c.cid) {
+                    this.selectedCid = c.cid;
+                    this.showBackToTop = false;
+                    this.articleScroller.scrollTo({ index: 0, smooth: true });
+                    await this.loadArticlesByCid(c.cid, true);
+                  }
+                })
+              }, (c: Category) => c.cid.toString())
             }
           }
+          .width('34%')
+          .padding({ left: 12, right: 6 })
+
+          // 右侧：文章列表（按 selectedCid 筛选）
+          Column() {
+            if (this.loadingCats || this.loadingArticles) {
+              Row({ space: 8 }) {
+                LoadingProgress()
+                Text('正在加载数据...').opacity(0.7)
+              }
+              .padding(12)
+            } else if (this.errorMsg) {
+              Column({ space: 6 }) {
+                Text('网络加载失败，数据暂不可用').fontSize(13).opacity(0.7)
+                Text(this.errorMsg).fontSize(12).opacity(0.6)
+              }
+              .padding({ left: 12, right: 12, bottom: 6 })
+            }
+
+            Refresh({ refreshing: this.refreshing }) {
+              if (this.articles.length === 0) {
+                Text('该分类暂无文章').margin(16).opacity(0.7)
+              } else {
+                List({ scroller: this.articleScroller }) {
+                  ForEach(this.articles, (item: Article) => {
+                    ListItem() {
+                      Row() {
+                        Column({ space: 6 }) {
+                          Text(item.title).fontSize(15).fontWeight(FontWeight.Medium)
+                          Text(item.desc).fontSize(12).opacity(0.7).maxLines(2)
+                        }
+                        .layoutWeight(1)
+
+                        Text(this.favIds.has(item.id) ? '❤️' : '🤍')
+                          .fontSize(20)
+                          .margin({ left: 8 })
+                          .gesture(
+                            TapGesture().onAction(async () => {
+                              await this.toggleFav(item);
+                            })
+                          )
+                      }
+                      .padding(12)
+                      .margin({ left: 6, right: 12, bottom: 12 })
+                      .borderRadius(12)
+                      .backgroundColor('#F5F5F5')
+                      .onClick(async () => {
+                        await this.openDetail(item);
+                      })
+                    }
+                  })
+
+                  ListItem() {
+                    if (this.loadingMore) {
+                      Row({ space: 8 }) {
+                        LoadingProgress().width(20).height(20)
+                        Text('加载中...').fontSize(13).opacity(0.7)
+                      }
+                      .padding(12)
+                      .justifyContent(FlexAlign.Center)
+                    } else if (!this.hasMore) {
+                      Text('已经到底了').fontSize(12).opacity(0.6).padding(12)
+                    } else {
+                      Text('上拉加载更多').fontSize(12).opacity(0.5).padding(12)
+                    }
+                  }
+                }
+                .onScrollIndex((first, last) => {
+                  if (last >= this.articles.length - 1) {
+                    this.loadMoreArticles();
+                  }
+                  this.showBackToTop = first > 0;
+                })
+              }
+            }
+            .onRefreshing(async () => {
+              await this.refreshArticles();
+            })
+          }
+          .width('66%')
         }
-        .width('66%')
+        .layoutWeight(1)
       }
-      .layoutWeight(1)
+      .width('100%')
+      .height('100%')
+      .onAppear(() => {
+        // 切回分类页也刷新收藏状态
+        this.refreshFav();
+      })
+
+      if (this.showBackToTop) {
+        Positioned({ bottom: 26, right: 20 }) {
+          Button('↑ 顶部')
+            .backgroundColor('#007DFF')
+            .fontColor(Color.White)
+            .borderRadius(18)
+            .padding({ left: 12, right: 12 })
+            .onClick(() => this.articleScroller.scrollTo({ index: 0, smooth: true }))
+            }
+      }
     }
-    .width('100%')
-    .height('100%')
-    .onAppear(() => {
-      // 切回分类页也刷新收藏状态
-      this.refreshFav();
-    })
   }
 }
