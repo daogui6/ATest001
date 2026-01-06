@@ -6,6 +6,7 @@ import type { Article } from '../model/Article';
 import { LocalArticles } from '../data/LocalArticles';
 import { FavoriteStore } from '../store/FavoriteStore';
 import { callZhipu, type AiMode } from '../service/ZhipuAI';
+import { HistoryStore } from '../store/HistoryStore';
 
 interface DetailParams {
   id?: number | string;
@@ -48,14 +49,38 @@ struct ArticleDetailPage {
   async aboutToAppear() {
     // 1) 读路由参数 id
     const params = router.getParams() as DetailParams;
-    const rawId = params.id;
-    const id = (typeof rawId === 'number') ? rawId : Number(rawId ?? 0);
+    const rawId = params?.id;
+    const id = typeof rawId === 'number' ? rawId : Number(rawId);
 
     // 2) 查文章
-    this.article = LocalArticles.find(a => a.id === id) ?? null;
+    if (!id || Number.isNaN(id)) {
+      this.article = null;
+      promptAction.showToast({ message: '文章参数缺失，无法打开' });
+      await this.refreshFav();
+      return;
+    }
+
+    // 2) 查文章（先本地列表，兜底历史缓存）
+    this.article = await this.resolveArticleById(id);
+
+    if (this.article) {
+      await HistoryStore.addVisit(this.hostCtx(), this.article);
+    } else {
+      promptAction.showToast({ message: '文章不存在或已被移除' });
+    }
 
     // 3) 刷新收藏状态
     await this.refreshFav();
+  }
+
+  private async resolveArticleById(id: number): Promise<Article | null> {
+    const hit = LocalArticles.find(a => a.id === id);
+    if (hit) {
+      return hit;
+    }
+
+    const historyList = await HistoryStore.loadHistory(this.hostCtx());
+    return historyList.find(item => item.id === id) ?? null;
   }
 
   private async refreshFav() {
