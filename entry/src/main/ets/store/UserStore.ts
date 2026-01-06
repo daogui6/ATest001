@@ -1,5 +1,6 @@
 import type common from '@ohos.app.ability.common';
 import { Prefs } from './Prefs';
+import { HistoryStore } from './HistoryStore';
 import { loginUser, logoutUser, registerUser, type WanUser } from '../service/WanService';
 
 export class UserStore {
@@ -72,6 +73,10 @@ export class UserStore {
       // ignore network errors during logout
     }
     await UserStore.clearSession(ctx);
+    await HistoryStore.clear(ctx);
+
+    const v = (AppStorage.get('history_version') as number) ?? 0;
+    AppStorage.setOrCreate('history_version', v + 1);
   }
 
   static async currentUser(ctx: common.UIAbilityContext): Promise<WanUser | null> {
