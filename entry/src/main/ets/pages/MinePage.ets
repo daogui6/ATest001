@@ -133,9 +133,13 @@ export struct MinePage {
           TextInput({ text: this.loginPassword, placeholder: '请输入密码' })
             .type(InputType.Password)
             .onChange((v) => { this.loginPassword = v; })
-          Checkbox({ name: 'rememberPassword', group: 'loginPrefs', label: '记住密码' })
-            .select(this.rememberPassword)
-            .onChange((value: boolean) => { this.rememberPassword = value; })
+          Row({ space: 8 }) {
+            Checkbox({ name: 'rememberPassword', group: 'loginPrefs' })
+              .select(this.rememberPassword)
+              .onChange((value: boolean) => { this.rememberPassword = value; })
+            Text('记住密码').fontSize(14)
+          }
+          .alignItems(VerticalAlign.Center)
           Button('登录', { type: ButtonType.Capsule })
             .onClick(async () => { await this.handleLogin(); })
 
