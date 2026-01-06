@@ -85,7 +85,7 @@ export struct MinePage {
       '这个人是新用户，快来打个招呼吧～'
     );
 
-    if (!result.ok) {
+    if (result.ok === false) {
       this.message = result.message;
       return;
     }
