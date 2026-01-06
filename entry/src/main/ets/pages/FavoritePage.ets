@@ -3,9 +3,9 @@ import promptAction from '@ohos.promptAction';
 import router from '@ohos.router';
 
 import type { Article } from '../model/Article';
-import { LocalArticles } from '../data/LocalArticles';
 import { FavoriteStore } from '../store/FavoriteStore';
 import { ArticleStore } from '../store/ArticleStore';
+import { fetchArticlesByIds } from '../service/WanService';
 
 // ✅ 确保 key 存在（避免首次 get 为 undefined）
 AppStorage.setOrCreate('fav_version', 0);
@@ -48,18 +48,21 @@ export struct FavoritePage {
 
     const set = await FavoriteStore.loadFavSet(ctx, this.uid);
     this.favIds = set;
-    // this.favArticles = LocalArticles.filter(a => set.has(a.id));
-    const cached = await FavoriteStore.pickCachedArticles(ctx, set);
-    const localHit = LocalArticles.filter(a => set.has(a.id));
-    // 去重合并：缓存 > 本地
-    const all = [...cached];
-    const cachedIds = new Set(cached.map(i => i.id));
-    localHit.forEach(item => {
-      if (!cachedIds.has(item.id)) {
-        all.push(item);
-      }
-    });
-    this.favArticles = all;
+    try {
+      const remote = await fetchArticlesByIds(set);
+      const remoteIds = new Set(remote.map(item => item.id));
+      const cached = await FavoriteStore.pickCachedArticles(ctx, set);
+      const merged = [...remote];
+      cached.forEach(item => {
+        if (!remoteIds.has(item.id)) {
+          merged.push(item);
+        }
+      });
+      this.favArticles = merged;
+    } catch (e) {
+      promptAction.showToast({ message: (e as Error)?.message ?? '收藏数据加载失败' });
+      this.favArticles = await FavoriteStore.pickCachedArticles(ctx, set);
+    }
   }
 
   // ✅ 安全跳转（解决 ArkTSCheck：可能抛异常）
@@ -85,7 +88,6 @@ export struct FavoritePage {
     next.delete(id);
     this.favIds = next;
     await FavoriteStore.saveFavSet(ctx, this.uid, next);
-    // this.favArticles = LocalArticles.filter(a => next.has(a.id));
     this.favArticles = this.favArticles.filter(item => item.id !== id);
     await FavoriteStore.removeArticleSnapshot(ctx, id);
     // ✅ 同样广播一次（防止其他页面需要刷新）

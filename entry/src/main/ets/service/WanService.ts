@@ -112,6 +112,35 @@ export async function fetchArticlesByCid(cid: number): Promise<Article[]> {
   return datas.map(mapArticle);
 }
 
+export async function fetchArticleById(id: number): Promise<Article | null> {
+  if (!id || Number.isNaN(id)) {
+    return null;
+  }
+
+  const requests: Promise<Article[]>[] = [fetchTopArticles(), fetchLatestArticles()];
+  const [top, latest] = await Promise.all(requests);
+  const merged = [...top, ...latest];
+  return merged.find(item => item.id === id) ?? null;
+}
+
+export async function fetchArticlesByIds(ids: Set<number>): Promise<Article[]> {
+  if (!ids || ids.size === 0) {
+    return [];
+  }
+
+  const requests: Promise<Article[]>[] = [fetchTopArticles(), fetchLatestArticles()];
+  const [top, latest] = await Promise.all(requests);
+  const all = [...top, ...latest];
+  const map = new Map<number, Article>();
+  all.forEach(item => {
+    if (ids.has(item.id)) {
+      map.set(item.id, item);
+    }
+  });
+
+  return Array.from(map.values());
+}
+
 export async function fetchCategories(): Promise<Category[]> {
   const data = await getJson<CategoryPayload[]>('/tree/json');
   if (!Array.isArray(data)) {

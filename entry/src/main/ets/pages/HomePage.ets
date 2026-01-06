@@ -3,7 +3,6 @@ import promptAction from '@ohos.promptAction';
 import router from '@ohos.router';
 
 import type { Article } from '../model/Article';
-import { LocalArticles } from '../data/LocalArticles';
 import { FavoriteStore } from '../store/FavoriteStore';
 import { fetchLatestArticles, fetchTopArticles } from '../service/WanService';
 import { ArticleStore } from '../store/ArticleStore';
@@ -25,7 +24,7 @@ export struct HomePage {
   @StorageLink('session_version')
   @Watch('onSessionVersionChange')
   sessionVersion: number = 0;
-  @State articles: Article[] = LocalArticles;
+  @State articles: Article[] = [];
   @State loading: boolean = true;
   @State errorMsg: string = '';
   @State uid: string = '0';
@@ -69,14 +68,10 @@ export struct HomePage {
       const uniqMap = new Map<number, Article>();
       merged.forEach(item => uniqMap.set(item.id, item));
       const uniq = Array.from(uniqMap.values());
-      if (uniq.length > 0) {
-        this.articles = uniq;
-      } else {
-        this.articles = LocalArticles;
-      }
+      this.articles = uniq;
     } catch (e) {
       this.errorMsg = (e as Error)?.message ?? '加载失败';
-      this.articles = LocalArticles;
+      this.articles = [];
     } finally {
       this.loading = false;
     }
@@ -127,7 +122,7 @@ export struct HomePage {
         .padding(16)
       } else if (this.errorMsg) {
         Column({ space: 6 }) {
-          Text('网络加载失败，已使用本地示例数据').fontSize(14).opacity(0.7)
+          Text('网络加载失败，数据暂不可用').fontSize(14).opacity(0.7)
           Text(this.errorMsg).fontSize(12).opacity(0.6)
         }
         .padding({ left: 16, right: 16, bottom: 6 })

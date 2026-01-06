@@ -3,11 +3,11 @@ import type common from '@ohos.app.ability.common';
 import promptAction from '@ohos.promptAction';
 
 import type { Article } from '../model/Article';
-import { LocalArticles } from '../data/LocalArticles';
 import { FavoriteStore } from '../store/FavoriteStore';
 import { callZhipu, type AiMode } from '../service/ZhipuAI';
 import { HistoryStore } from '../store/HistoryStore';
 import { ArticleStore } from '../store/ArticleStore';
+import { fetchArticleById } from '../service/WanService';
 
 interface DetailParams {
   id?: number | string;
@@ -112,10 +112,14 @@ struct ArticleDetailPage {
       return favList[0];
     }
 
-    // 再查本地示例数据
-    const hit = LocalArticles.find(a => a.id === id);
-    if (hit) {
-      return hit;
+    // 若缓存缺失，则从 WanAndroid 拉取最新数据
+    try {
+      const remote = await fetchArticleById(id);
+      if (remote) {
+        return remote;
+      }
+    } catch (e) {
+      promptAction.showToast({ message: (e as Error)?.message ?? '远端文章加载失败' });
     }
 
     // 最后查历史记录

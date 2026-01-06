@@ -3,9 +3,7 @@ import promptAction from '@ohos.promptAction';
 import router from '@ohos.router';
 
 import type { Article } from '../model/Article';
-import { LocalArticles } from '../data/LocalArticles';
 import type { Category } from '../model/Category';
-import { LocalCategories } from '../data/LocalCategories';
 import { FavoriteStore } from '../store/FavoriteStore';
 import { fetchArticlesByCid, fetchCategories } from '../service/WanService';
 import { ArticleStore } from '../store/ArticleStore';
@@ -16,8 +14,8 @@ export struct CategoryPage {
     return this.getUIContext().getHostContext() as common.UIAbilityContext;
   }
 
-  @State categories: Category[] = LocalCategories;
-  @State selectedCid: number = 101;
+  @State categories: Category[] = [];
+  @State selectedCid: number = 0;
   @State articles: Article[] = [];
   @State loadingCats: boolean = true;
   @State loadingArticles: boolean = true;
@@ -53,20 +51,19 @@ export struct CategoryPage {
     this.errorMsg = '';
     try {
       const remote = await fetchCategories();
-      if (remote.length > 0) {
-        this.categories = remote;
-        this.selectedCid = remote[0].cid;
-      } else {
-        this.categories = LocalCategories;
-        this.selectedCid = LocalCategories[0]?.cid ?? 0;
-      }
+      this.categories = remote;
+      this.selectedCid = remote[0]?.cid ?? 0;
     } catch (e) {
       this.errorMsg = (e as Error)?.message ?? '分类加载失败';
-      this.categories = LocalCategories;
-      this.selectedCid = LocalCategories[0]?.cid ?? 0;
+      this.categories = [];
+      this.selectedCid = 0;
     } finally {
       this.loadingCats = false;
-      await this.loadArticlesByCid(this.selectedCid);
+      if (this.selectedCid !== 0) {
+        await this.loadArticlesByCid(this.selectedCid);
+      } else {
+        this.loadingArticles = false;
+      }
     }
   }
 
@@ -75,14 +72,10 @@ export struct CategoryPage {
     this.errorMsg = '';
     try {
       const remote = await fetchArticlesByCid(cid);
-      if (remote.length > 0) {
-        this.articles = remote;
-      } else {
-        this.articles = LocalArticles.filter(a => a.cid === cid);
-      }
+      this.articles = remote;
     } catch (e) {
       this.errorMsg = (e as Error)?.message ?? '文章加载失败';
-      this.articles = LocalArticles.filter(a => a.cid === cid);
+      this.articles = [];
     } finally {
       this.loadingArticles = false;
     }
@@ -104,12 +97,6 @@ export struct CategoryPage {
     const v = (AppStorage.get('fav_version') as number) ?? 0;
     AppStorage.set('fav_version', v + 1);
   }
-
-  // private getFilteredArticles(): Article[] {
-  //   return LocalArticles.filter(a => a.cid === this.selectedCid);
-  // }
-
-  //private async toggleFav(id: number) {
   private async toggleFav(article: Article) {
     const ctx = this.hostCtx();
     const uid = await FavoriteStore.getUid(ctx);
@@ -195,7 +182,7 @@ export struct CategoryPage {
             .padding(12)
           } else if (this.errorMsg) {
             Column({ space: 6 }) {
-              Text('网络加载失败，已回退到本地示例数据').fontSize(13).opacity(0.7)
+              Text('网络加载失败，数据暂不可用').fontSize(13).opacity(0.7)
               Text(this.errorMsg).fontSize(12).opacity(0.6)
             }
             .padding({ left: 12, right: 12, bottom: 6 })
