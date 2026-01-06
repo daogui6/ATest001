@@ -130,7 +130,7 @@ export struct HomePage {
   }
 
   private scrollToTop() {
-    this.listScroller.scrollTo({ index: 0, smooth: true });
+    this.listScroller.scrollToIndex({ index: 0, smooth: true });
   }
 
   private async bumpFavVersion() {
@@ -274,14 +274,14 @@ export struct HomePage {
       })
 
       if (this.showBackToTop) {
-        Positioned({ bottom: 26, right: 20 }) {
-          Button('↑ 顶部')
-            .backgroundColor('#007DFF')
-            .fontColor(Color.White)
-            .borderRadius(18)
-            .padding({ left: 12, right: 12 })
-            .onClick(() => this.scrollToTop())
-        }
+        Button('↑ 顶部')
+          .backgroundColor('#007DFF')
+          .fontColor(Color.White)
+          .borderRadius(18)
+          .padding({ left: 12, right: 12 })
+          .margin({ bottom: 26, right: 20 })
+          .align(Alignment.BottomEnd)
+          .onClick(() => this.scrollToTop())
       }
     }
   }

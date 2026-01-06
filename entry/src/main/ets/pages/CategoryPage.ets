@@ -217,7 +217,7 @@ export struct CategoryPage {
                   if (this.selectedCid !== c.cid) {
                     this.selectedCid = c.cid;
                     this.showBackToTop = false;
-                    this.articleScroller.scrollTo({ index: 0, smooth: true });
+                    this.listScroller.scrollToIndex({ index: 0, smooth: true });
                     await this.loadArticlesByCid(c.cid, true);
                   }
                 })
@@ -315,14 +315,14 @@ export struct CategoryPage {
       })
 
       if (this.showBackToTop) {
-        Positioned({ bottom: 26, right: 20 }) {
-          Button('↑ 顶部')
-            .backgroundColor('#007DFF')
-            .fontColor(Color.White)
-            .borderRadius(18)
-            .padding({ left: 12, right: 12 })
-            .onClick(() => this.articleScroller.scrollTo({ index: 0, smooth: true }))
-            }
+        Button('↑ 顶部')
+          .backgroundColor('#007DFF')
+          .fontColor(Color.White)
+          .borderRadius(18)
+          .padding({ left: 12, right: 12 })
+          .margin({ bottom: 26, right: 20 })
+          .align(Alignment.BottomEnd)
+          .onClick(() => this.scrollToTop())
       }
     }
   }

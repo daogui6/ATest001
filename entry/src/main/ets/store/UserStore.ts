@@ -8,6 +8,30 @@ export class UserStore {
   private static SESSION_USER_KEY = 'session.user';
   private static COOKIE_KEY = 'session.cookie';
 
+  private static profileOverrideKey(userId: number): string {
+    return `profile.user.${userId}`;
+  }
+
+  private static async applyProfileOverrides(
+    ctx: common.UIAbilityContext,
+    user: WanUser
+  ): Promise<WanUser> {
+    const raw = await Prefs.getString(ctx, UserStore.profileOverrideKey(user.id), '');
+    if (!raw) {
+      return user;
+    }
+    try {
+      const override = JSON.parse(raw) as Partial<WanUser>;
+      return {
+        ...user,
+        ...override,
+        bio: (override.bio ?? user.bio) ?? '这个人很懒，还没有签名～'
+      };
+    } catch (e) {
+      return user;
+    }
+  }
+
   private static async saveSession(ctx: common.UIAbilityContext, user: WanUser, cookie: string): Promise<void> {
     const merged: WanUser = { ...user, bio: user.bio ?? '这个人很懒，还没有签名～' };
     await Prefs.putString(ctx, UserStore.SESSION_USER_KEY, JSON.stringify(merged));
@@ -35,7 +59,11 @@ export class UserStore {
 
     try {
       const { user, cookie } = await registerUser(username, password, password);
-      const finalUser: WanUser = { ...user, nickname: nickname || user.nickname, bio };
+      const finalUser: WanUser = await UserStore.applyProfileOverrides(ctx, {
+        ...user,
+        nickname: nickname || user.nickname,
+        bio
+      });
       await UserStore.saveSession(ctx, finalUser, cookie);
       return { ok: true, user: finalUser };
     } catch (e) {
@@ -55,7 +83,10 @@ export class UserStore {
 
     try {
       const { user, cookie } = await loginUser(username, password);
-      const mergedUser: WanUser = { ...user, bio: user.bio ?? '这个人很懒，还没有签名～' };
+      const mergedUser: WanUser = await UserStore.applyProfileOverrides(ctx, {
+        ...user,
+        bio: user.bio ?? '这个人很懒，还没有签名～'
+      });
       await UserStore.saveSession(ctx, mergedUser, cookie);
       return { ok: true, user: mergedUser };
     } catch (e) {
@@ -107,6 +138,11 @@ export class UserStore {
       bio: profile.bio ?? current.bio
     };
     await Prefs.putString(ctx, UserStore.SESSION_USER_KEY, JSON.stringify(next));
+    await Prefs.putString(
+      ctx,
+      UserStore.profileOverrideKey(next.id),
+      JSON.stringify({ nickname: next.nickname, bio: next.bio })
+    );
   }
 
   static async getCookie(ctx: common.UIAbilityContext): Promise<string> {
