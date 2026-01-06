@@ -57,21 +57,19 @@ export struct HomePage {
   }
 
   private get colors(): ThemePalette {
+    // 兜底逻辑：任何情况下都返回完整的配色对象，避免 this.colors 为空导致渲染崩溃
     const fallback = ThemeStore.palette(false);
-    const palette = ThemeStore.palette(!!this.isDarkMode);
 
-    // 在极端情况下（主题存储尚未完成初始化）保证有默认配色，避免 undefined 访问
-    return {
-      background: palette ? palette.background : fallback.background,
-      card: palette ? palette.card : fallback.card,
-      cardActive: palette ? palette.cardActive : fallback.cardActive,
-      primaryText: palette ? palette.primaryText : fallback.primaryText,
-      secondaryText: palette ? palette.secondaryText : fallback.secondaryText,
-      hintText: palette ? palette.hintText : fallback.hintText,
-      accent: palette ? palette.accent : fallback.accent,
-      divider: palette ? palette.divider : fallback.divider,
-      inputBackground: palette ? palette.inputBackground : fallback.inputBackground,
-    } as ThemePalette;
+    try {
+      const palette = ThemeStore.palette(!!this.isDarkMode) as ThemePalette | undefined;
+      if (palette) {
+        return palette;
+      }
+    } catch (_) {
+      // ignore and fall back
+    }
+
+    return fallback;
   }
 
   async aboutToAppear() {
