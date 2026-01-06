@@ -32,6 +32,13 @@ interface CategoryPayload {
 const BASE = 'https://www.wanandroid.com';
 const HTTP_TIMEOUT = 12000;
 
+function stripHtml(raw: string | undefined): string {
+  if (!raw) {
+    return '';
+  }
+  return raw.replace(/<[^>]*>/g, '').trim();
+}
+
 function parseApiResult<T>(status: number, raw: string): T {
   if (status < 200 || status >= 300) {
     throw new Error(`接口请求失败(${status})`);
@@ -97,12 +104,12 @@ async function postJson<T>(path: string, body: string): Promise<T> {
 
 function mapArticle(item: ArticlePayload): Article {
   const id = item.id ?? 0;
-  const title = item.title ?? '未命名';
-  const desc = item.desc && item.desc.trim().length > 0 ? item.desc : title;
+  const title = stripHtml(item.title) || '未命名';
+  const desc = stripHtml(item.desc) || title;
   const link = item.link && item.link.trim().length > 0 ? item.link.trim() : '';
-  const author = (item.author && item.author.trim().length > 0)
-    ? item.author
-    : (item.shareUser && item.shareUser.trim().length > 0 ? item.shareUser : '佚名');
+  const author = stripHtml(item.author)
+    || stripHtml(item.shareUser)
+    || '佚名';
   const cid = item.chapterId ?? item.superChapterId ?? 0;
 
   const content = `${title}\n\n来源：wanandroid（ID=${id}）\n作者：${author}\n分类：${cid}\n链接：${link || '暂无链接'}\n\n摘要：${desc}`;
