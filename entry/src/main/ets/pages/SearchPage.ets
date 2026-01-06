@@ -3,32 +3,38 @@ import promptAction from '@ohos.promptAction';
 import router from '@ohos.router';
 
 import type { Article } from '../model/Article';
-import { FavoriteStore } from '../store/FavoriteStore';
-import { fetchLatestArticles, fetchTopArticles } from '../service/WanService';
 import { ArticleStore } from '../store/ArticleStore';
+import { FavoriteStore } from '../store/FavoriteStore';
+import { searchArticles } from '../service/WanService';
 
-// ✅ 确保 key 存在（避免首次为 undefined）
 AppStorage.setOrCreate('fav_version', 0);
 AppStorage.setOrCreate('session_version', 0);
 
+@Entry
 @Component
-export struct HomePage {
+export struct SearchPage {
   private hostCtx(): common.UIAbilityContext {
     return this.getUIContext().getHostContext() as common.UIAbilityContext;
   }
 
-  // ✅ 监听：收藏变化 / 登录变化
+  @State keyword: string = '';
+  @State results: Article[] = [];
+  @State loading: boolean = false;
+  @State errorMsg: string = '';
+  @State hasSearched: boolean = false;
+  @State uid: string = '0';
+  @State favIds: Set<number> = new Set<number>();
+
   @StorageLink('fav_version')
   @Watch('onFavVersionChange')
   favVersion: number = 0;
   @StorageLink('session_version')
   @Watch('onSessionVersionChange')
   sessionVersion: number = 0;
-  @State articles: Article[] = [];
-  @State loading: boolean = true;
-  @State errorMsg: string = '';
-  @State uid: string = '0';
-  @State favIds: Set<number> = new Set<number>();
+
+  async aboutToAppear() {
+    await this.refreshFav();
+  }
 
   private onFavVersionChange() {
     this.refreshFav();
@@ -42,36 +48,30 @@ export struct HomePage {
     const ctx = this.hostCtx();
     const uid = await FavoriteStore.getUid(ctx);
     this.uid = uid;
-
     if (uid === '0') {
-      // ✅ 未登录：主页红心全部熄灭
       this.favIds = new Set<number>();
       return;
     }
-
     this.favIds = await FavoriteStore.loadFavSet(ctx, uid);
   }
 
-  async aboutToAppear() {
-    await this.loadArticles();
-    await this.refreshFav();
-  }
+  private async performSearch() {
+    const kw = this.keyword.trim();
+    if (kw.length === 0) {
+      promptAction.showToast({ message: '请输入关键词' });
+      return;
+    }
 
-  private async loadArticles() {
     this.loading = true;
     this.errorMsg = '';
+    this.hasSearched = true;
+
     try {
-      const requests: Promise<Article[]>[] = [fetchTopArticles(), fetchLatestArticles()];
-      const results = await Promise.all(requests);
-      const merged: Article[] = [...results[0], ...results[1]];
-      // 去重合并，保证列表至少有几条
-      const uniqMap = new Map<number, Article>();
-      merged.forEach(item => uniqMap.set(item.id, item));
-      const uniq = Array.from(uniqMap.values());
-      this.articles = uniq;
+      const list = await searchArticles(kw);
+      this.results = list;
     } catch (e) {
-      this.errorMsg = (e as Error)?.message ?? '加载失败';
-      this.articles = [];
+      this.errorMsg = (e as Error)?.message ?? '搜索失败';
+      this.results = [];
     } finally {
       this.loading = false;
     }
@@ -82,7 +82,6 @@ export struct HomePage {
     AppStorage.set('fav_version', v + 1);
   }
 
-  // private async toggleFav(id: number) {
   private async toggleFav(article: Article) {
     const ctx = this.hostCtx();
     const uid = await FavoriteStore.getUid(ctx);
@@ -92,62 +91,72 @@ export struct HomePage {
     }
 
     const next = new Set(this.favIds);
-    // if (next.has(id)) {
-    //   next.delete(id);
     if (next.has(article.id)) {
       next.delete(article.id);
       await FavoriteStore.removeArticleSnapshot(ctx, article.id);
     } else {
-      // next.add(id);
       next.add(article.id);
       await FavoriteStore.saveArticleSnapshot(ctx, article);
     }
 
     this.favIds = next;
     await FavoriteStore.saveFavSet(ctx, uid, next);
-
-    // 通知其他页面（收藏页/主页自己）
     await this.bumpFavVersion();
   }
 
-  private async openSearchPage() {
+  private async openDetail(article: Article) {
     try {
-      await router.pushUrl({ url: 'pages/SearchPage' });
+      ArticleStore.setArticles(this.results);
+      await router.pushUrl({
+        url: 'pages/ArticleDetailPage',
+        params: { id: article.id, article: article }
+      });
     } catch (e) {
-      promptAction.showToast({ message: '无法打开搜索页' });
+      promptAction.showToast({ message: '跳转失败：页面不存在或参数错误' });
     }
   }
 
   build() {
     Column() {
-      Row() {
-        Text('首页')
-          .fontSize(22)
-          .fontWeight(FontWeight.Bold)
-          .margin({ top: 16, left: 16, bottom: 12 })
-        Blank().layoutWeight(1)
-        Text('🔍')
-          .fontSize(22)
-          .margin({ top: 16, right: 16, bottom: 12 })
-          .onClick(async () => await this.openSearchPage())
+      Text('搜索')
+        .fontSize(22)
+        .fontWeight(FontWeight.Bold)
+        .margin({ top: 16, left: 16, bottom: 12 })
+
+      Row({ space: 8 }) {
+        TextInput({ placeholder: '输入关键词', text: this.keyword })
+          .layoutWeight(1)
+          .onChange((v) => { this.keyword = v; })
+        Button('搜索', { type: ButtonType.Capsule })
+          .onClick(async () => await this.performSearch())
+      }
+      .padding({ left: 16, right: 16, bottom: 12 })
+
+      if (!this.hasSearched) {
+        Text('支持远端搜索 WanAndroid 文章，试试输入“鸿蒙”或“AI”。')
+          .fontSize(13)
+          .opacity(0.7)
+          .margin({ left: 16, right: 16, bottom: 8 })
       }
 
       if (this.loading) {
         Row({ space: 8 }) {
           LoadingProgress()
-          Text('正在加载文章...').opacity(0.7)
+          Text('正在搜索...').opacity(0.7)
         }
         .padding(16)
       } else if (this.errorMsg) {
         Column({ space: 6 }) {
-          Text('网络加载失败，数据暂不可用').fontSize(14).opacity(0.7)
+          Text('搜索失败，请稍后重试').fontSize(13).opacity(0.7)
           Text(this.errorMsg).fontSize(12).opacity(0.6)
         }
         .padding({ left: 16, right: 16, bottom: 6 })
+      } else if (this.hasSearched && this.results.length === 0) {
+        Text('未找到相关内容').margin({ left: 16, right: 16, bottom: 8 }).opacity(0.7)
       }
 
       List() {
-        ForEach(this.articles, (item: Article) => {
+        ForEach(this.results, (item: Article) => {
           ListItem() {
             Row() {
               Column({ space: 6 }) {
@@ -160,31 +169,24 @@ export struct HomePage {
               Text(this.favIds.has(item.id) ? '❤️' : '🤍')
                 .fontSize(22)
                 .margin({ left: 10 })
-                // .onClick(async () => await this.toggleFav(item.id))
-                .onClick(async () => await this.toggleFav(item))
+                .gesture(
+                  TapGesture().onAction(async () => {
+                    await this.toggleFav(item);
+                  })
+                )
             }
             .padding(12)
             .margin({ left: 16, right: 16, bottom: 12 })
             .borderRadius(12)
             .backgroundColor('#F5F5F5')
-            .onClick(() => {
-              ArticleStore.setArticles(this.articles);
-              router.pushUrl({
-                url: 'pages/ArticleDetailPage',
-                params: { id: item.id, article: item }
-              })
-            })
+            .onClick(async () => { await this.openDetail(item); })
           }
-        })
+        }, (item: Article) => item.id.toString())
       }
       .width('100%')
       .layoutWeight(1)
     }
     .width('100%')
     .height('100%')
-    .onAppear(() => {
-      // 进入首页时也刷新一次（更稳）
-      this.refreshFav();
-    })
   }
 }

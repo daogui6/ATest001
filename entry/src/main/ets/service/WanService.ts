@@ -32,6 +32,29 @@ interface CategoryPayload {
 const BASE = 'https://www.wanandroid.com';
 const HTTP_TIMEOUT = 12000;
 
+function parseApiResult<T>(status: number, raw: string): T {
+  if (status < 200 || status >= 300) {
+    throw new Error(`接口请求失败(${status})`);
+  }
+
+  let parsed: ApiResult<T>;
+  try {
+    parsed = JSON.parse(raw) as ApiResult<T>;
+  } catch (e) {
+    throw new Error('接口返回不是合法的 JSON');
+  }
+
+  if (parsed.errorCode !== 0) {
+    throw new Error(parsed.errorMsg || '接口返回错误码');
+  }
+
+  if (parsed.data === undefined) {
+    throw new Error('接口返回为空');
+  }
+
+  return parsed.data;
+}
+
 async function getJson<T>(path: string): Promise<T> {
   const client = http.createHttp();
   try {
@@ -44,26 +67,29 @@ async function getJson<T>(path: string): Promise<T> {
 
     const status = resp.responseCode ?? 0;
     const raw = String(resp.result ?? '');
-    if (status < 200 || status >= 300) {
-      throw new Error(`接口请求失败(${status})`);
-    }
+    return parseApiResult<T>(status, raw);
+  } finally {
+    client.destroy();
+  }
+}
 
-    let parsed: ApiResult<T>;
-    try {
-      parsed = JSON.parse(raw) as ApiResult<T>;
-    } catch (e) {
-      throw new Error('接口返回不是合法的 JSON');
-    }
+async function postJson<T>(path: string, body: string): Promise<T> {
+  const client = http.createHttp();
+  try {
+    const resp = await client.request(`${BASE}${path}`, {
+      method: http.RequestMethod.POST,
+      connectTimeout: HTTP_TIMEOUT,
+      readTimeout: HTTP_TIMEOUT,
+      expectDataType: http.HttpDataType.STRING,
+      header: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      extraData: body
+    });
 
-    if (parsed.errorCode !== 0) {
-      throw new Error(parsed.errorMsg || '接口返回错误码');
-    }
-
-    if (parsed.data === undefined) {
-      throw new Error('接口返回为空');
-    }
-
-    return parsed.data;
+    const status = resp.responseCode ?? 0;
+    const raw = String(resp.result ?? '');
+    return parseApiResult<T>(status, raw);
   } finally {
     client.destroy();
   }
@@ -139,6 +165,17 @@ export async function fetchArticlesByIds(ids: Set<number>): Promise<Article[]> {
   });
 
   return Array.from(map.values());
+}
+
+export async function searchArticles(keyword: string): Promise<Article[]> {
+  const kw = keyword.trim();
+  if (kw.length === 0) {
+    return [];
+  }
+
+  const payload = await postJson<ArticleListPayload>('/article/query/0/json', `k=${encodeURIComponent(kw)}`);
+  const datas = payload.datas ?? [];
+  return datas.map(mapArticle);
 }
 
 export async function fetchCategories(): Promise<Category[]> {
