@@ -1,19 +1,17 @@
 import { ConfigurationConstant } from '@kit.AbilityKit';
 import type common from '@ohos.app.ability.common';
-import type { ResourceColor } from '@kit.ArkUI';
-
 import { Prefs } from './Prefs';
 
 export interface ThemePalette {
-  background: ResourceColor;
-  card: ResourceColor;
-  cardActive: ResourceColor;
-  primaryText: ResourceColor;
-  secondaryText: ResourceColor;
-  hintText: ResourceColor;
-  accent: ResourceColor;
-  divider: ResourceColor;
-  inputBackground: ResourceColor;
+  background: string;
+  card: string;
+  cardActive: string;
+  primaryText: string;
+  secondaryText: string;
+  hintText: string;
+  accent: string;
+  divider: string;
+  inputBackground: string;
 }
 
 const DARK_MODE_KEY = 'app_dark_mode';
