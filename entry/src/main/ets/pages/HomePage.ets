@@ -79,7 +79,9 @@ export struct HomePage {
     this.hasMore = true;
     this.nextPage = 0;
     try {
-      const [top, latest] = await Promise.all([fetchTopArticles(), fetchLatestArticles(0)]);
+      const result = await Promise.all([fetchTopArticles(), fetchLatestArticles(0)]);
+      const top = result[0];
+      const latest = result[1];
       const merged: Article[] = [...top, ...latest];
       this.articles = this.dedupArticles(merged);
       this.hasMore = latest.length > 0;
@@ -252,7 +254,7 @@ export struct HomePage {
           }
         })
       }
-      .onRefresh(async () => {
+      .onRefreshing(async () => {
         await this.refreshArticles();
       })
     }
