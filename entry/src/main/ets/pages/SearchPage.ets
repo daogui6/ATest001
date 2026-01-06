@@ -118,10 +118,22 @@ export struct SearchPage {
 
   build() {
     Column() {
-      Text('搜索')
-        .fontSize(22)
-        .fontWeight(FontWeight.Bold)
-        .margin({ top: 16, left: 16, bottom: 12 })
+      Row() {
+        Text('←')
+          .fontSize(22)
+          .onClick(() => router.back())
+          .width(40)
+
+        Text('搜索')
+          .fontSize(22)
+          .fontWeight(FontWeight.Bold)
+          .layoutWeight(1)
+          .textAlign(TextAlign.Center)
+
+        Blank().width(40)
+      }
+      .width('100%')
+      .padding({ top: 16, left: 16, right: 16, bottom: 12 })
 
       Row({ space: 8 }) {
         TextInput({ placeholder: '输入关键词', text: this.keyword })
