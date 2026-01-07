@@ -69,6 +69,8 @@ struct ArticleDetailPage {
   @State replyTarget: CommentView | null = null;
   @State likeCount: number = 0;
   @State liked: boolean = false;
+  @State commentSectionTop: number = 0;
+  private detailScroller: Scroller = new Scroller();
 
   private buildCommentView(comment: Comment, state: LikeState): CommentView {
     return {
@@ -441,6 +443,17 @@ struct ArticleDetailPage {
     }
   }
 
+  private scrollToComments() {
+    if (this.commentSectionTop <= 0) {
+      return;
+    }
+    this.detailScroller.scrollTo({
+      xOffset: 0,
+      yOffset: this.commentSectionTop,
+      animation: { duration: 260, curve: Curve.EaseOut }
+    });
+  }
+
   // ✅ AI 调用（总结/锐评）
   private async runAi(mode: AiMode) {
     if (!this.article) {
@@ -571,7 +584,7 @@ struct ArticleDetailPage {
       if (!this.article) {
         Text('文章不存在或参数错误').margin(16).opacity(0.7)
       } else {
-        Scroll() {
+        Scroll({ scroller: this.detailScroller }) {
           Column({ space: 10 }) {
             Text(this.article.title).fontSize(20).fontWeight(FontWeight.Bold)
             Text(`作者：${this.article.author}`).fontSize(12).opacity(0.6)
@@ -664,6 +677,9 @@ struct ArticleDetailPage {
             .backgroundColor('#F5F5F5')
             .width('100%')
             .alignItems(HorizontalAlign.Start)
+            .onAreaChange((_, area) => {
+              this.commentSectionTop = area.position.y;
+            })
           }
           .padding({ top: 16, left: 16, right: 16, bottom: 88 })
           .width('100%')
@@ -709,6 +725,7 @@ struct ArticleDetailPage {
               Text('💬').fontSize(22)
               Text(`${this.commentCount}`).fontSize(14).opacity(0.8)
             }
+            .onClick(() => this.scrollToComments())
           }
           .margin({ left: 8 })
             .alignItems(VerticalAlign.Center)
