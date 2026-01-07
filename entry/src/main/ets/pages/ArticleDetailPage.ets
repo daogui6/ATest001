@@ -605,10 +605,13 @@ struct ArticleDetailPage {
             // ✅ AI 展示区
             Column() {
               if (this.aiLoading) {
-                Row({ space: 10 }) {
+                Column({ space: 8 }) {
                   LoadingProgress()
                   Text('AI生成中…').opacity(0.7)
-                }.padding(12)
+                }
+                .padding(12)
+                .width('100%')
+                .alignItems(HorizontalAlign.Center)
               } else if (this.aiText) {
                 Text(this.aiMode === 'summary' ? 'AI总结' : 'AI锐评')
                   .fontSize(16)
