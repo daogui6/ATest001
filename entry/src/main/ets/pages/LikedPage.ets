@@ -102,18 +102,24 @@ export struct LikedPage {
           ForEach(this.likedArticles, (item: Article) => {
             ListItem() {
               Column({ space: 6 }) {
-                Text(item.title).fontSize(16).fontWeight(FontWeight.Medium)
+                Text(item.title)
+                  .fontSize(16)
+                  .fontWeight(FontWeight.Medium)
+                  .maxLines(2)
                 Text(item.desc).fontSize(13).opacity(0.7).maxLines(2)
                 Text(`作者：${item.author}`).fontSize(12).opacity(0.6)
               }
+              .height(120)
               .padding(12)
-              .margin({ left: 16, right: 16, bottom: 12 })
+              .margin({ bottom: 12 })
               .borderRadius(12)
               .backgroundColor('#F5F5F5')
+              .justifyContent(FlexAlign.SpaceBetween)
               .onClick(async () => await this.openDetail(item))
             }
           })
         }
+        .padding({ left: 16, right: 16 })
         .width('100%')
         .layoutWeight(1)
       }

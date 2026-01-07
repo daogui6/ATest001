@@ -221,16 +221,21 @@ export struct MinePage {
       Scroll() {
         Column({ space: 16 }) {
           Row({ space: 12 }) {
-            Text(this.isLogin ? (this.nickname ? this.nickname.slice(0, 1) : '我') : '访')
-              .fontSize(20)
-              .fontWeight(FontWeight.Bold)
-              .fontColor('#FFFFFF')
-              .width(52)
-              .height(52)
-              .textAlign(TextAlign.Center)
-              .backgroundColor('#4C6FFF')
-              .borderRadius(26)
-              .padding({ top: 12 })
+            Stack({ alignContent: Alignment.Center }) {
+              Image($r('app.media.startIcon'))
+                .width(52)
+                .height(52)
+                .borderRadius(26)
+                .backgroundColor('#4C6FFF')
+                .objectFit(ImageFit.Cover)
+              Text(this.isLogin ? (this.nickname ? this.nickname.slice(0, 1) : '我') : '访')
+                .fontSize(18)
+                .fontWeight(FontWeight.Bold)
+                .fontColor('#FFFFFF')
+                .textAlign(TextAlign.Center)
+            }
+            .width(52)
+            .height(52)
 
             Column({ space: 4 }) {
               Text(this.isLogin ? this.nickname : '欢迎来到我的主页')
