@@ -461,6 +461,52 @@ struct ArticleDetailPage {
     }
   }
 
+  @Builder
+  private renderComment(item: CommentView, level: number) {
+    const nameSize = level === 0 ? 14 : 13;
+    const timeSize = level === 0 ? 12 : 11;
+    const replySize = level === 0 ? 12 : 11;
+    const contentSize = level === 0 ? 14 : 13;
+    const lineHeight = level === 0 ? 20 : 18;
+    const likeSize = level === 0 ? 14 : 12;
+    const likeCountSize = level === 0 ? 12 : 11;
+    const paddingSize = level === 0 ? 10 : 8;
+    const backgroundColor = level === 0 ? '#FAFAFA' : '#FFFFFF';
+    Column({ space: 6 }) {
+      Column({ space: 4 }) {
+        Row({ space: 6 }) {
+          Text(item.nickname || '匿名用户').fontSize(nameSize).fontWeight(FontWeight.Medium)
+          Text(this.formatTime(item.createdAt)).fontSize(timeSize).opacity(0.6)
+        }
+        if (item.replyTo) {
+          Text(`回复 ${item.replyTo}：`).fontSize(replySize).opacity(0.6)
+        }
+        Text(item.content).fontSize(contentSize).lineHeight(lineHeight)
+        Row({ space: 12 }) {
+          Text('回复').fontSize(replySize).opacity(0.7)
+            .onClick(() => { this.replyTarget = item; })
+          Row({ space: 4 }) {
+            Text(item.liked ? '❤️' : '🤍').fontSize(likeSize)
+            Text(`${item.likeCount}`).fontSize(likeCountSize).opacity(0.7)
+          }
+          .onClick(async () => await this.toggleCommentLike(item))
+        }
+      }
+      .padding(paddingSize)
+      .borderRadius(10)
+      .backgroundColor(backgroundColor)
+
+      if (item.replies.length > 0) {
+        Column({ space: 6 }) {
+          ForEach(item.replies, (child: CommentView) => {
+            this.renderComment(child, level + 1)
+          })
+        }
+        .padding({ left: 12, top: 4, bottom: 4 })
+      }
+    }
+  }
+
   build() {
     Column() {
       // 顶部栏（左返回 + 标题 + 右收藏）
@@ -564,60 +610,7 @@ struct ArticleDetailPage {
                 Text('暂时还没有评论，快来抢沙发～').opacity(0.6)
               } else {
                 ForEach(this.comments, (c: CommentView) => {
-                  Column({ space: 6 }) {
-                    Column({ space: 4 }) {
-                      Row({ space: 6 }) {
-                        Text(c.nickname || '匿名用户').fontSize(14).fontWeight(FontWeight.Medium)
-                        Text(this.formatTime(c.createdAt)).fontSize(12).opacity(0.6)
-                      }
-                      if (c.replyTo) {
-                        Text(`回复 ${c.replyTo}：`).fontSize(12).opacity(0.6)
-                      }
-                      Text(c.content).fontSize(14).lineHeight(20)
-                      Row({ space: 12 }) {
-                        Text('回复').fontSize(12).opacity(0.7)
-                          .onClick(() => { this.replyTarget = c; })
-                        Row({ space: 4 }) {
-                          Text(c.liked ? '❤️' : '🤍').fontSize(14)
-                          Text(`${c.likeCount}`).fontSize(12).opacity(0.7)
-                        }
-                        .onClick(async () => await this.toggleCommentLike(c))
-                      }
-                    }
-                    .padding(10)
-                    .borderRadius(10)
-                    .backgroundColor('#FAFAFA')
-
-                    if (c.replies.length > 0) {
-                      Column({ space: 6 }) {
-                        ForEach(c.replies, (r: CommentView) => {
-                          Column({ space: 4 }) {
-                            Row({ space: 6 }) {
-                              Text(r.nickname || '匿名用户').fontSize(13).fontWeight(FontWeight.Medium)
-                              Text(this.formatTime(r.createdAt)).fontSize(11).opacity(0.6)
-                            }
-                            if (r.replyTo) {
-                              Text(`回复 ${r.replyTo}：`).fontSize(11).opacity(0.6)
-                            }
-                            Text(r.content).fontSize(13).lineHeight(18)
-                            Row({ space: 12 }) {
-                              Text('回复').fontSize(11).opacity(0.7)
-                                .onClick(() => { this.replyTarget = r; })
-                              Row({ space: 4 }) {
-                                Text(r.liked ? '❤️' : '🤍').fontSize(12)
-                                Text(`${r.likeCount}`).fontSize(11).opacity(0.7)
-                              }
-                              .onClick(async () => await this.toggleCommentLike(r))
-                            }
-                          }
-                          .padding(8)
-                          .borderRadius(10)
-                          .backgroundColor('#FFFFFF')
-                        })
-                      }
-                      .padding({ left: 12, top: 4, bottom: 4 })
-                    }
-                  }
+                  this.renderComment(c, 0)
                 })
               }
             }
