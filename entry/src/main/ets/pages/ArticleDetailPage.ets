@@ -9,7 +9,7 @@ import { HistoryStore } from '../store/HistoryStore';
 import { ArticleStore } from '../store/ArticleStore';
 import { fetchArticleById } from '../service/WanService';
 import type { Comment } from '../model/Comment';
-import { InteractionStore } from '../store/InteractionStore';
+import { InteractionStore, type LikeState } from '../store/InteractionStore';
 import { UserActionStore } from '../store/UserActionStore';
 import { UserStore } from '../store/UserStore';
 import { NotificationStore } from '../store/NotificationStore';
@@ -32,11 +32,6 @@ interface CommentView extends Comment {
   likeCount: number;
   liked: boolean;
   replies: CommentView[];
-}
-
-interface LikeState {
-  liked: boolean;
-  count: number;
 }
 
 interface CommentViewOverrides {
