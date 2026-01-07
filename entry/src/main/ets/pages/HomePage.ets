@@ -75,6 +75,17 @@ export struct HomePage {
     return result;
   }
 
+  private shuffleArticles(list: Article[]): Article[] {
+    const result = [...list];
+    for (let i = result.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp = result[i];
+      result[i] = result[j];
+      result[j] = temp;
+    }
+    return result;
+  }
+
   private async reloadArticles() {
     this.loading = true;
     this.errorMsg = '';
@@ -103,6 +114,7 @@ export struct HomePage {
     }
     this.refreshing = true;
     await this.reloadArticles();
+    this.articles = this.shuffleArticles(this.articles);
     this.refreshing = false;
   }
 

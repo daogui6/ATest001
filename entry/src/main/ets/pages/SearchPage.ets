@@ -23,6 +23,7 @@ export struct SearchPage {
   @State loading: boolean = false;
   @State errorMsg: string = '';
   @State hasSearched: boolean = false;
+  @State isEditing: boolean = false;
   @State uid: string = '0';
   @State favIds: Set<number> = new Set<number>();
   @State searchHistory: string[] = [];
@@ -88,6 +89,7 @@ export struct SearchPage {
     this.loading = true;
     this.errorMsg = '';
     this.hasSearched = true;
+    this.isEditing = false;
 
     try {
       const list = await searchArticles(kw);
@@ -161,13 +163,16 @@ export struct SearchPage {
       Row({ space: 8 }) {
         TextInput({ placeholder: '输入关键词', text: this.keyword })
           .layoutWeight(1)
-          .onChange((v) => { this.keyword = v; })
+          .onChange((v) => {
+            this.keyword = v;
+            this.isEditing = true;
+          })
         Button('搜索', { type: ButtonType.Capsule })
           .onClick(async () => await this.performSearch())
       }
       .padding({ left: 16, right: 16, bottom: 12 })
 
-      if (this.searchHistory.length > 0) {
+      if (this.isEditing && this.keyword.trim().length > 0 && this.searchHistory.length > 0) {
         Column({ space: 8 }) {
           Row() {
             Text('搜索记录')
