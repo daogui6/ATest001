@@ -53,9 +53,8 @@ export struct RegisterPage {
   build() {
     Column() {
       Row({ space: 12 }) {
-        Text('返回登录')
-          .fontSize(14)
-          .fontColor('#4C6FFF')
+        Text('←')
+          .fontSize(20)
           .onClick(async () => {
             await this.goBack();
           })

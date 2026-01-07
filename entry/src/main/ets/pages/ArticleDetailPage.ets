@@ -338,7 +338,8 @@ struct ArticleDetailPage {
 
     const ctx = this.hostCtx();
     const currentUser = await UserStore.currentUser(ctx);
-    const uid = currentUser?.username ?? this.uid;
+    const sessionUid = await FavoriteStore.getUid(ctx);
+    const uid = sessionUid;
     if (!uid || uid === '0') {
       promptAction.showToast({ message: '请先登录后再评论' });
       return;
@@ -359,8 +360,7 @@ struct ArticleDetailPage {
 
     await InteractionStore.addComment(ctx, article.id, comment);
     await this.refreshInteractions();
-    const sessionUid = await FavoriteStore.getUid(ctx);
-    await UserActionStore.addCommented(ctx, sessionUid, article);
+    await UserActionStore.addCommented(ctx, uid, article);
     this.bumpCommentedVersion();
     this.newComment = '';
     this.replyTarget = null;
@@ -484,8 +484,10 @@ struct ArticleDetailPage {
         }
       }
       .padding(this.commentPaddingSize(level))
+      .width('100%')
       .borderRadius(10)
       .backgroundColor(this.commentBackgroundColor(level))
+      .alignItems(HorizontalAlign.Start)
 
       if (item.replies.length > 0) {
         Column({ space: 6 }) {
@@ -494,8 +496,12 @@ struct ArticleDetailPage {
           })
         }
         .padding({ left: 12, top: 4, bottom: 4 })
+        .width('100%')
+        .alignItems(HorizontalAlign.Start)
       }
     }
+    .width('100%')
+    .alignItems(HorizontalAlign.Start)
   }
 
   private commentNameSize(level: number): number {
@@ -644,6 +650,8 @@ struct ArticleDetailPage {
             .padding(12)
             .borderRadius(12)
             .backgroundColor('#F5F5F5')
+            .width('100%')
+            .alignItems(HorizontalAlign.Start)
           }
           .padding({ top: 16, left: 16, right: 16, bottom: 88 })
           .width('100%')
