@@ -56,13 +56,23 @@ export struct NotificationPage {
     return `${item.fromNickname} 回复了你的评论`;
   }
 
+  private markNotificationsReadInMemory(): void {
+    const updated: NotificationItem[] = [];
+    for (let i = 0; i < this.notifications.length; i++) {
+      const item = this.notifications[i];
+      item.read = true;
+      updated.push(item);
+    }
+    this.notifications = updated;
+  }
+
   private async markAllRead() {
     if (this.uid === '0') {
       promptAction.showToast({ message: '请先登录' });
       return;
     }
     await NotificationStore.markAllRead(this.hostCtx(), this.uid);
-    this.notifications = this.notifications.map(item => Object.assign({}, item, { read: true }));
+    this.markNotificationsReadInMemory();
     const v = (AppStorage.get('notification_version') as number) ?? 0;
     AppStorage.set('notification_version', v + 1);
   }
@@ -75,7 +85,7 @@ export struct NotificationPage {
       return;
     }
     await NotificationStore.markAllRead(this.hostCtx(), this.uid);
-    this.notifications = this.notifications.map(item => Object.assign({}, item, { read: true }));
+    this.markNotificationsReadInMemory();
     const v = (AppStorage.get('notification_version') as number) ?? 0;
     AppStorage.set('notification_version', v + 1);
   }
