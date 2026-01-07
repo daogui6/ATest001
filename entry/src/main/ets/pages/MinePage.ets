@@ -26,6 +26,10 @@ export struct MinePage {
   @State loginAgree: boolean = false
   @State message: string = ''
   @State rememberPassword: boolean = false
+  @State headerOpacity: number = 0
+  @State headerOffset: number = 12
+  @State contentOpacity: number = 0
+  @State contentOffset: number = 18
   @StorageLink('notification_version')
   @Watch('onNotificationVersionChange')
   notificationVersion: number = 0
@@ -210,6 +214,8 @@ export struct MinePage {
       }
       .height(52)
       .alignItems(VerticalAlign.Center)
+      .opacity(this.headerOpacity)
+      .translate({ x: 0, y: this.headerOffset })
 
       Scroll() {
         Column({ space: 16 }) {
@@ -250,6 +256,7 @@ export struct MinePage {
           .padding(16)
           .borderRadius(16)
           .backgroundColor('#FFFFFF')
+          .border({ width: 1, color: '#E9EEF5' })
 
           Column({ space: 12 }) {
             Row() {
@@ -264,6 +271,7 @@ export struct MinePage {
               .padding(12)
               .borderRadius(12)
               .backgroundColor('#F6F7FB')
+              .border({ width: 1, color: '#E9EEF5' })
               .onClick(async () => await this.openHistory())
 
               Column({ space: 6 }) {
@@ -274,6 +282,7 @@ export struct MinePage {
               .padding(12)
               .borderRadius(12)
               .backgroundColor('#F6F7FB')
+              .border({ width: 1, color: '#E9EEF5' })
               .onClick(async () => await this.openLiked())
 
               Column({ space: 6 }) {
@@ -284,6 +293,7 @@ export struct MinePage {
               .padding(12)
               .borderRadius(12)
               .backgroundColor('#F6F7FB')
+              .border({ width: 1, color: '#E9EEF5' })
               .onClick(async () => await this.openCommented())
             }
 
@@ -306,12 +316,14 @@ export struct MinePage {
               .padding(12)
               .borderRadius(12)
               .backgroundColor('#F6F7FB')
+              .border({ width: 1, color: '#E9EEF5' })
               .onClick(async () => await this.openNotifications())
             }
           }
           .padding(16)
           .borderRadius(16)
           .backgroundColor('#FFFFFF')
+          .border({ width: 1, color: '#E9EEF5' })
 
           if (!this.isLogin) {
             Column({ space: 12 }) {
@@ -372,6 +384,7 @@ export struct MinePage {
             .padding(16)
             .borderRadius(16)
             .backgroundColor('#FFFFFF')
+            .border({ width: 1, color: '#E9EEF5' })
           } else {
             Column({ space: 12 }) {
               Text('账号信息').fontSize(16).fontWeight(FontWeight.Medium)
@@ -417,14 +430,27 @@ export struct MinePage {
             .padding(16)
             .borderRadius(16)
             .backgroundColor('#FFFFFF')
+            .border({ width: 1, color: '#E9EEF5' })
           }
         }
         .padding({ left: 16, right: 16, bottom: 16 })
+        .opacity(this.contentOpacity)
+        .translate({ x: 0, y: this.contentOffset })
       }
       .layoutWeight(1)
     }
     .width('100%')
     .height('100%')
     .backgroundColor('#F6F7FB')
+    .onAppear(() => {
+      animateTo({ duration: 220, curve: Curve.EaseOut }, () => {
+        this.headerOpacity = 1;
+        this.headerOffset = 0;
+      });
+      animateTo({ duration: 260, curve: Curve.EaseOut }, () => {
+        this.contentOpacity = 1;
+        this.contentOffset = 0;
+      });
+    })
   }
 }

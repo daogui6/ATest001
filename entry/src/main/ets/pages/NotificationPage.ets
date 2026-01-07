@@ -24,6 +24,10 @@ export struct NotificationPage {
   sessionVersion: number = 0;
   @State uid: string = '0';
   @State notifications: NotificationItem[] = [];
+  @State headerOpacity: number = 0;
+  @State headerOffset: number = 12;
+  @State listOpacity: number = 0;
+  @State listOffset: number = 16;
 
   private onNotificationVersionChange() {
     this.refresh();
@@ -136,11 +140,17 @@ export struct NotificationPage {
       }
       .alignItems(VerticalAlign.Center)
       .padding({ top: 16, right: 16, bottom: 12 })
+      .opacity(this.headerOpacity)
+      .translate({ x: 0, y: this.headerOffset })
 
       if (this.uid === '0') {
         Text('请先去【我的】页登录').margin(16).opacity(0.7)
+          .opacity(this.listOpacity)
+          .translate({ x: 0, y: this.listOffset })
       } else if (this.notifications.length === 0) {
         Text('暂无通知').margin(16).opacity(0.7)
+          .opacity(this.listOpacity)
+          .translate({ x: 0, y: this.listOffset })
       } else {
         List() {
           ForEach(this.notifications, (item: NotificationItem) => {
@@ -161,8 +171,9 @@ export struct NotificationPage {
               .width('100%')
               .padding(12)
               .margin({ bottom: 12 })
-              .borderRadius(12)
-              .backgroundColor('#F5F5F5')
+              .borderRadius(16)
+              .backgroundColor('#FFFFFF')
+              .border({ width: 1, color: '#E9EEF5' })
               .onClick(async () => {
                 await this.markNotificationRead(item);
                 await this.openArticle(item);
@@ -173,12 +184,23 @@ export struct NotificationPage {
         .padding({ left: 16, right: 16 })
         .width('100%')
         .layoutWeight(1)
+        .opacity(this.listOpacity)
+        .translate({ x: 0, y: this.listOffset })
       }
     }
     .width('100%')
     .height('100%')
+    .backgroundColor('#F6F7FB')
     .onAppear(async () => {
       await this.refresh();
+      animateTo({ duration: 220, curve: Curve.EaseOut }, () => {
+        this.headerOpacity = 1;
+        this.headerOffset = 0;
+      });
+      animateTo({ duration: 260, curve: Curve.EaseOut }, () => {
+        this.listOpacity = 1;
+        this.listOffset = 0;
+      });
     })
   }
 }

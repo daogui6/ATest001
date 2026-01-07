@@ -27,6 +27,10 @@ export struct SearchPage {
   @State uid: string = '0';
   @State favIds: Set<number> = new Set<number>();
   @State searchHistory: string[] = [];
+  @State headerOpacity: number = 0;
+  @State headerOffset: number = 12;
+  @State panelOpacity: number = 0;
+  @State panelOffset: number = 16;
 
   @StorageLink('fav_version')
   @Watch('onFavVersionChange')
@@ -159,18 +163,31 @@ export struct SearchPage {
       }
       .width('100%')
       .padding({ top: 16, left: 16, right: 16, bottom: 12 })
+      .opacity(this.headerOpacity)
+      .translate({ x: 0, y: this.headerOffset })
 
       Row({ space: 8 }) {
-        TextInput({ placeholder: '输入关键词', text: this.keyword })
-          .layoutWeight(1)
-          .onChange((v) => {
-            this.keyword = v;
-            this.isEditing = true;
-          })
+        Row({ space: 8 }) {
+          Text('🔍').fontSize(16).opacity(0.6)
+          TextInput({ placeholder: '输入关键词', text: this.keyword })
+            .layoutWeight(1)
+            .onChange((v) => {
+              this.keyword = v;
+              this.isEditing = true;
+            })
+        }
+        .layoutWeight(1)
+        .padding({ left: 12, right: 12, top: 10, bottom: 10 })
+        .borderRadius(16)
+        .backgroundColor('#FFFFFF')
+        .border({ width: 1, color: '#E9EEF5' })
+
         Button('搜索', { type: ButtonType.Capsule })
           .onClick(async () => await this.performSearch())
       }
       .padding({ left: 16, right: 16, bottom: 12 })
+      .opacity(this.panelOpacity)
+      .translate({ x: 0, y: this.panelOffset })
 
       if (this.searchHistory.length > 0 && (this.isEditing || !this.hasSearched)) {
         Column({ space: 8 }) {
@@ -205,14 +222,17 @@ export struct SearchPage {
                     })
                   )
               }
-              .padding({ left: 12, right: 12, top: 8, bottom: 8 })
-              .backgroundColor('#F5F5F5')
-              .borderRadius(10)
+              .padding({ left: 12, right: 12, top: 10, bottom: 10 })
+              .backgroundColor('#FFFFFF')
+              .borderRadius(12)
+              .border({ width: 1, color: '#E9EEF5' })
               .margin({ left: 16, right: 16 })
             }, (item: string) => item)
           }
         }
         .padding({ bottom: 12 })
+        .opacity(this.panelOpacity)
+        .translate({ x: 0, y: this.panelOffset })
       }
 
       if (!this.hasSearched) {
@@ -220,6 +240,8 @@ export struct SearchPage {
           .fontSize(13)
           .opacity(0.7)
           .margin({ left: 16, right: 16, bottom: 8 })
+          .opacity(this.panelOpacity)
+          .translate({ x: 0, y: this.panelOffset })
       }
 
       if (this.loading) {
@@ -228,14 +250,20 @@ export struct SearchPage {
           Text('正在搜索...').opacity(0.7)
         }
         .padding(16)
+        .opacity(this.panelOpacity)
+        .translate({ x: 0, y: this.panelOffset })
       } else if (this.errorMsg) {
         Column({ space: 6 }) {
           Text('搜索失败，请稍后重试').fontSize(13).opacity(0.7)
           Text(this.errorMsg).fontSize(12).opacity(0.6)
         }
         .padding({ left: 16, right: 16, bottom: 6 })
+        .opacity(this.panelOpacity)
+        .translate({ x: 0, y: this.panelOffset })
       } else if (this.hasSearched && this.results.length === 0) {
         Text('未找到相关内容').margin({ left: 16, right: 16, bottom: 8 }).opacity(0.7)
+          .opacity(this.panelOpacity)
+          .translate({ x: 0, y: this.panelOffset })
       }
 
       List() {
@@ -260,16 +288,30 @@ export struct SearchPage {
             }
             .padding(12)
             .margin({ left: 16, right: 16, bottom: 12 })
-            .borderRadius(12)
-            .backgroundColor('#F5F5F5')
+            .borderRadius(16)
+            .backgroundColor('#FFFFFF')
+            .border({ width: 1, color: '#E9EEF5' })
             .onClick(async () => { await this.openDetail(item); })
           }
         }, (item: Article) => item.id.toString())
       }
       .width('100%')
       .layoutWeight(1)
+      .opacity(this.panelOpacity)
+      .translate({ x: 0, y: this.panelOffset })
     }
     .width('100%')
     .height('100%')
+    .backgroundColor('#F6F7FB')
+    .onAppear(() => {
+      animateTo({ duration: 220, curve: Curve.EaseOut }, () => {
+        this.headerOpacity = 1;
+        this.headerOffset = 0;
+      });
+      animateTo({ duration: 260, curve: Curve.EaseOut }, () => {
+        this.panelOpacity = 1;
+        this.panelOffset = 0;
+      });
+    })
   }
 }

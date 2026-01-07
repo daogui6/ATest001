@@ -26,6 +26,10 @@ export struct CommentedPage {
   @State uid: string = '0';
   @State commentedIds: Set<number> = new Set<number>();
   @State commentedArticles: Article[] = [];
+  @State headerOpacity: number = 0;
+  @State headerOffset: number = 12;
+  @State listOpacity: number = 0;
+  @State listOffset: number = 16;
 
   private onCommentedVersionChange() {
     this.refresh();
@@ -92,11 +96,17 @@ export struct CommentedPage {
       }
       .alignItems(VerticalAlign.Center)
       .padding({ top: 16, right: 16, bottom: 12 })
+      .opacity(this.headerOpacity)
+      .translate({ x: 0, y: this.headerOffset })
 
       if (this.uid === '0') {
         Text('请先去【我的】页登录').margin(16).opacity(0.7)
+          .opacity(this.listOpacity)
+          .translate({ x: 0, y: this.listOffset })
       } else if (this.commentedArticles.length === 0) {
         Text('暂无评论记录').margin(16).opacity(0.7)
+          .opacity(this.listOpacity)
+          .translate({ x: 0, y: this.listOffset })
       } else {
         List() {
           ForEach(this.commentedArticles, (item: Article) => {
@@ -113,8 +123,9 @@ export struct CommentedPage {
               .height(120)
               .padding(12)
               .margin({ bottom: 12 })
-              .borderRadius(12)
-              .backgroundColor('#F5F5F5')
+              .borderRadius(16)
+              .backgroundColor('#FFFFFF')
+              .border({ width: 1, color: '#E9EEF5' })
               .justifyContent(FlexAlign.SpaceBetween)
               .onClick(async () => await this.openDetail(item))
             }
@@ -123,12 +134,23 @@ export struct CommentedPage {
         .padding({ left: 16, right: 16 })
         .width('100%')
         .layoutWeight(1)
+        .opacity(this.listOpacity)
+        .translate({ x: 0, y: this.listOffset })
       }
     }
     .width('100%')
     .height('100%')
+    .backgroundColor('#F6F7FB')
     .onAppear(() => {
       this.refresh();
+      animateTo({ duration: 220, curve: Curve.EaseOut }, () => {
+        this.headerOpacity = 1;
+        this.headerOffset = 0;
+      });
+      animateTo({ duration: 260, curve: Curve.EaseOut }, () => {
+        this.listOpacity = 1;
+        this.listOffset = 0;
+      });
     })
   }
 }

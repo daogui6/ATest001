@@ -16,6 +16,10 @@ export struct HistoryPage {
 
   @State history: Article[] = [];
   @State loading: boolean = false;
+  @State headerOpacity: number = 0;
+  @State headerOffset: number = 12;
+  @State listOpacity: number = 0;
+  @State listOffset: number = 16;
   @StorageLink('history_version')
   @Watch('onHistoryVersionChange')
   historyVersion: number = 0;
@@ -73,6 +77,8 @@ export struct HistoryPage {
       }
       .alignItems(VerticalAlign.Center)
       .padding({ top: 16, right: 16, bottom: 12 })
+      .opacity(this.headerOpacity)
+      .translate({ x: 0, y: this.headerOffset })
 
       if (this.loading) {
         Row({ space: 8 }) {
@@ -80,8 +86,12 @@ export struct HistoryPage {
           Text('正在加载历史...').opacity(0.7)
         }
         .padding(16)
+        .opacity(this.listOpacity)
+        .translate({ x: 0, y: this.listOffset })
       } else if (this.history.length === 0) {
         Text('暂无阅读记录').margin(16).opacity(0.7)
+          .opacity(this.listOpacity)
+          .translate({ x: 0, y: this.listOffset })
       } else {
         List() {
           ForEach(this.history, (item: Article) => {
@@ -96,17 +106,31 @@ export struct HistoryPage {
               }
               .padding(12)
               .margin({ left: 16, right: 16, bottom: 12 })
-              .borderRadius(12)
-              .backgroundColor('#F5F5F5')
+              .borderRadius(16)
+              .backgroundColor('#FFFFFF')
+              .border({ width: 1, color: '#E9EEF5' })
               .onClick(async () => await this.openDetail(item.id))
             }
           })
         }
         .width('100%')
         .layoutWeight(1)
+        .opacity(this.listOpacity)
+        .translate({ x: 0, y: this.listOffset })
       }
     }
     .width('100%')
     .height('100%')
+    .backgroundColor('#F6F7FB')
+    .onAppear(() => {
+      animateTo({ duration: 220, curve: Curve.EaseOut }, () => {
+        this.headerOpacity = 1;
+        this.headerOffset = 0;
+      });
+      animateTo({ duration: 260, curve: Curve.EaseOut }, () => {
+        this.listOpacity = 1;
+        this.listOffset = 0;
+      });
+    })
   }
 }

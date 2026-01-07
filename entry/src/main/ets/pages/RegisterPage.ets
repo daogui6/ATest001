@@ -11,6 +11,10 @@ export struct RegisterPage {
   @State regNickname: string = ''
   @State registerAgree: boolean = false
   @State message: string = ''
+  @State headerOpacity: number = 0
+  @State headerOffset: number = 12
+  @State cardOpacity: number = 0
+  @State cardOffset: number = 18
 
   private hostCtx(): common.UIAbilityContext {
     return this.getUIContext().getHostContext() as common.UIAbilityContext;
@@ -73,9 +77,14 @@ export struct RegisterPage {
       }
       .width('100%')
       .height(52)
+      .opacity(this.headerOpacity)
+      .translate({ x: 0, y: this.headerOffset })
       Scroll() {
         Column({ space: 12 }) {
-          Text('注册').fontSize(16).fontWeight(FontWeight.Medium)
+          Row({ space: 8 }) {
+            Text('✨').fontSize(16)
+            Text('注册').fontSize(16).fontWeight(FontWeight.Medium)
+          }
           TextInput({ text: this.regUsername, placeholder: '设置用户名' })
             .onChange((v) => { this.regUsername = v; })
             .padding({ left: 12, right: 12 })
@@ -122,6 +131,9 @@ export struct RegisterPage {
         .padding(16)
         .borderRadius(16)
         .backgroundColor('#FFFFFF')
+        .border({ width: 1, color: '#E9EEF5' })
+        .opacity(this.cardOpacity)
+        .translate({ x: 0, y: this.cardOffset })
       }
       .layoutWeight(1)
       .padding({ left: 16, right: 16, bottom: 16 })
@@ -129,5 +141,15 @@ export struct RegisterPage {
     .width('100%')
     .height('100%')
     .backgroundColor('#F6F7FB')
+    .onAppear(() => {
+      animateTo({ duration: 220, curve: Curve.EaseOut }, () => {
+        this.headerOpacity = 1;
+        this.headerOffset = 0;
+      });
+      animateTo({ duration: 260, curve: Curve.EaseOut }, () => {
+        this.cardOpacity = 1;
+        this.cardOffset = 0;
+      });
+    })
   }
 }
