@@ -1,6 +1,7 @@
 import router from '@ohos.router';
 import type common from '@ohos.app.ability.common';
 import promptAction from '@ohos.promptAction';
+import webview from '@ohos.web.webview';
 
 import type { Article } from '../model/Article';
 import { FavoriteStore } from '../store/FavoriteStore';
@@ -50,6 +51,7 @@ struct ArticleDetailPage {
   @State article: Article | null = null;
   @State uid: string = '0';
   @State favIds: Set<number> = new Set<number>();
+  private webController: webview.WebviewController = new webview.WebviewController();
   // ✅ AI 状态
   @State aiLoading: boolean = false;
   @State aiText: string = '';
@@ -627,12 +629,19 @@ struct ArticleDetailPage {
             .borderRadius(12)
             .backgroundColor('#F5F5F5')
 
-            // 正文
-            Text(this.article.content)
-              .fontSize(15)
-              .lineHeight(22)
-              .width('100%')
-              .margin({ top: 10 })
+            // 正文（优先展示原网页）
+            if (this.article.link && this.article.link.trim().length > 0) {
+              Web({ src: this.article.link, controller: this.webController })
+                .width('100%')
+                .height(520)
+                .margin({ top: 10 })
+            } else {
+              Text(this.article.content)
+                .fontSize(15)
+                .lineHeight(22)
+                .width('100%')
+                .margin({ top: 10 })
+            }
 
             Divider().margin({ top: 12, bottom: 4 })
 
