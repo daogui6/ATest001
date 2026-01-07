@@ -62,6 +62,20 @@ export struct NotificationPage {
       return;
     }
     await NotificationStore.markAllRead(this.hostCtx(), this.uid);
+    this.notifications = this.notifications.map(item => Object.assign({}, item, { read: true }));
+    const v = (AppStorage.get('notification_version') as number) ?? 0;
+    AppStorage.set('notification_version', v + 1);
+  }
+
+  private async markAllReadSilently() {
+    if (this.uid === '0') {
+      return;
+    }
+    if (!this.notifications.some(item => !item.read)) {
+      return;
+    }
+    await NotificationStore.markAllRead(this.hostCtx(), this.uid);
+    this.notifications = this.notifications.map(item => Object.assign({}, item, { read: true }));
     const v = (AppStorage.get('notification_version') as number) ?? 0;
     AppStorage.set('notification_version', v + 1);
   }
@@ -138,8 +152,9 @@ export struct NotificationPage {
     }
     .width('100%')
     .height('100%')
-    .onAppear(() => {
-      this.refresh();
+    .onAppear(async () => {
+      await this.refresh();
+      await this.markAllReadSilently();
     })
   }
 }
