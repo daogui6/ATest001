@@ -1,5 +1,7 @@
 import router from '@ohos.router';
 import type common from '@ohos.app.ability.common';
+import type resourceManager from '@ohos.resourceManager';
+import pasteboard from '@ohos.pasteboard';
 import promptAction from '@ohos.promptAction';
 import webview from '@ohos.web.webview';
 
@@ -443,6 +445,26 @@ struct ArticleDetailPage {
     }
   }
 
+  private async shareArticle() {
+    if (!this.article) {
+      promptAction.showToast({ message: '文章未加载' });
+      return;
+    }
+
+    const link = this.article.link?.trim();
+    const content = link && link.length > 0
+      ? `${this.article.title}\n${link}`
+      : this.article.title;
+    try {
+      const systemPasteboard = pasteboard.getSystemPasteboard();
+      const pasteData = pasteboard.createData('text/plain', content);
+      await systemPasteboard.setData(pasteData);
+      promptAction.showToast({ message: '已复制分享内容，快去发送给朋友吧' });
+    } catch (e) {
+      promptAction.showToast({ message: (e as Error)?.message ?? '分享失败' });
+    }
+  }
+
   private scrollToComments() {
     if (this.commentSectionTop <= 0) {
       return;
@@ -571,10 +593,16 @@ struct ArticleDetailPage {
           .layoutWeight(1);
 
         if (this.article) {
-          Text(this.favIds.has(this.article.id) ? '★' : '☆')
-            .fontSize(22)
-            .margin({ right: 16 })
-            .onClick(async () => await this.toggleFav(this.article!.id));
+          Row({ space: 12 }) {
+            Text('🔗')
+              .fontSize(20)
+              .onClick(async () => await this.shareArticle())
+
+            Text(this.favIds.has(this.article.id) ? '★' : '☆')
+              .fontSize(22)
+              .onClick(async () => await this.toggleFav(this.article!.id));
+          }
+          .margin({ right: 16 })
         }
       }
       .height(52)
@@ -584,7 +612,7 @@ struct ArticleDetailPage {
       if (!this.article) {
         Text('文章不存在或参数错误').margin(16).opacity(0.7)
       } else {
-        Scroll({ scroller: this.detailScroller }) {
+        Scroll(this.detailScroller) {
           Column({ space: 10 }) {
             Text(this.article.title).fontSize(20).fontWeight(FontWeight.Bold)
             Text(`作者：${this.article.author}`).fontSize(12).opacity(0.6)
@@ -678,7 +706,16 @@ struct ArticleDetailPage {
             .width('100%')
             .alignItems(HorizontalAlign.Start)
             .onAreaChange((_, area) => {
-              this.commentSectionTop = area.position.y;
+              const positionY = area.position.y;
+              let resolvedY = 0;
+              if (typeof positionY === 'number') {
+                resolvedY = positionY;
+              } else if (typeof positionY === 'string') {
+                resolvedY = Number.parseFloat(positionY);
+              } else {
+                resolvedY = this.hostCtx().resourceManager.getNumber(positionY as resourceManager.Resource);
+              }
+              this.commentSectionTop = resolvedY;
             })
           }
           .padding({ top: 16, left: 16, right: 16, bottom: 88 })
