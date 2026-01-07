@@ -66,6 +66,18 @@ export struct NotificationPage {
     this.notifications = updated;
   }
 
+  private markNotificationReadInMemory(targetId: string): void {
+    const updated: NotificationItem[] = [];
+    for (let i = 0; i < this.notifications.length; i++) {
+      const item = this.notifications[i];
+      if (item.id === targetId) {
+        item.read = true;
+      }
+      updated.push(item);
+    }
+    this.notifications = updated;
+  }
+
   private async markAllRead() {
     if (this.uid === '0') {
       promptAction.showToast({ message: '请先登录' });
@@ -77,15 +89,15 @@ export struct NotificationPage {
     AppStorage.set('notification_version', v + 1);
   }
 
-  private async markAllReadSilently() {
+  private async markNotificationRead(item: NotificationItem) {
     if (this.uid === '0') {
       return;
     }
-    if (!this.notifications.some(item => !item.read)) {
+    if (item.read) {
       return;
     }
-    await NotificationStore.markAllRead(this.hostCtx(), this.uid);
-    this.markNotificationsReadInMemory();
+    await NotificationStore.markRead(this.hostCtx(), this.uid, item.id);
+    this.markNotificationReadInMemory(item.id);
     const v = (AppStorage.get('notification_version') as number) ?? 0;
     AppStorage.set('notification_version', v + 1);
   }
@@ -151,7 +163,10 @@ export struct NotificationPage {
               .margin({ bottom: 12 })
               .borderRadius(12)
               .backgroundColor('#F5F5F5')
-              .onClick(async () => await this.openArticle(item))
+              .onClick(async () => {
+                await this.markNotificationRead(item);
+                await this.openArticle(item);
+              })
             }
           })
         }
@@ -164,7 +179,6 @@ export struct NotificationPage {
     .height('100%')
     .onAppear(async () => {
       await this.refresh();
-      await this.markAllReadSilently();
     })
   }
 }

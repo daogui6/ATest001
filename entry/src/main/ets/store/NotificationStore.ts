@@ -49,6 +49,16 @@ export class NotificationStore {
     await Prefs.putString(ctx, NotificationStore.key(safeUid), JSON.stringify(next));
   }
 
+  static async markRead(ctx: common.UIAbilityContext, uid: string, id: string): Promise<void> {
+    const safeUid = NotificationStore.normalizeUid(uid);
+    if (!safeUid || safeUid === '0') {
+      return;
+    }
+    const list = await NotificationStore.load(ctx, safeUid);
+    const next = list.map(item => (item.id === id ? { ...item, read: true } : item));
+    await Prefs.putString(ctx, NotificationStore.key(safeUid), JSON.stringify(next));
+  }
+
   static async unreadCount(ctx: common.UIAbilityContext, uid: string): Promise<number> {
     const list = await NotificationStore.load(ctx, NotificationStore.normalizeUid(uid));
     return list.filter(item => !item.read).length;
