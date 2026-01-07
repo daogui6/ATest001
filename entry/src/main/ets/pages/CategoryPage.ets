@@ -229,16 +229,21 @@ export struct CategoryPage {
   build() {
     Stack() {
       Column() {
-        Text('分类')
-          .fontSize(22)
-          .fontWeight(FontWeight.Bold)
-          .padding(12)
-          .margin({ top: 12, left: 16, right: 16, bottom: 12 })
-          .backgroundColor('#FFFFFF')
-          .borderRadius(16)
-          .shadow({ radius: 14, color: '#14000000', offsetX: 0, offsetY: 6 })
-          .opacity(this.headerOpacity)
-          .translate({ x: 0, y: this.headerOffset })
+        Row() {
+          Text('分类')
+            .fontSize(22)
+            .fontWeight(FontWeight.Bold)
+            .layoutWeight(1)
+            .textAlign(TextAlign.Center)
+        }
+        .width('100%')
+        .padding(12)
+        .margin({ top: 12, left: 16, right: 16, bottom: 12 })
+        .backgroundColor('#FFFFFF')
+        .borderRadius(16)
+        .shadow({ radius: 14, color: '#14000000', offsetX: 0, offsetY: 6 })
+        .opacity(this.headerOpacity)
+        .translate({ x: 0, y: this.headerOffset })
 
         Row() {
           // 左侧：分类列表
@@ -250,11 +255,14 @@ export struct CategoryPage {
                     .fontSize(14)
                     .fontWeight(this.selectedCid === c.cid ? FontWeight.Bold : FontWeight.Normal)
                     .padding(12)
+                    .width('100%')
+                    .textAlign(TextAlign.Center)
                     .backgroundColor(this.selectedCid === c.cid ? '#EEF4FF' : '#FFFFFF')
                     .borderRadius(8)
                     .border({ width: 1, color: this.selectedCid === c.cid ? '#D6E4FF' : '#EEF0F3' })
                     .shadow({ radius: 6, color: '#0D000000', offsetX: 0, offsetY: 2 })
                 }
+                .width('100%')
                 .onClick(async () => {
                   if (this.selectedCid !== c.cid) {
                     this.selectedCid = c.cid;
