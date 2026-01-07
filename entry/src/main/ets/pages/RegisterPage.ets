@@ -52,20 +52,27 @@ export struct RegisterPage {
 
   build() {
     Column() {
-      Row({ space: 12 }) {
+      Flex({
+        alignItems: ItemAlign.Center,
+        justifyContent: FlexAlign.Center
+      }) {
         Text('←')
           .fontSize(20)
+          .margin({ left: 12 })
           .onClick(async () => {
             await this.goBack();
           })
+
+        Blank().layoutWeight(1)  // 左侧弹性空白
+
         Text('注册')
           .fontSize(22)
           .fontWeight(FontWeight.Bold)
-      }
-      .height(52)
-      .alignItems(VerticalAlign.Center)
-      .padding({ left: 16 })
 
+        Blank().layoutWeight(1)  // 右侧弹性空白
+      }
+      .width('100%')
+      .height(52)
       Scroll() {
         Column({ space: 12 }) {
           Text('注册').fontSize(16).fontWeight(FontWeight.Medium)
