@@ -7,6 +7,7 @@ import { HistoryStore } from '../store/HistoryStore';
 
 AppStorage.setOrCreate('history_version', 0);
 
+@Entry
 @Component
 export struct HistoryPage {
   private hostCtx(): common.UIAbilityContext {
@@ -54,7 +55,10 @@ export struct HistoryPage {
   build() {
     Column() {
       Row() {
-        Blank().width(78)
+        Text('←')
+          .fontSize(20)
+          .margin({ left: 16 })
+          .onClick(() => router.back());
         Text('阅读历史')
           .fontSize(22)
           .fontWeight(FontWeight.Bold)
@@ -68,7 +72,7 @@ export struct HistoryPage {
         }
       }
       .alignItems(VerticalAlign.Center)
-      .padding({ top: 16, left: 16, right: 16, bottom: 12 })
+      .padding({ top: 16, right: 16, bottom: 12 })
 
       if (this.loading) {
         Row({ space: 8 }) {

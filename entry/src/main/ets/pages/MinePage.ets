@@ -1,5 +1,6 @@
 import type common from '@ohos.app.ability.common';
 import promptAction from '@ohos.promptAction';
+import router from '@ohos.router';
 import { Prefs } from '../store/Prefs';
 import { UserStore } from '../store/UserStore';
 
@@ -174,140 +175,278 @@ export struct MinePage {
     promptAction.showToast({ message: '已退出登录' });
   }
 
+  private async openHistory() {
+    try {
+      await router.pushUrl({ url: 'pages/HistoryPage' });
+    } catch (e) {
+      promptAction.showToast({ message: '跳转失败：页面不存在或参数错误' });
+    }
+  }
+
+  private async openLiked() {
+    if (!this.isLogin || this.uid === '0') {
+      promptAction.showToast({ message: '请先登录后查看点赞记录' });
+      return;
+    }
+    try {
+      await router.pushUrl({ url: 'pages/LikedPage' });
+    } catch (e) {
+      promptAction.showToast({ message: '跳转失败：页面不存在或参数错误' });
+    }
+  }
+
+  private async openCommented() {
+    if (!this.isLogin || this.uid === '0') {
+      promptAction.showToast({ message: '请先登录后查看评论记录' });
+      return;
+    }
+    try {
+      await router.pushUrl({ url: 'pages/CommentedPage' });
+    } catch (e) {
+      promptAction.showToast({ message: '跳转失败：页面不存在或参数错误' });
+    }
+  }
+
   build() {
     Column() {
-      Text('我的').fontSize(22).fontWeight(FontWeight.Bold).margin({ top: 16, left: 16, bottom: 12 })
-
-      if (!this.isLogin) {
-        Column({ space: 12 }) {
-          Text('登录').fontSize(16)
-          TextInput({ text: this.loginUsername, placeholder: '请输入用户名' })
-            .onChange((v) => { this.loginUsername = v; })
-          TextInput({ text: this.loginPassword, placeholder: '请输入密码' })
-            .type(InputType.Password)
-            .onChange((v) => { this.loginPassword = v; })
-          Row({ space: 8 }) {
-            Checkbox({ name: 'rememberPassword', group: 'loginPrefs' })
-              .select(this.rememberPassword)
-              .onChange((value: boolean) => { this.rememberPassword = value; })
-            Text('记住密码').fontSize(14)
-          }
-          .alignItems(VerticalAlign.Center)
-          Row({ space: 8 }) {
-            Checkbox({ name: 'loginAgree', group: 'loginAgreement' })
-              .select(this.loginAgree)
-              .onChange((value: boolean) => {
-                this.loginAgree = value;
-                if (value) {
-                  this.message = '';
-                }
-              })
-            Text('我已阅读并同意《用户协议》和《隐私政策》').fontSize(12)
-              .onClick(() => {
-                const next = !this.loginAgree;
-                this.loginAgree = next;
-                if (next) {
-                  this.message = '';
-                }
-              })
-          }
-          .alignItems(VerticalAlign.Center)
-          .margin({ top: 4 })
-          Button('登录', { type: ButtonType.Capsule })
-            .onClick(async () => { await this.handleLogin(); })
-
-          Divider().margin({ top: 6, bottom: 6 })
-
-          Button(this.showRegister ? '返回登录' : '注册', { type: ButtonType.Capsule })
-            .onClick(() => {
-              this.message = '';
-              this.showRegister = !this.showRegister;
-            })
-
-          if (this.showRegister) {
-            Text('注册').fontSize(16)
-            TextInput({ text: this.regUsername, placeholder: '设置用户名' })
-              .onChange((v) => { this.regUsername = v; })
-            TextInput({ text: this.regPassword, placeholder: '设置密码' })
-              .type(InputType.Password)
-              .onChange((v) => { this.regPassword = v; })
-            TextInput({ text: this.regNickname, placeholder: '昵称（可选）' })
-              .onChange((v) => { this.regNickname = v; })
-            Row({ space: 8 }) {
-              Checkbox({ name: 'registerAgree', group: 'registerAgreement' })
-                .select(this.registerAgree)
-                .onChange((value: boolean) => {
-                  this.registerAgree = value;
-                  if (value) {
-                    this.message = '';
-                  }
-                })
-              Text('我已阅读并同意《用户协议》和《隐私政策》').fontSize(12)
-                .onClick(() => {
-                  const next = !this.registerAgree;
-                  this.registerAgree = next;
-                  if (next) {
-                    this.message = '';
-                  }
-                })
-            }
-            .alignItems(VerticalAlign.Center)
-            .margin({ top: 4 })
-            Button('注册并登录', { type: ButtonType.Capsule })
-              .onClick(async () => { await this.handleRegister(); })
-          }
-
-          if (this.message) {
-            Text(this.message).fontSize(14).fontColor(Color.Red).margin({ top: 4 })
-          }
-        }
-        .padding(16)
-        .margin(16)
-        .borderRadius(12)
-        .backgroundColor('#F5F5F5')
-      } else {
-        Column({ space: 12 }) {
-          Text('账号信息').fontSize(16).fontWeight(FontWeight.Medium)
-          Column({ space: 6 }) {
-            Text(`用户ID：${this.uid}`).fontSize(14)
-            Text(`用户名：${this.username || '未获取'}`).fontSize(14)
-            Text(`公开昵称：${this.publicName || this.nickname}`).fontSize(14)
-            Text(`Token：${this.token || '暂无'}`).fontSize(14).opacity(0.7)
-            Text(`昵称：${this.nickname}`).fontSize(14)
-            Text(`签名：${this.bio}`).fontSize(14).opacity(0.7)
-          }
-
-          Text('编辑昵称').fontSize(14).opacity(0.7)
-          TextInput({ text: this.nickname, placeholder: '请输入昵称' })
-            .onChange((v) => { // 首先更新本地状态，统一点击保存时再持久化
-              this.nickname = v;
-            })
-
-          Text('编辑签名').fontSize(14).opacity(0.7).margin({ top: 6 })
-          TextInput({ text: this.bio, placeholder: '请输入签名' })
-            .onChange((v) => {
-              this.bio = v
-            })
-
-          Button('保存资料', { type: ButtonType.Capsule })
-            .onClick(async () => {
-              await this.persistProfileChanges();
-            })
-            .margin({ top: 6 })
-
-          Button('退出登录', { type: ButtonType.Capsule })
-            .onClick(async () => {
-              await this.handleLogout();
-            })
-            .margin({ top: 10 })
-        }
-        .padding(16)
-        .margin(16)
-        .borderRadius(12)
-        .backgroundColor('#F5F5F5')
+      Row() {
+        Text('我的')
+          .fontSize(22)
+          .fontWeight(FontWeight.Bold)
+          .margin({ left: 16 })
       }
+      .height(52)
+      .alignItems(VerticalAlign.Center)
+
+      Scroll() {
+        Column({ space: 16 }) {
+          Row({ space: 12 }) {
+            Text(this.isLogin ? (this.nickname ? this.nickname.slice(0, 1) : '我') : '访')
+              .fontSize(20)
+              .fontWeight(FontWeight.Bold)
+              .fontColor('#FFFFFF')
+              .width(52)
+              .height(52)
+              .textAlign(TextAlign.Center)
+              .backgroundColor('#4C6FFF')
+              .borderRadius(26)
+              .padding({ top: 12 })
+
+            Column({ space: 4 }) {
+              Text(this.isLogin ? this.nickname : '欢迎来到我的主页')
+                .fontSize(18)
+                .fontWeight(FontWeight.Medium)
+              Text(
+                this.isLogin
+                  ? `ID：${this.uid} · ${this.publicName || this.username || '未设置昵称'}`
+                  : '登录后可同步点赞、评论等记录'
+              )
+                .fontSize(12)
+                .opacity(0.6)
+              if (this.isLogin) {
+                Text(this.bio).fontSize(12).opacity(0.7).maxLines(2)
+              }
+            }
+            .layoutWeight(1)
+          }
+          .padding(16)
+          .borderRadius(16)
+          .backgroundColor('#FFFFFF')
+
+          Column({ space: 12 }) {
+            Row() {
+              Text('我的足迹').fontSize(16).fontWeight(FontWeight.Medium)
+            }
+            Row({ space: 12 }) {
+              Column({ space: 6 }) {
+                Text('🕘').fontSize(22)
+                Text('浏览历史').fontSize(12)
+              }
+              .layoutWeight(1)
+              .padding(12)
+              .borderRadius(12)
+              .backgroundColor('#F6F7FB')
+              .onClick(async () => await this.openHistory())
+
+              Column({ space: 6 }) {
+                Text('❤️').fontSize(22)
+                Text('点赞过').fontSize(12)
+              }
+              .layoutWeight(1)
+              .padding(12)
+              .borderRadius(12)
+              .backgroundColor('#F6F7FB')
+              .onClick(async () => await this.openLiked())
+
+              Column({ space: 6 }) {
+                Text('💬').fontSize(22)
+                Text('评论过').fontSize(12)
+              }
+              .layoutWeight(1)
+              .padding(12)
+              .borderRadius(12)
+              .backgroundColor('#F6F7FB')
+              .onClick(async () => await this.openCommented())
+            }
+          }
+          .padding(16)
+          .borderRadius(16)
+          .backgroundColor('#FFFFFF')
+
+          if (!this.isLogin) {
+            Column({ space: 12 }) {
+              Text('登录').fontSize(16).fontWeight(FontWeight.Medium)
+              TextInput({ text: this.loginUsername, placeholder: '请输入用户名' })
+                .onChange((v) => { this.loginUsername = v; })
+                .padding({ left: 12, right: 12 })
+                .borderRadius(10)
+                .backgroundColor('#F6F7FB')
+              TextInput({ text: this.loginPassword, placeholder: '请输入密码' })
+                .type(InputType.Password)
+                .onChange((v) => { this.loginPassword = v; })
+                .padding({ left: 12, right: 12 })
+                .borderRadius(10)
+                .backgroundColor('#F6F7FB')
+              Row({ space: 8 }) {
+                Checkbox({ name: 'rememberPassword', group: 'loginPrefs' })
+                  .select(this.rememberPassword)
+                  .onChange((value: boolean) => { this.rememberPassword = value; })
+                Text('记住密码').fontSize(14)
+              }
+              .alignItems(VerticalAlign.Center)
+              Row({ space: 8 }) {
+                Checkbox({ name: 'loginAgree', group: 'loginAgreement' })
+                  .select(this.loginAgree)
+                  .onChange((value: boolean) => {
+                    this.loginAgree = value;
+                    if (value) {
+                      this.message = '';
+                    }
+                  })
+                Text('我已阅读并同意《用户协议》和《隐私政策》').fontSize(12)
+                  .onClick(() => {
+                    const next = !this.loginAgree;
+                    this.loginAgree = next;
+                    if (next) {
+                      this.message = '';
+                    }
+                  })
+              }
+              .alignItems(VerticalAlign.Center)
+              .margin({ top: 4 })
+              Button('登录', { type: ButtonType.Capsule })
+                .onClick(async () => { await this.handleLogin(); })
+
+              Divider().margin({ top: 6, bottom: 6 })
+
+              Button(this.showRegister ? '返回登录' : '注册', { type: ButtonType.Capsule })
+                .onClick(() => {
+                  this.message = '';
+                  this.showRegister = !this.showRegister;
+                })
+
+              if (this.showRegister) {
+                Text('注册').fontSize(16)
+                TextInput({ text: this.regUsername, placeholder: '设置用户名' })
+                  .onChange((v) => { this.regUsername = v; })
+                  .padding({ left: 12, right: 12 })
+                  .borderRadius(10)
+                  .backgroundColor('#F6F7FB')
+                TextInput({ text: this.regPassword, placeholder: '设置密码' })
+                  .type(InputType.Password)
+                  .onChange((v) => { this.regPassword = v; })
+                  .padding({ left: 12, right: 12 })
+                  .borderRadius(10)
+                  .backgroundColor('#F6F7FB')
+                TextInput({ text: this.regNickname, placeholder: '昵称（可选）' })
+                  .onChange((v) => { this.regNickname = v; })
+                  .padding({ left: 12, right: 12 })
+                  .borderRadius(10)
+                  .backgroundColor('#F6F7FB')
+                Row({ space: 8 }) {
+                  Checkbox({ name: 'registerAgree', group: 'registerAgreement' })
+                    .select(this.registerAgree)
+                    .onChange((value: boolean) => {
+                      this.registerAgree = value;
+                      if (value) {
+                        this.message = '';
+                      }
+                    })
+                  Text('我已阅读并同意《用户协议》和《隐私政策》').fontSize(12)
+                    .onClick(() => {
+                      const next = !this.registerAgree;
+                      this.registerAgree = next;
+                      if (next) {
+                        this.message = '';
+                      }
+                    })
+                }
+                .alignItems(VerticalAlign.Center)
+                .margin({ top: 4 })
+                Button('注册并登录', { type: ButtonType.Capsule })
+                  .onClick(async () => { await this.handleRegister(); })
+              }
+
+              if (this.message) {
+                Text(this.message).fontSize(14).fontColor(Color.Red).margin({ top: 4 })
+              }
+            }
+            .padding(16)
+            .borderRadius(16)
+            .backgroundColor('#FFFFFF')
+          } else {
+            Column({ space: 12 }) {
+              Text('账号信息').fontSize(16).fontWeight(FontWeight.Medium)
+              Column({ space: 6 }) {
+                Text(`用户ID：${this.uid}`).fontSize(14)
+                Text(`用户名：${this.username || '未获取'}`).fontSize(14)
+                Text(`公开昵称：${this.publicName || this.nickname}`).fontSize(14)
+                Text(`Token：${this.token || '暂无'}`).fontSize(14).opacity(0.7)
+                Text(`昵称：${this.nickname}`).fontSize(14)
+                Text(`签名：${this.bio}`).fontSize(14).opacity(0.7)
+              }
+
+              Text('编辑昵称').fontSize(14).opacity(0.7)
+              TextInput({ text: this.nickname, placeholder: '请输入昵称' })
+                .onChange((v) => { // 首先更新本地状态，统一点击保存时再持久化
+                  this.nickname = v;
+                })
+                .padding({ left: 12, right: 12 })
+                .borderRadius(10)
+                .backgroundColor('#F6F7FB')
+
+              Text('编辑签名').fontSize(14).opacity(0.7).margin({ top: 6 })
+              TextInput({ text: this.bio, placeholder: '请输入签名' })
+                .onChange((v) => {
+                  this.bio = v
+                })
+                .padding({ left: 12, right: 12 })
+                .borderRadius(10)
+                .backgroundColor('#F6F7FB')
+
+              Button('保存资料', { type: ButtonType.Capsule })
+                .onClick(async () => {
+                  await this.persistProfileChanges();
+                })
+                .margin({ top: 6 })
+
+              Button('退出登录', { type: ButtonType.Capsule })
+                .onClick(async () => {
+                  await this.handleLogout();
+                })
+                .margin({ top: 10 })
+            }
+            .padding(16)
+            .borderRadius(16)
+            .backgroundColor('#FFFFFF')
+          }
+        }
+        .padding({ left: 16, right: 16, bottom: 16 })
+      }
+      .layoutWeight(1)
     }
     .width('100%')
     .height('100%')
+    .backgroundColor('#F6F7FB')
   }
 }

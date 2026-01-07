@@ -3,6 +3,9 @@
     "pages/SplashPage",
     "pages/Index",
     "pages/ArticleDetailPage",
-    "pages/SearchPage"
+    "pages/SearchPage",
+    "pages/HistoryPage",
+    "pages/LikedPage",
+    "pages/CommentedPage"
   ]
 }

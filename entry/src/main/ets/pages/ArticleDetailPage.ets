@@ -10,6 +10,7 @@ import { ArticleStore } from '../store/ArticleStore';
 import { fetchArticleById } from '../service/WanService';
 import type { Comment } from '../model/Comment';
 import { InteractionStore } from '../store/InteractionStore';
+import { UserActionStore } from '../store/UserActionStore';
 import { UserStore } from '../store/UserStore';
 
 interface DetailParams {
@@ -21,6 +22,8 @@ interface DetailParams {
 AppStorage.setOrCreate('fav_version', 0);
 AppStorage.setOrCreate('session_version', 0);
 AppStorage.setOrCreate('history_version', 0);
+AppStorage.setOrCreate('liked_version', 0);
+AppStorage.setOrCreate('commented_version', 0);
 
 @Entry
 @Component
@@ -174,6 +177,16 @@ struct ArticleDetailPage {
     AppStorage.set('history_version', v + 1);
   }
 
+  private bumpLikedVersion() {
+    const v = (AppStorage.get('liked_version') as number) ?? 0;
+    AppStorage.set('liked_version', v + 1);
+  }
+
+  private bumpCommentedVersion() {
+    const v = (AppStorage.get('commented_version') as number) ?? 0;
+    AppStorage.set('commented_version', v + 1);
+  }
+
   private async toggleFav(id: number) {
     const ctx = this.hostCtx();
     const uid = await FavoriteStore.getUid(ctx);
@@ -205,7 +218,8 @@ struct ArticleDetailPage {
   }
 
   private async submitComment() {
-    if (!this.article) {
+    const article = this.article;
+    if (!article) {
       promptAction.showToast({ message: '文章未加载' });
       return;
     }
@@ -226,21 +240,25 @@ struct ArticleDetailPage {
 
     const nickname = currentUser?.nickname ?? currentUser?.username ?? '匿名用户';
     const comment: Comment = {
-      id: `${this.article.id}-${Date.now()}`,
-      articleId: this.article.id,
+      id: `${article.id}-${Date.now()}`,
+      articleId: article.id,
       userId: uid,
       nickname,
       content,
       createdAt: Date.now()
     };
 
-    this.comments = await InteractionStore.addComment(ctx, this.article.id, comment);
+    this.comments = await InteractionStore.addComment(ctx, article.id, comment);
+    const sessionUid = await FavoriteStore.getUid(ctx);
+    await UserActionStore.addCommented(ctx, sessionUid, article);
+    this.bumpCommentedVersion();
     this.newComment = '';
     promptAction.showToast({ message: '评论成功' });
   }
 
   private async toggleLikeStatus() {
-    if (!this.article) {
+    const article = this.article;
+    if (!article) {
       promptAction.showToast({ message: '文章未加载' });
       return;
     }
@@ -253,9 +271,11 @@ struct ArticleDetailPage {
       return;
     }
 
-    const state = await InteractionStore.toggleLike(ctx, this.article.id, uid);
+    const state = await InteractionStore.toggleLike(ctx, article.id, uid);
     this.liked = state.liked;
     this.likeCount = state.count;
+    await UserActionStore.updateLiked(ctx, uid, article, state.liked);
+    this.bumpLikedVersion();
   }
 
   // ✅ AI 调用（总结/锐评）

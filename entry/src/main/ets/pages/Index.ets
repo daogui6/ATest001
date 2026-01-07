@@ -2,7 +2,6 @@ import { HomePage } from './HomePage'
 import { CategoryPage } from './CategoryPage'
 import { FavoritePage } from './FavoritePage'
 import { MinePage } from './MinePage'
-import { HistoryPage } from './HistoryPage'
 
 @Entry
 @Component
@@ -23,11 +22,6 @@ struct MainTabs {
         FavoritePage()
       }
       .tabBar({ text: '收藏' })
-
-      TabContent() {
-        HistoryPage()
-      }
-      .tabBar({ text: '历史' })
 
       TabContent() {
         MinePage()
