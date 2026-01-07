@@ -277,10 +277,11 @@ export struct HomePage {
         Button('↑')
           .backgroundColor('#F5F5F5')
           .fontColor('#444444')
+          .border({ width: 1, color: '#444444', style: BorderStyle.Solid })
           .borderRadius(18)
           .padding({ left: 10, right: 10, top: 8, bottom: 8 })
-          .margin({ right: 16, bottom: 24 })
-          .align(Alignment.BottomEnd)
+          .position({ x: '85%', y: '92%' }) // 先定位到父容器右下角
+          .margin({ right: 16, bottom: 24 })    // 再通过负边距回拉
           .onClick(() => this.scrollToTop())
       }
     }
