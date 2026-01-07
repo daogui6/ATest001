@@ -17,6 +17,10 @@ export class InteractionStore {
     return `likes.${articleId}.users`;
   }
 
+  private static commentLikeKey(articleId: number, commentId: string): string {
+    return `comment.likes.${articleId}.${commentId}`;
+  }
+
   static async loadComments(ctx: common.UIAbilityContext, articleId: number): Promise<Comment[]> {
     const key = InteractionStore.commentKey(articleId);
     const raw = await Prefs.getString(ctx, key, '[]');
@@ -78,6 +82,49 @@ export class InteractionStore {
     }
 
     await Prefs.putString(ctx, InteractionStore.likeKey(articleId), JSON.stringify(Array.from(set)));
+    return { liked: set.has(uid), count: set.size };
+  }
+
+  static async loadCommentLikeState(
+    ctx: common.UIAbilityContext,
+    articleId: number,
+    commentId: string,
+    uid: string
+  ): Promise<LikeState> {
+    const raw = await Prefs.getString(ctx, InteractionStore.commentLikeKey(articleId, commentId), '[]');
+    try {
+      const arr = JSON.parse(raw) as string[];
+      const set = new Set(arr.filter(item => typeof item === 'string' && item.trim().length > 0));
+      return { liked: uid !== '0' && set.has(uid), count: set.size };
+    } catch {
+      return { liked: false, count: 0 };
+    }
+  }
+
+  static async toggleCommentLike(
+    ctx: common.UIAbilityContext,
+    articleId: number,
+    commentId: string,
+    uid: string
+  ): Promise<LikeState> {
+    const raw = await Prefs.getString(ctx, InteractionStore.commentLikeKey(articleId, commentId), '[]');
+    let set = new Set<string>();
+    try {
+      const arr = JSON.parse(raw) as string[];
+      set = new Set(arr.filter(item => typeof item === 'string' && item.trim().length > 0));
+    } catch {}
+
+    if (set.has(uid)) {
+      set.delete(uid);
+    } else {
+      set.add(uid);
+    }
+
+    await Prefs.putString(
+      ctx,
+      InteractionStore.commentLikeKey(articleId, commentId),
+      JSON.stringify(Array.from(set))
+    );
     return { liked: set.has(uid), count: set.size };
   }
 }

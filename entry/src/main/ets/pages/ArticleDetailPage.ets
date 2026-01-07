@@ -12,6 +12,8 @@ import type { Comment } from '../model/Comment';
 import { InteractionStore } from '../store/InteractionStore';
 import { UserActionStore } from '../store/UserActionStore';
 import { UserStore } from '../store/UserStore';
+import { NotificationStore } from '../store/NotificationStore';
+import type { NotificationItem } from '../model/Notification';
 
 interface DetailParams {
   id?: number | string;
@@ -24,6 +26,13 @@ AppStorage.setOrCreate('session_version', 0);
 AppStorage.setOrCreate('history_version', 0);
 AppStorage.setOrCreate('liked_version', 0);
 AppStorage.setOrCreate('commented_version', 0);
+AppStorage.setOrCreate('notification_version', 0);
+
+interface CommentView extends Comment {
+  likeCount: number;
+  liked: boolean;
+  replies: CommentView[];
+}
 
 @Entry
 @Component
@@ -46,8 +55,10 @@ struct ArticleDetailPage {
   @StorageLink('session_version')
   @Watch('onSessionVersionChange')
   sessionVersion: number = 0;
-  @State comments: Comment[] = [];
+  @State comments: CommentView[] = [];
+  @State commentCount: number = 0;
   @State newComment: string = '';
+  @State replyTarget: CommentView | null = null;
   @State likeCount: number = 0;
   @State liked: boolean = false;
 
@@ -155,13 +166,42 @@ struct ArticleDetailPage {
   private async refreshInteractions() {
     if (!this.article) {
       this.comments = [];
+      this.commentCount = 0;
       this.likeCount = 0;
       this.liked = false;
       return;
     }
 
     const ctx = this.hostCtx();
-    this.comments = await InteractionStore.loadComments(ctx, this.article.id);
+    const rawComments = await InteractionStore.loadComments(ctx, this.article.id);
+    this.commentCount = rawComments.length;
+    const likeStates = new Map<string, { liked: boolean; count: number }>();
+    await Promise.all(
+      rawComments.map(async (comment: Comment) => {
+        const state = await InteractionStore.loadCommentLikeState(ctx, this.article!.id, comment.id, this.uid);
+        likeStates.set(comment.id, state);
+      })
+    );
+
+    const viewMap = new Map<string, CommentView>();
+    rawComments.forEach((comment: Comment) => {
+      const state = likeStates.get(comment.id) ?? { liked: false, count: 0 };
+      viewMap.set(comment.id, { ...comment, likeCount: state.count, liked: state.liked, replies: [] });
+    });
+
+    const roots: CommentView[] = [];
+    rawComments.forEach((comment: Comment) => {
+      const view = viewMap.get(comment.id);
+      if (!view) {
+        return;
+      }
+      if (view.parentId && viewMap.has(view.parentId)) {
+        viewMap.get(view.parentId)!.replies.push(view);
+      } else {
+        roots.push(view);
+      }
+    });
+    this.comments = roots;
     const likeState = await InteractionStore.loadLikeState(ctx, this.article.id, this.uid);
     this.likeCount = likeState.count;
     this.liked = likeState.liked;
@@ -185,6 +225,11 @@ struct ArticleDetailPage {
   private bumpCommentedVersion() {
     const v = (AppStorage.get('commented_version') as number) ?? 0;
     AppStorage.set('commented_version', v + 1);
+  }
+
+  private bumpNotificationVersion() {
+    const v = (AppStorage.get('notification_version') as number) ?? 0;
+    AppStorage.set('notification_version', v + 1);
   }
 
   private async toggleFav(id: number) {
@@ -217,6 +262,28 @@ struct ArticleDetailPage {
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
+  private updateCommentLikeState(commentId: string, state: { liked: boolean; count: number }) {
+    const update = (items: CommentView[]): CommentView[] => {
+      return items.map(item => {
+        if (item.id === commentId) {
+          return { ...item, liked: state.liked, likeCount: state.count };
+        }
+        if (item.replies.length === 0) {
+          return item;
+        }
+        const nextReplies = update(item.replies);
+        return { ...item, replies: nextReplies };
+      });
+    };
+    this.comments = update(this.comments);
+  }
+
+  private async pushNotification(targetUid: string, item: NotificationItem) {
+    const ctx = this.hostCtx();
+    await NotificationStore.add(ctx, targetUid, item);
+    this.bumpNotificationVersion();
+  }
+
   private async submitComment() {
     const article = this.article;
     if (!article) {
@@ -239,21 +306,41 @@ struct ArticleDetailPage {
     }
 
     const nickname = currentUser?.nickname ?? currentUser?.username ?? '匿名用户';
+    const replyTarget = this.replyTarget;
     const comment: Comment = {
       id: `${article.id}-${Date.now()}`,
       articleId: article.id,
       userId: uid,
       nickname,
       content,
-      createdAt: Date.now()
+      createdAt: Date.now(),
+      parentId: replyTarget?.id,
+      replyTo: replyTarget?.nickname
     };
 
-    this.comments = await InteractionStore.addComment(ctx, article.id, comment);
+    await InteractionStore.addComment(ctx, article.id, comment);
+    await this.refreshInteractions();
     const sessionUid = await FavoriteStore.getUid(ctx);
     await UserActionStore.addCommented(ctx, sessionUid, article);
     this.bumpCommentedVersion();
     this.newComment = '';
+    this.replyTarget = null;
     promptAction.showToast({ message: '评论成功' });
+
+    if (replyTarget && replyTarget.userId !== uid) {
+      await this.pushNotification(replyTarget.userId, {
+        id: `${comment.id}-reply-${uid}`,
+        type: 'comment_reply',
+        articleId: article.id,
+        articleTitle: article.title,
+        commentId: replyTarget.id,
+        fromUserId: uid,
+        fromNickname: nickname,
+        content: comment.content,
+        createdAt: Date.now(),
+        read: false
+      });
+    }
   }
 
   private async toggleLikeStatus() {
@@ -276,6 +363,41 @@ struct ArticleDetailPage {
     this.likeCount = state.count;
     await UserActionStore.updateLiked(ctx, uid, article, state.liked);
     this.bumpLikedVersion();
+  }
+
+  private async toggleCommentLike(comment: CommentView) {
+    const article = this.article;
+    if (!article) {
+      promptAction.showToast({ message: '文章未加载' });
+      return;
+    }
+
+    const ctx = this.hostCtx();
+    const uid = await FavoriteStore.getUid(ctx);
+    if (!uid || uid === '0') {
+      promptAction.showToast({ message: '请先在【我的】里登录' });
+      return;
+    }
+
+    const state = await InteractionStore.toggleCommentLike(ctx, article.id, comment.id, uid);
+    this.updateCommentLikeState(comment.id, state);
+
+    if (state.liked && comment.userId !== uid) {
+      const currentUser = await UserStore.currentUser(ctx);
+      const nickname = currentUser?.nickname ?? currentUser?.username ?? uid;
+      await this.pushNotification(comment.userId, {
+        id: `${comment.id}-like-${uid}`,
+        type: 'comment_like',
+        articleId: article.id,
+        articleTitle: article.title,
+        commentId: comment.id,
+        fromUserId: uid,
+        fromNickname: nickname,
+        content: comment.content,
+        createdAt: Date.now(),
+        read: false
+      });
+    }
   }
 
   // ✅ AI 调用（总结/锐评）
@@ -402,17 +524,61 @@ struct ArticleDetailPage {
               if (this.comments.length === 0) {
                 Text('暂时还没有评论，快来抢沙发～').opacity(0.6)
               } else {
-                ForEach(this.comments, (c: Comment) => {
-                  Column({ space: 4 }) {
-                    Row({ space: 6 }) {
-                      Text(c.nickname || '匿名用户').fontSize(14).fontWeight(FontWeight.Medium)
-                      Text(this.formatTime(c.createdAt)).fontSize(12).opacity(0.6)
+                ForEach(this.comments, (c: CommentView) => {
+                  Column({ space: 6 }) {
+                    Column({ space: 4 }) {
+                      Row({ space: 6 }) {
+                        Text(c.nickname || '匿名用户').fontSize(14).fontWeight(FontWeight.Medium)
+                        Text(this.formatTime(c.createdAt)).fontSize(12).opacity(0.6)
+                      }
+                      if (c.replyTo) {
+                        Text(`回复 ${c.replyTo}：`).fontSize(12).opacity(0.6)
+                      }
+                      Text(c.content).fontSize(14).lineHeight(20)
+                      Row({ space: 12 }) {
+                        Text('回复').fontSize(12).opacity(0.7)
+                          .onClick(() => { this.replyTarget = c; })
+                        Row({ space: 4 }) {
+                          Text(c.liked ? '❤️' : '🤍').fontSize(14)
+                          Text(`${c.likeCount}`).fontSize(12).opacity(0.7)
+                        }
+                        .onClick(async () => await this.toggleCommentLike(c))
+                      }
                     }
-                    Text(c.content).fontSize(14).lineHeight(20)
+                    .padding(10)
+                    .borderRadius(10)
+                    .backgroundColor('#FAFAFA')
+
+                    if (c.replies.length > 0) {
+                      Column({ space: 6 }) {
+                        ForEach(c.replies, (r: CommentView) => {
+                          Column({ space: 4 }) {
+                            Row({ space: 6 }) {
+                              Text(r.nickname || '匿名用户').fontSize(13).fontWeight(FontWeight.Medium)
+                              Text(this.formatTime(r.createdAt)).fontSize(11).opacity(0.6)
+                            }
+                            if (r.replyTo) {
+                              Text(`回复 ${r.replyTo}：`).fontSize(11).opacity(0.6)
+                            }
+                            Text(r.content).fontSize(13).lineHeight(18)
+                            Row({ space: 12 }) {
+                              Text('回复').fontSize(11).opacity(0.7)
+                                .onClick(() => { this.replyTarget = r; })
+                              Row({ space: 4 }) {
+                                Text(r.liked ? '❤️' : '🤍').fontSize(12)
+                                Text(`${r.likeCount}`).fontSize(11).opacity(0.7)
+                              }
+                              .onClick(async () => await this.toggleCommentLike(r))
+                            }
+                          }
+                          .padding(8)
+                          .borderRadius(10)
+                          .backgroundColor('#FFFFFF')
+                        })
+                      }
+                      .padding({ left: 12, top: 4, bottom: 4 })
+                    }
                   }
-                  .padding(10)
-                  .borderRadius(10)
-                  .backgroundColor('#FAFAFA')
                 })
               }
             }
@@ -426,34 +592,48 @@ struct ArticleDetailPage {
         .layoutWeight(1)
       }
       // 底部固定评论/点赞栏
-      Row() {
-        TextInput({ text: this.newComment, placeholder: '说点什么…' })
-          .onChange((v: string) => { this.newComment = v; })
-          .layoutWeight(1)
-          .height(42)
-          .padding({ left: 14, right: 14 })
-          .borderRadius(22)
-          .backgroundColor('#FFFFFF')
-
-        Button('发送', { type: ButtonType.Capsule })
-          .height(36)
-          .margin({ left: 8, right: 4 })
-          .onClick(async () => await this.submitComment())
-
-        Row({ space: 16 }) {
-          Row({ space: 4 }) {
-            Text(this.liked ? '❤️' : '🤍').fontSize(22)
-            Text(`${this.likeCount}`).fontSize(14).opacity(0.8)
-          }
-          .onClick(async () => await this.toggleLikeStatus())
-
-          Row({ space: 4 }) {
-            Text('💬').fontSize(22)
-            Text(`${this.comments.length}`).fontSize(14).opacity(0.8)
+      Column({ space: 6 }) {
+        if (this.replyTarget) {
+          Row({ space: 8 }) {
+            Text(`回复 ${this.replyTarget.nickname || '匿名用户'}`)
+              .fontSize(12)
+              .opacity(0.7)
+            Text('取消')
+              .fontSize(12)
+              .fontColor('#4C6FFF')
+              .onClick(() => {this.replyTarget = null;})
           }
         }
-        .margin({ left: 8 })
-        .alignItems(VerticalAlign.Center)
+
+        Row() {
+          TextInput({ text: this.newComment, placeholder: this.replyTarget ? `回复 ${this.replyTarget.nickname}` : '说点什么…' })
+            .onChange((v: string) => { this.newComment = v; })
+            .layoutWeight(1)
+            .height(42)
+            .padding({ left: 14, right: 14 })
+            .borderRadius(22)
+            .backgroundColor('#FFFFFF')
+
+          Button('发送', { type: ButtonType.Capsule })
+            .height(36)
+            .margin({ left: 8, right: 4 })
+            .onClick(async () => await this.submitComment())
+
+          Row({ space: 16 }) {
+            Row({ space: 4 }) {
+              Text(this.liked ? '❤️' : '🤍').fontSize(22)
+              Text(`${this.likeCount}`).fontSize(14).opacity(0.8)
+            }
+            .onClick(async () => await this.toggleLikeStatus())
+
+            Row({ space: 4 }) {
+              Text('💬').fontSize(22)
+              Text(`${this.commentCount}`).fontSize(14).opacity(0.8)
+            }
+          }
+          margin({ left: 8 })
+            .alignItems(VerticalAlign.Center)
+        }
       }
       .padding(12)
       .borderRadius(26)

@@ -3,6 +3,9 @@ import promptAction from '@ohos.promptAction';
 import router from '@ohos.router';
 import { Prefs } from '../store/Prefs';
 import { UserStore } from '../store/UserStore';
+import { NotificationStore } from '../store/NotificationStore';
+
+AppStorage.setOrCreate('notification_version', 0);
 
 @Component
 export struct MinePage {
@@ -28,6 +31,10 @@ export struct MinePage {
   @State message: string = ''
   @State showRegister: boolean = false
   @State rememberPassword: boolean = false
+  @StorageLink('notification_version')
+  @Watch('onNotificationVersionChange')
+  notificationVersion: number = 0
+  @State unreadNotifications: number = 0
 
   private hostCtx(): common.UIAbilityContext { //从 ArkUI 页面获取宿主 UIAbility 的 Context，给 Preferences/数据库等系统能力提供稳定的上下文参数
     return this.getUIContext().getHostContext() as common.UIAbilityContext;
@@ -35,6 +42,11 @@ export struct MinePage {
 
   async aboutToAppear() {
     await this.loadSession();
+    await this.refreshNotifications();
+  }
+
+  private onNotificationVersionChange() {
+    this.refreshNotifications();
   }
 
   private async loadSession() {
@@ -105,6 +117,7 @@ export struct MinePage {
     AppStorage.setOrCreate('session_version', 0);
     const v = (AppStorage.get('session_version') as number) ?? 0;
     AppStorage.set('session_version', v + 1);
+    await this.refreshNotifications();
   }
 
   private async handleRegister() {
@@ -139,6 +152,7 @@ export struct MinePage {
     AppStorage.setOrCreate('session_version', 0);
     const v = (AppStorage.get('session_version') as number) ?? 0;
     AppStorage.set('session_version', v + 1);
+    await this.refreshNotifications();
   }
 
   private resetRegisterForm() {
@@ -171,6 +185,7 @@ export struct MinePage {
     AppStorage.setOrCreate('session_version', 0);
     const v = (AppStorage.get('session_version') as number) ?? 0;
     AppStorage.set('session_version', v + 1);
+    await this.refreshNotifications();
 
     promptAction.showToast({ message: '已退出登录' });
   }
@@ -202,6 +217,26 @@ export struct MinePage {
     }
     try {
       await router.pushUrl({ url: 'pages/CommentedPage' });
+    } catch (e) {
+      promptAction.showToast({ message: '跳转失败：页面不存在或参数错误' });
+    }
+  }
+
+  private async refreshNotifications() {
+    if (!this.isLogin || this.uid === '0') {
+      this.unreadNotifications = 0;
+      return;
+    }
+    this.unreadNotifications = await NotificationStore.unreadCount(this.hostCtx(), this.uid);
+  }
+
+  private async openNotifications() {
+    if (!this.isLogin || this.uid === '0') {
+      promptAction.showToast({ message: '请先登录后查看通知' });
+      return;
+    }
+    try {
+      await router.pushUrl({ url: 'pages/NotificationPage' });
     } catch (e) {
       promptAction.showToast({ message: '跳转失败：页面不存在或参数错误' });
     }
@@ -292,6 +327,28 @@ export struct MinePage {
               .borderRadius(12)
               .backgroundColor('#F6F7FB')
               .onClick(async () => await this.openCommented())
+            }
+
+            Row({ space: 12 }) {
+              Column({ space: 6 }) {
+                Text('🔔').fontSize(22)
+                Row({ space: 6 }) {
+                  Text('通知').fontSize(12)
+                  if (this.unreadNotifications > 0) {
+                    Text(`${this.unreadNotifications}`)
+                      .fontSize(10)
+                      .fontColor('#FFFFFF')
+                      .padding({ left: 6, right: 6, top: 2, bottom: 2 })
+                      .borderRadius(10)
+                      .backgroundColor('#4C6FFF')
+                  }
+                }
+              }
+              .layoutWeight(1)
+              .padding(12)
+              .borderRadius(12)
+              .backgroundColor('#F6F7FB')
+              .onClick(async () => await this.openNotifications())
             }
           }
           .padding(16)

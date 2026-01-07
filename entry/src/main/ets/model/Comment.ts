@@ -5,4 +5,6 @@ export interface Comment {
   nickname: string;
   content: string;
   createdAt: number;
+  parentId?: string;
+  replyTo?: string;
 }
