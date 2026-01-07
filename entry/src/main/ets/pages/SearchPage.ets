@@ -5,6 +5,7 @@ import router from '@ohos.router';
 import type { Article } from '../model/Article';
 import { ArticleStore } from '../store/ArticleStore';
 import { FavoriteStore } from '../store/FavoriteStore';
+import { SearchHistoryStore } from '../store/SearchHistoryStore';
 import { searchArticles } from '../service/WanService';
 
 AppStorage.setOrCreate('fav_version', 0);
@@ -24,6 +25,7 @@ export struct SearchPage {
   @State hasSearched: boolean = false;
   @State uid: string = '0';
   @State favIds: Set<number> = new Set<number>();
+  @State searchHistory: string[] = [];
 
   @StorageLink('fav_version')
   @Watch('onFavVersionChange')
@@ -34,6 +36,7 @@ export struct SearchPage {
 
   async aboutToAppear() {
     await this.refreshFav();
+    await this.loadSearchHistory();
   }
 
   private onFavVersionChange() {
@@ -55,6 +58,25 @@ export struct SearchPage {
     this.favIds = await FavoriteStore.loadFavSet(ctx, uid);
   }
 
+  private async loadSearchHistory() {
+    this.searchHistory = await SearchHistoryStore.load(this.hostCtx());
+  }
+
+  private async saveSearchKeyword(keyword: string) {
+    await SearchHistoryStore.addKeyword(this.hostCtx(), keyword);
+    await this.loadSearchHistory();
+  }
+
+  private async removeSearchKeyword(keyword: string) {
+    await SearchHistoryStore.removeKeyword(this.hostCtx(), keyword);
+    await this.loadSearchHistory();
+  }
+
+  private async clearSearchHistory() {
+    await SearchHistoryStore.clear(this.hostCtx());
+    this.searchHistory = [];
+  }
+
   private async performSearch() {
     const kw = this.keyword.trim();
     if (kw.length === 0) {
@@ -62,6 +84,7 @@ export struct SearchPage {
       return;
     }
 
+    await this.saveSearchKeyword(kw);
     this.loading = true;
     this.errorMsg = '';
     this.hasSearched = true;
@@ -143,6 +166,49 @@ export struct SearchPage {
           .onClick(async () => await this.performSearch())
       }
       .padding({ left: 16, right: 16, bottom: 12 })
+
+      if (this.searchHistory.length > 0) {
+        Column({ space: 8 }) {
+          Row() {
+            Text('搜索记录')
+              .fontSize(14)
+              .fontWeight(FontWeight.Medium)
+              .layoutWeight(1)
+            Text('清空')
+              .fontSize(12)
+              .opacity(0.6)
+              .onClick(async () => await this.clearSearchHistory())
+          }
+          .padding({ left: 16, right: 16 })
+
+          Column({ space: 6 }) {
+            ForEach(this.searchHistory, (item: string) => {
+              Row({ space: 8 }) {
+                Text(item)
+                  .layoutWeight(1)
+                  .fontSize(13)
+                  .onClick(async () => {
+                    this.keyword = item;
+                    await this.performSearch();
+                  })
+                Text('删除')
+                  .fontSize(12)
+                  .opacity(0.6)
+                  .gesture(
+                    TapGesture().onAction(async () => {
+                      await this.removeSearchKeyword(item);
+                    })
+                  )
+              }
+              .padding({ left: 12, right: 12, top: 8, bottom: 8 })
+              .backgroundColor('#F5F5F5')
+              .borderRadius(10)
+              .margin({ left: 16, right: 16 })
+            }, (item: string) => item)
+          }
+        }
+        .padding({ bottom: 12 })
+      }
 
       if (!this.hasSearched) {
         Text('支持远端搜索 WanAndroid 文章，试试输入“鸿蒙”或“AI”。')
