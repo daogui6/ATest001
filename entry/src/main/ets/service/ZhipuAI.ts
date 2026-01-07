@@ -1,12 +1,12 @@
 import http from '@ohos.net.http';
 
-export type AiMode = 'summary' | 'review';
+export type AiMode = 'summary' | 'review' | 'qa';
 
 const API_KEY = '2d890ff673044875af844d4cdda8f356.FwfpRGVx5LtPaDCr';
 const ENDPOINT = 'https://open.bigmodel.cn/api/paas/v4/chat/completions';
 const MODEL = 'glm-4-flash'; // 免费模型一般用这个
 
-function buildPrompt(title: string, content: string, mode: AiMode): string {
+function buildPrompt(title: string, content: string, mode: AiMode, question?: string): string {
   const base = `文章标题：${title}\n\n文章内容：\n${content}\n\n`;
 
   if (mode === 'summary') {
@@ -18,6 +18,13 @@ function buildPrompt(title: string, content: string, mode: AiMode): string {
       `要求：结构清晰，避免空话。`;
   }
 
+  if (mode === 'qa') {
+    const questionText = question?.trim() ?? '';
+    return base +
+      `请仅基于文章内容回答用户问题，若文中没有相关信息请说明“本文未提供相关信息”。\n` +
+      `用户问题：${questionText}`;
+  }
+
   // review
   return base +
     `请用中文输出“锐评”，风格像公众号的犀利评论，但不要人身攻击：\n` +
@@ -27,7 +34,7 @@ function buildPrompt(title: string, content: string, mode: AiMode): string {
     `要求：观点明确、短句、有力度。`;
 }
 
-export async function callZhipu(title: string, content: string, mode: AiMode): Promise<string> {
+export async function callZhipu(title: string, content: string, mode: AiMode, question?: string): Promise<string> {
   if (!API_KEY || API_KEY.includes('把你')) {
     throw new Error('未配置智谱 API Key');
   }
@@ -38,7 +45,7 @@ export async function callZhipu(title: string, content: string, mode: AiMode): P
       model: MODEL,
       messages: [
         { role: 'system', content: '你是一个严谨但表达清晰的中文写作助手。' },
-        { role: 'user', content: buildPrompt(title, content, mode) }
+        { role: 'user', content: buildPrompt(title, content, mode, question) }
       ],
       temperature: 0.7,
       stream: false

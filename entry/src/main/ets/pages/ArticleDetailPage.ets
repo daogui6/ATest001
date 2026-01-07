@@ -58,6 +58,9 @@ struct ArticleDetailPage {
   @State aiLoading: boolean = false;
   @State aiText: string = '';
   @State aiMode: AiMode = 'summary';
+  @State aiQuestion: string = '';
+  @State aiAnswer: string = '';
+  @State aiQaLoading: boolean = false;
   // 监听收藏/登录变化，保证红心同步
   @StorageLink('fav_version')
   @Watch('onFavVersionChange')
@@ -498,6 +501,32 @@ struct ArticleDetailPage {
     }
   }
 
+  private async runAiQuestion() {
+    if (!this.article) {
+      promptAction.showToast({ message: '文章未加载' });
+      return;
+    }
+
+    const question = this.aiQuestion.trim();
+    if (question.length === 0) {
+      promptAction.showToast({ message: '请输入问题再提问' });
+      return;
+    }
+
+    this.aiQaLoading = true;
+    this.aiAnswer = '';
+
+    try {
+      const text = await callZhipu(this.article.title, this.article.content, 'qa', question);
+      this.aiAnswer = text;
+    } catch (e) {
+      const msg = (e as Error)?.message ?? 'AI调用失败';
+      promptAction.showToast({ message: msg });
+    } finally {
+      this.aiQaLoading = false;
+    }
+  }
+
   @Builder
   private renderComment(item: CommentView, level: number) {
     Column({ space: 6 }) {
@@ -667,6 +696,39 @@ struct ArticleDetailPage {
                 Text('点击上方按钮生成 AI 总结/锐评')
                   .opacity(0.6)
                   .padding(12)
+              }
+            }
+            .padding(12)
+            .borderRadius(12)
+            .backgroundColor('#F5F5F5')
+
+            // ✅ AI 答疑
+            Column({ space: 10 }) {
+              Text('AI答疑').fontSize(16).fontWeight(FontWeight.Bold)
+
+              TextInput({ text: this.aiQuestion, placeholder: '输入问题，AI基于本文回答' })
+                .onChange((v: string) => { this.aiQuestion = v; })
+                .height(42)
+                .padding({ left: 14, right: 14 })
+                .borderRadius(22)
+                .backgroundColor('#FFFFFF')
+
+              Button('提问', { type: ButtonType.Capsule })
+                .onClick(async () => await this.runAiQuestion())
+
+              if (this.aiQaLoading) {
+                Row({ space: 8 }) {
+                  LoadingProgress()
+                  Text('AI思考中…').opacity(0.7)
+                }
+                .alignItems(VerticalAlign.Center)
+              } else if (this.aiAnswer) {
+                Text(this.aiAnswer)
+                  .fontSize(14)
+                  .lineHeight(20)
+                  .opacity(0.85)
+              } else {
+                Text('请输入问题后点击提问').opacity(0.6)
               }
             }
             .padding(12)
