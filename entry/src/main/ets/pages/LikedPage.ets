@@ -109,6 +109,7 @@ export struct LikedPage {
                 Text(item.desc).fontSize(13).opacity(0.7).maxLines(2)
                 Text(`作者：${item.author}`).fontSize(12).opacity(0.6)
               }
+              .width('100%')
               .height(120)
               .padding(12)
               .margin({ bottom: 12 })
