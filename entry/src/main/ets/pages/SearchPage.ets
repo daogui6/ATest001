@@ -172,7 +172,7 @@ export struct SearchPage {
       }
       .padding({ left: 16, right: 16, bottom: 12 })
 
-      if (this.isEditing && this.keyword.trim().length > 0 && this.searchHistory.length > 0) {
+      if (this.searchHistory.length > 0 && (this.isEditing || !this.hasSearched)) {
         Column({ space: 8 }) {
           Row() {
             Text('搜索记录')
