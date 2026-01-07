@@ -376,72 +376,70 @@ struct ArticleDetailPage {
 
             Divider().margin({ top: 12, bottom: 4 })
 
-            // 点赞 + 收藏 + 评论：小红书式排列
-            Column({ space: 12 }) {
-              Row() {
-                TextInput({ text: this.newComment, placeholder: '说点什么…' })
-                  .onChange((v: string) => { this.newComment = v; })
-                  .layoutWeight(1)
-                  .height(42)
-                  .padding({ left: 14, right: 14 })
-                  .borderRadius(22)
-                  .backgroundColor('#FFFFFF')
-
-                Button('发送', { type: ButtonType.Capsule })
-                  .height(36)
-                  .margin({ left: 8, right: 4 })
-                  .onClick(async () => await this.submitComment())
-
-                Row({ space: 16 }) {
-                  Row({ space: 4 }) {
-                    Text(this.liked ? '❤️' : '🤍').fontSize(22)
-                    Text(`${this.likeCount}`).fontSize(14).opacity(0.8)
-                  }
-                  .onClick(async () => await this.toggleLikeStatus())
-
-                  Row({ space: 4 }) {
-                    Text('💬').fontSize(22)
-                    Text(`${this.comments.length}`).fontSize(14).opacity(0.8)
-                  }
-                }
-                .margin({ left: 8 })
-                .alignItems(VerticalAlign.Center)
-              }
-              .padding(12)
-              .borderRadius(26)
-              .backgroundColor('#F0F1F5')
-              .alignItems(VerticalAlign.Center)
-
-              Column({ space: 10 }) {
-                Text('最新评论').fontSize(16).fontWeight(FontWeight.Medium)
-                if (this.comments.length === 0) {
-                  Text('暂时还没有评论，快来抢沙发～').opacity(0.6)
-                } else {
-                  ForEach(this.comments, (c: Comment) => {
-                    Column({ space: 4 }) {
-                      Row({ space: 6 }) {
-                        Text(c.nickname || '匿名用户').fontSize(14).fontWeight(FontWeight.Medium)
-                        Text(this.formatTime(c.createdAt)).fontSize(12).opacity(0.6)
-                      }
-                      Text(c.content).fontSize(14).lineHeight(20)
+            // 评论列表
+            Column({ space: 10 }) {
+              Text('最新评论').fontSize(16).fontWeight(FontWeight.Medium)
+              if (this.comments.length === 0) {
+                Text('暂时还没有评论，快来抢沙发～').opacity(0.6)
+              } else {
+                ForEach(this.comments, (c: Comment) => {
+                  Column({ space: 4 }) {
+                    Row({ space: 6 }) {
+                      Text(c.nickname || '匿名用户').fontSize(14).fontWeight(FontWeight.Medium)
+                      Text(this.formatTime(c.createdAt)).fontSize(12).opacity(0.6)
                     }
-                    .padding(10)
-                    .borderRadius(10)
-                    .backgroundColor('#FAFAFA')
-                  })
-                }
+                    Text(c.content).fontSize(14).lineHeight(20)
+                  }
+                  .padding(10)
+                  .borderRadius(10)
+                  .backgroundColor('#FAFAFA')
+                })
               }
-              .padding(12)
-              .borderRadius(12)
-              .backgroundColor('#F5F5F5')
             }
-            .padding({ top: 8, bottom: 4 })
+            .padding(12)
+            .borderRadius(12)
+            .backgroundColor('#F5F5F5')
           }
-          .padding(16)
+          .padding({ top: 16, left: 16, right: 16, bottom: 88 })
           .width('100%')
         }
         .layoutWeight(1)
       }
+      // 底部固定评论/点赞栏
+      Row() {
+        TextInput({ text: this.newComment, placeholder: '说点什么…' })
+          .onChange((v: string) => { this.newComment = v; })
+          .layoutWeight(1)
+          .height(42)
+          .padding({ left: 14, right: 14 })
+          .borderRadius(22)
+          .backgroundColor('#FFFFFF')
+
+        Button('发送', { type: ButtonType.Capsule })
+          .height(36)
+          .margin({ left: 8, right: 4 })
+          .onClick(async () => await this.submitComment())
+
+        Row({ space: 16 }) {
+          Row({ space: 4 }) {
+            Text(this.liked ? '❤️' : '🤍').fontSize(22)
+            Text(`${this.likeCount}`).fontSize(14).opacity(0.8)
+          }
+          .onClick(async () => await this.toggleLikeStatus())
+
+          Row({ space: 4 }) {
+            Text('💬').fontSize(22)
+            Text(`${this.comments.length}`).fontSize(14).opacity(0.8)
+          }
+        }
+        .margin({ left: 8 })
+        .alignItems(VerticalAlign.Center)
+      }
+      .padding(12)
+      .borderRadius(26)
+      .backgroundColor('#F0F1F5')
+      .alignItems(VerticalAlign.Center)
+      .margin({ left: 16, right: 16, bottom: 12 })
     }
     .width('100%')
     .height('100%')
