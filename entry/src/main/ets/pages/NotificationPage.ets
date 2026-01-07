@@ -7,6 +7,7 @@ import { NotificationStore } from '../store/NotificationStore';
 import { FavoriteStore } from '../store/FavoriteStore';
 
 AppStorage.setOrCreate('notification_version', 0);
+AppStorage.setOrCreate('session_version', 0);
 
 @Entry
 @Component
@@ -18,10 +19,17 @@ export struct NotificationPage {
   @StorageLink('notification_version')
   @Watch('onNotificationVersionChange')
   notificationVersion: number = 0;
+  @StorageLink('session_version')
+  @Watch('onSessionVersionChange')
+  sessionVersion: number = 0;
   @State uid: string = '0';
   @State notifications: NotificationItem[] = [];
 
   private onNotificationVersionChange() {
+    this.refresh();
+  }
+
+  private onSessionVersionChange() {
     this.refresh();
   }
 
