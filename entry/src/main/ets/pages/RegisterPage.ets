@@ -3,6 +3,7 @@ import promptAction from '@ohos.promptAction';
 import router from '@ohos.router';
 import { UserStore } from '../store/UserStore';
 
+@Entry
 @Component
 export struct RegisterPage {
   @State regUsername: string = ''
