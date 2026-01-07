@@ -34,6 +34,17 @@ interface CommentView extends Comment {
   replies: CommentView[];
 }
 
+interface LikeState {
+  liked: boolean;
+  count: number;
+}
+
+interface CommentViewOverrides {
+  liked?: boolean;
+  likeCount?: number;
+  replies?: CommentView[];
+}
+
 @Entry
 @Component
 struct ArticleDetailPage {
@@ -61,6 +72,38 @@ struct ArticleDetailPage {
   @State replyTarget: CommentView | null = null;
   @State likeCount: number = 0;
   @State liked: boolean = false;
+
+  private buildCommentView(comment: Comment, state: LikeState): CommentView {
+    return {
+      id: comment.id,
+      articleId: comment.articleId,
+      userId: comment.userId,
+      nickname: comment.nickname,
+      content: comment.content,
+      createdAt: comment.createdAt,
+      parentId: comment.parentId,
+      replyTo: comment.replyTo,
+      likeCount: state.count,
+      liked: state.liked,
+      replies: [],
+    };
+  }
+
+  private mergeCommentView(item: CommentView, overrides: CommentViewOverrides): CommentView {
+    return {
+      id: item.id,
+      articleId: item.articleId,
+      userId: item.userId,
+      nickname: item.nickname,
+      content: item.content,
+      createdAt: item.createdAt,
+      parentId: item.parentId,
+      replyTo: item.replyTo,
+      likeCount: overrides.likeCount ?? item.likeCount,
+      liked: overrides.liked ?? item.liked,
+      replies: overrides.replies ?? item.replies,
+    };
+  }
 
   private onFavVersionChange() {
     this.refreshFav();
@@ -175,7 +218,7 @@ struct ArticleDetailPage {
     const ctx = this.hostCtx();
     const rawComments = await InteractionStore.loadComments(ctx, this.article.id);
     this.commentCount = rawComments.length;
-    const likeStates = new Map<string, { liked: boolean; count: number }>();
+    const likeStates = new Map<string, LikeState>();
     await Promise.all(
       rawComments.map(async (comment: Comment) => {
         const state = await InteractionStore.loadCommentLikeState(ctx, this.article!.id, comment.id, this.uid);
@@ -184,9 +227,10 @@ struct ArticleDetailPage {
     );
 
     const viewMap = new Map<string, CommentView>();
+    const defaultLikeState: LikeState = { liked: false, count: 0 };
     rawComments.forEach((comment: Comment) => {
-      const state = likeStates.get(comment.id) ?? { liked: false, count: 0 };
-      viewMap.set(comment.id, { ...comment, likeCount: state.count, liked: state.liked, replies: [] });
+      const state = likeStates.get(comment.id) ?? defaultLikeState;
+      viewMap.set(comment.id, this.buildCommentView(comment, state));
     });
 
     const roots: CommentView[] = [];
@@ -262,17 +306,17 @@ struct ArticleDetailPage {
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
-  private updateCommentLikeState(commentId: string, state: { liked: boolean; count: number }) {
+  private updateCommentLikeState(commentId: string, state: LikeState) {
     const update = (items: CommentView[]): CommentView[] => {
       return items.map(item => {
         if (item.id === commentId) {
-          return { ...item, liked: state.liked, likeCount: state.count };
+          return this.mergeCommentView(item, { liked: state.liked, likeCount: state.count });
         }
         if (item.replies.length === 0) {
           return item;
         }
         const nextReplies = update(item.replies);
-        return { ...item, replies: nextReplies };
+        return this.mergeCommentView(item, { replies: nextReplies });
       });
     };
     this.comments = update(this.comments);
@@ -631,14 +675,14 @@ struct ArticleDetailPage {
               Text(`${this.commentCount}`).fontSize(14).opacity(0.8)
             }
           }
-          margin({ left: 8 })
+          .margin({ left: 8 })
             .alignItems(VerticalAlign.Center)
         }
       }
       .padding(12)
       .borderRadius(26)
       .backgroundColor('#F0F1F5')
-      .alignItems(VerticalAlign.Center)
+      .alignItems(HorizontalAlign.Center)
       .margin({ left: 16, right: 16, bottom: 12 })
     }
     .width('100%')
