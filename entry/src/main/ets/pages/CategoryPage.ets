@@ -27,6 +27,10 @@ export struct CategoryPage {
   @State nextPage: number = 0;
   @State hasMore: boolean = true;
   @State showBackToTop: boolean = false;
+  @State headerOpacity: number = 0;
+  @State headerOffset: number = 12;
+  @State backTopOpacity: number = 0;
+  @State backTopScale: number = 0.9;
   private articleScroller: Scroller = new Scroller();
   // 监听全局变化：收藏变化 / 登录变化（和你首页/收藏页同一套机制）
   @StorageLink('fav_version')
@@ -161,6 +165,24 @@ export struct CategoryPage {
     this.favIds = await FavoriteStore.loadFavSet(ctx, uid);
   }
 
+  private animateHeader() {
+    animateTo({ duration: 260, curve: Curve.EaseOut }, () => {
+      this.headerOpacity = 1;
+      this.headerOffset = 0;
+    });
+  }
+
+  private updateBackToTop(show: boolean) {
+    if (this.showBackToTop === show) {
+      return;
+    }
+    this.showBackToTop = show;
+    animateTo({ duration: 220, curve: Curve.EaseOut }, () => {
+      this.backTopOpacity = show ? 1 : 0;
+      this.backTopScale = show ? 1 : 0.9;
+    });
+  }
+
   private async bumpFavVersion() {
     AppStorage.setOrCreate('fav_version', 0);
     const v = (AppStorage.get('fav_version') as number) ?? 0;
@@ -210,7 +232,13 @@ export struct CategoryPage {
         Text('分类')
           .fontSize(22)
           .fontWeight(FontWeight.Bold)
-          .margin({ top: 16, left: 16, bottom: 12 })
+          .padding(12)
+          .margin({ top: 12, left: 16, right: 16, bottom: 12 })
+          .backgroundColor('#FFFFFF')
+          .borderRadius(16)
+          .shadow({ radius: 14, color: '#14000000', offsetX: 0, offsetY: 6 })
+          .opacity(this.headerOpacity)
+          .translate({ x: 0, y: this.headerOffset })
 
         Row() {
           // 左侧：分类列表
@@ -222,8 +250,10 @@ export struct CategoryPage {
                     .fontSize(14)
                     .fontWeight(this.selectedCid === c.cid ? FontWeight.Bold : FontWeight.Normal)
                     .padding(12)
-                    .backgroundColor(this.selectedCid === c.cid ? '#EDEDED' : '#FFFFFF')
+                    .backgroundColor(this.selectedCid === c.cid ? '#EEF4FF' : '#FFFFFF')
                     .borderRadius(8)
+                    .border({ width: 1, color: this.selectedCid === c.cid ? '#D6E4FF' : '#EEF0F3' })
+                    .shadow({ radius: 6, color: '#0D000000', offsetX: 0, offsetY: 2 })
                 }
                 .onClick(async () => {
                   if (this.selectedCid !== c.cid) {
@@ -280,8 +310,9 @@ export struct CategoryPage {
                       }
                       .padding(12)
                       .margin({ left: 6, right: 12, bottom: 12 })
-                      .borderRadius(12)
-                      .backgroundColor('#F5F5F5')
+                      .borderRadius(16)
+                      .backgroundColor('#FFFFFF')
+                      .shadow({ radius: 12, color: '#1A000000', offsetX: 0, offsetY: 5 })
                       .onClick(async () => {
                         await this.openDetail(item);
                       })
@@ -307,7 +338,7 @@ export struct CategoryPage {
                   if (last >= this.articles.length - 1) {
                     this.loadMoreArticles();
                   }
-                  this.showBackToTop = first > 0;
+                  this.updateBackToTop(first > 0);
                 })
               }
             }
@@ -324,21 +355,25 @@ export struct CategoryPage {
       .onAppear(() => {
         // 切回分类页也刷新收藏状态
         this.refreshFav();
+        this.animateHeader();
       })
 
-      if (this.showBackToTop) {
-        Button('↑')
-          .backgroundColor('#F5F5F5')
-          .fontColor('#444444')
-          .border({ width: 1, color: '#444444', style: BorderStyle.Solid })
-          .borderRadius(18)
-          .padding({ left: 10, right: 10, top: 8, bottom: 8 })
-          .position({ x: '85%', y: '92%' }) // 先定位到父容器右下角
-          .margin({ right: 16, bottom: 24 })    // 再通过负边距回拉
-          .onClick(() => this.articleScroller.scrollToIndex(0))
-      }
+      Button('↑')
+        .backgroundColor('#FFFFFF')
+        .fontColor('#444444')
+        .border({ width: 1, color: '#E3E5EA', style: BorderStyle.Solid })
+        .borderRadius(20)
+        .padding({ left: 10, right: 10, top: 8, bottom: 8 })
+        .position({ x: '85%', y: '92%' }) // 先定位到父容器右下角
+        .margin({ right: 16, bottom: 24 })    // 再通过负边距回拉
+        .shadow({ radius: 10, color: '#1A000000', offsetX: 0, offsetY: 4 })
+        .opacity(this.backTopOpacity)
+        .scale({ x: this.backTopScale, y: this.backTopScale })
+        .enabled(this.showBackToTop)
+        .onClick(() => this.articleScroller.scrollToIndex(0))
     }
     .width('100%')
     .height('100%')
+    .backgroundColor('#F7F8FA')
   }
 }

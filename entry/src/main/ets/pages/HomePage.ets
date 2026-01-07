@@ -34,6 +34,10 @@ export struct HomePage {
   @State nextPage: number = 0;
   @State hasMore: boolean = true;
   @State showBackToTop: boolean = false;
+  @State headerOpacity: number = 0;
+  @State headerOffset: number = 12;
+  @State backTopOpacity: number = 0;
+  @State backTopScale: number = 0.9;
   private listScroller: Scroller = new Scroller();
 
   private onFavVersionChange() {
@@ -145,6 +149,24 @@ export struct HomePage {
     this.listScroller.scrollToIndex(0);
   }
 
+  private animateHeader() {
+    animateTo({ duration: 260, curve: Curve.EaseOut }, () => {
+      this.headerOpacity = 1;
+      this.headerOffset = 0;
+    });
+  }
+
+  private updateBackToTop(show: boolean) {
+    if (this.showBackToTop === show) {
+      return;
+    }
+    this.showBackToTop = show;
+    animateTo({ duration: 220, curve: Curve.EaseOut }, () => {
+      this.backTopOpacity = show ? 1 : 0;
+      this.backTopScale = show ? 1 : 0.9;
+    });
+  }
+
   private async bumpFavVersion() {
     const v = (AppStorage.get('fav_version') as number) ?? 0;
     AppStorage.set('fav_version', v + 1);
@@ -197,11 +219,21 @@ export struct HomePage {
             .layoutWeight(1)
             .textAlign(TextAlign.Center)
           Text('🔍')
-            .fontSize(22)
+            .fontSize(18)
+            .backgroundColor('#F3F4F6')
+            .padding(6)
+            .borderRadius(14)
+            .shadow({ radius: 8, color: '#14000000', offsetX: 0, offsetY: 3 })
             .onClick(async () => await this.openSearchPage())
         }
         .alignItems(VerticalAlign.Center)
-        .padding({ top: 16, left: 16, right: 16, bottom: 12 })
+        .padding(12)
+        .margin({ top: 12, left: 16, right: 16, bottom: 12 })
+        .backgroundColor('#FFFFFF')
+        .borderRadius(16)
+        .shadow({ radius: 14, color: '#14000000', offsetX: 0, offsetY: 6 })
+        .opacity(this.headerOpacity)
+        .translate({ x: 0, y: this.headerOffset })
 
         if (this.loading) {
           Row({ space: 8 }) {
@@ -237,8 +269,9 @@ export struct HomePage {
               }
               .padding(12)
               .margin({ left: 16, right: 16, bottom: 12 })
-              .borderRadius(12)
-              .backgroundColor('#F5F5F5')
+                .borderRadius(16)
+                .backgroundColor('#FFFFFF')
+                .shadow({ radius: 12, color: '#1A000000', offsetX: 0, offsetY: 5 })
               .onClick(() => {
                 ArticleStore.setArticles(this.articles);
                 router.pushUrl({
@@ -271,7 +304,7 @@ export struct HomePage {
             if (last >= this.articles.length - 1) {
               this.loadMoreArticles();
             }
-            this.showBackToTop = first > 0;
+            this.updateBackToTop(first > 0);
           })
         }
         .onRefreshing(async () => {
@@ -283,21 +316,25 @@ export struct HomePage {
       .onAppear(() => {
         // 进入首页时也刷新一次（更稳）
         this.refreshFav();
+        this.animateHeader();
       })
 
-      if (this.showBackToTop) {
-        Button('↑')
-          .backgroundColor('#F5F5F5')
-          .fontColor('#444444')
-          .border({ width: 1, color: '#444444', style: BorderStyle.Solid })
-          .borderRadius(18)
-          .padding({ left: 10, right: 10, top: 8, bottom: 8 })
-          .position({ x: '85%', y: '92%' }) // 先定位到父容器右下角
-          .margin({ right: 16, bottom: 24 })    // 再通过负边距回拉
-          .onClick(() => this.scrollToTop())
-      }
+      Button('↑')
+        .backgroundColor('#FFFFFF')
+        .fontColor('#444444')
+        .border({ width: 1, color: '#E3E5EA', style: BorderStyle.Solid })
+        .borderRadius(20)
+        .padding({ left: 10, right: 10, top: 8, bottom: 8 })
+        .position({ x: '85%', y: '92%' }) // 先定位到父容器右下角
+        .margin({ right: 16, bottom: 24 })    // 再通过负边距回拉
+        .shadow({ radius: 10, color: '#1A000000', offsetX: 0, offsetY: 4 })
+        .opacity(this.backTopOpacity)
+        .scale({ x: this.backTopScale, y: this.backTopScale })
+        .enabled(this.showBackToTop)
+        .onClick(() => this.scrollToTop())
     }
     .width('100%')
     .height('100%')
+    .backgroundColor('#F7F8FA')
   }
 }

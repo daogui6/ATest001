@@ -27,6 +27,8 @@ export struct FavoritePage {
   @State uid: string = '0';
   @State favIds: Set<number> = new Set<number>();
   @State favArticles: Article[] = [];
+  @State headerOpacity: number = 0;
+  @State headerOffset: number = 12;
 
   private onFavVersionChange() {
     this.refresh();
@@ -96,6 +98,13 @@ export struct FavoritePage {
     AppStorage.set('fav_version', v + 1);
   }
 
+  private animateHeader() {
+    animateTo({ duration: 260, curve: Curve.EaseOut }, () => {
+      this.headerOpacity = 1;
+      this.headerOffset = 0;
+    });
+  }
+
   build() {
     Column() {
       Row() {
@@ -117,8 +126,14 @@ export struct FavoritePage {
           .padding({ right: 8 })
       }
       .alignItems(VerticalAlign.Center)
-      .padding({ top: 16, left: 16, right: 16, bottom: 12 })
+      .padding(12)
+      .margin({ top: 12, left: 16, right: 16, bottom: 12 })
       .width('100%')
+      .backgroundColor('#FFFFFF')
+      .borderRadius(16)
+      .shadow({ radius: 14, color: '#14000000', offsetX: 0, offsetY: 6 })
+      .opacity(this.headerOpacity)
+      .translate({ x: 0, y: this.headerOffset })
 
       if (this.uid === '0') {
         Text('请先去【我的】页登录').margin(16).opacity(0.7)
@@ -146,8 +161,9 @@ export struct FavoritePage {
               }
               .padding(12)
               .margin({ left: 16, right: 16, bottom: 12 })
-              .borderRadius(12)
-              .backgroundColor('#F5F5F5')
+              .borderRadius(16)
+              .backgroundColor('#FFFFFF')
+              .shadow({ radius: 12, color: '#1A000000', offsetX: 0, offsetY: 5 })
               // ✅ 点卡片进正文
               .onClick(async () => {
                 await this.openDetail(item);
@@ -163,6 +179,8 @@ export struct FavoritePage {
     .height('100%')
     .onAppear(() => {
       this.refresh();
+      this.animateHeader();
     })
+    .backgroundColor('#F7F8FA')
   }
 }
