@@ -463,38 +463,29 @@ struct ArticleDetailPage {
 
   @Builder
   private renderComment(item: CommentView, level: number) {
-    const nameSize = level === 0 ? 14 : 13;
-    const timeSize = level === 0 ? 12 : 11;
-    const replySize = level === 0 ? 12 : 11;
-    const contentSize = level === 0 ? 14 : 13;
-    const lineHeight = level === 0 ? 20 : 18;
-    const likeSize = level === 0 ? 14 : 12;
-    const likeCountSize = level === 0 ? 12 : 11;
-    const paddingSize = level === 0 ? 10 : 8;
-    const backgroundColor = level === 0 ? '#FAFAFA' : '#FFFFFF';
     Column({ space: 6 }) {
       Column({ space: 4 }) {
         Row({ space: 6 }) {
-          Text(item.nickname || '匿名用户').fontSize(nameSize).fontWeight(FontWeight.Medium)
-          Text(this.formatTime(item.createdAt)).fontSize(timeSize).opacity(0.6)
+          Text(item.nickname || '匿名用户').fontSize(this.commentNameSize(level)).fontWeight(FontWeight.Medium)
+          Text(this.formatTime(item.createdAt)).fontSize(this.commentTimeSize(level)).opacity(0.6)
         }
         if (item.replyTo) {
-          Text(`回复 ${item.replyTo}：`).fontSize(replySize).opacity(0.6)
+          Text(`回复 ${item.replyTo}：`).fontSize(this.commentReplySize(level)).opacity(0.6)
         }
-        Text(item.content).fontSize(contentSize).lineHeight(lineHeight)
+        Text(item.content).fontSize(this.commentContentSize(level)).lineHeight(this.commentLineHeight(level))
         Row({ space: 12 }) {
-          Text('回复').fontSize(replySize).opacity(0.7)
+          Text('回复').fontSize(this.commentReplySize(level)).opacity(0.7)
             .onClick(() => { this.replyTarget = item; })
           Row({ space: 4 }) {
-            Text(item.liked ? '❤️' : '🤍').fontSize(likeSize)
-            Text(`${item.likeCount}`).fontSize(likeCountSize).opacity(0.7)
+            Text(item.liked ? '❤️' : '🤍').fontSize(this.commentLikeSize(level))
+            Text(`${item.likeCount}`).fontSize(this.commentLikeCountSize(level)).opacity(0.7)
           }
           .onClick(async () => await this.toggleCommentLike(item))
         }
       }
-      .padding(paddingSize)
+      .padding(this.commentPaddingSize(level))
       .borderRadius(10)
-      .backgroundColor(backgroundColor)
+      .backgroundColor(this.commentBackgroundColor(level))
 
       if (item.replies.length > 0) {
         Column({ space: 6 }) {
@@ -505,6 +496,42 @@ struct ArticleDetailPage {
         .padding({ left: 12, top: 4, bottom: 4 })
       }
     }
+  }
+
+  private commentNameSize(level: number): number {
+    return level === 0 ? 14 : 13;
+  }
+
+  private commentTimeSize(level: number): number {
+    return level === 0 ? 12 : 11;
+  }
+
+  private commentReplySize(level: number): number {
+    return level === 0 ? 12 : 11;
+  }
+
+  private commentContentSize(level: number): number {
+    return level === 0 ? 14 : 13;
+  }
+
+  private commentLineHeight(level: number): number {
+    return level === 0 ? 20 : 18;
+  }
+
+  private commentLikeSize(level: number): number {
+    return level === 0 ? 14 : 12;
+  }
+
+  private commentLikeCountSize(level: number): number {
+    return level === 0 ? 12 : 11;
+  }
+
+  private commentPaddingSize(level: number): number {
+    return level === 0 ? 10 : 8;
+  }
+
+  private commentBackgroundColor(level: number): string {
+    return level === 0 ? '#FAFAFA' : '#FFFFFF';
   }
 
   build() {

@@ -7,6 +7,7 @@
     "pages/HistoryPage",
     "pages/LikedPage",
     "pages/CommentedPage",
-    "pages/NotificationPage"
+    "pages/NotificationPage",
+    "pages/RegisterPage"
   ]
 }
