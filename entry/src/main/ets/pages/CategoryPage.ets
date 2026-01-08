@@ -178,8 +178,12 @@ export struct CategoryPage {
     try {
       const remote = await fetchCategories();
       this.categories = remote;
-      // 默认选中第一个分类
-      this.selectedCid = remote[0]?.cid ?? 0;
+      const params = router.getParams() as { cid?: number | string } | undefined;
+      const rawCid = params?.cid;
+      const requestedCid = typeof rawCid === 'number' ? rawCid : Number(rawCid);
+      const matchedCid = remote.some(item => item.cid === requestedCid) ? requestedCid : 0;
+      // 默认选中第一个分类或传入分类
+      this.selectedCid = matchedCid ?? remote[0]?.cid ?? 0;
     } catch (e) {
       this.errorMsg = (e as Error)?.message ?? '分类加载失败';
       this.categories = [];

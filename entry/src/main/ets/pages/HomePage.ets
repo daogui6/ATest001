@@ -26,8 +26,10 @@ import router from '@ohos.router';
 // 数据模型和存储导入
 import type { Article } from '../model/Article';
 import { FavoriteStore } from '../store/FavoriteStore';
-import { fetchLatestArticles, fetchTopArticles } from '../service/WanService';
+import { fetchCategories, fetchLatestArticles, fetchTopArticles } from '../service/WanService';
 import { ArticleStore } from '../store/ArticleStore';
+import type { Category } from '../model/Category';
+import { HistoryStore } from '../store/HistoryStore';
 
 // 确保全局状态key存在
 AppStorage.setOrCreate('fav_version', 0);
@@ -62,6 +64,8 @@ export struct HomePage {
   @State favIds: Set<number> = new Set<number>();
   @State nextPage: number = 0;
   @State hasMore: boolean = true;
+  @State strategyText: string = '基于热门与最新内容推荐，浏览/收藏后会更懂你';
+  @State topics: Category[] = [];
 
   // UI动画状态
   @State showBackToTop: boolean = false;
@@ -71,6 +75,8 @@ export struct HomePage {
   @State backTopScale: number = 0.9;
   
   private listScroller: Scroller = new Scroller();
+  private preferenceScores: Map<number, number> = new Map<number, number>();
+  private topArticleIds: Set<number> = new Set<number>();
 
   private onFavVersionChange() {
     this.refreshFav();
@@ -122,20 +128,6 @@ export struct HomePage {
   }
 
   /**
-   * 文章随机排序
-   */
-  private shuffleArticles(list: Article[]): Article[] {
-    const result = [...list];
-    for (let i = result.length - 1; i > 0; i -= 1) {
-      const j = Math.floor(Math.random() * (i + 1));
-      const temp = result[i];
-      result[i] = result[j];
-      result[j] = temp;
-    }
-    return result;
-  }
-
-  /**
    * 重新加载文章
    * 获取置顶和最新文章
    */
@@ -145,11 +137,22 @@ export struct HomePage {
     this.hasMore = true;
     this.nextPage = 0;
     try {
-      const result = await Promise.all([fetchTopArticles(), fetchLatestArticles(0)]);
+      const result = await Promise.all([
+        fetchTopArticles(),
+        fetchLatestArticles(0),
+        fetchCategories()
+      ]);
       const top = result[0];
       const latest = result[1];
+      const categories = result[2];
+      const profile = await this.buildRecommendationProfile(categories);
+      this.preferenceScores = profile.scores;
+      this.topArticleIds = new Set(top.map(item => item.id));
+      this.strategyText = profile.strategyText;
+      this.topics = profile.topics;
       const merged: Article[] = [...top, ...latest];
-      this.articles = this.dedupArticles(merged);
+      const deduped = this.dedupArticles(merged);
+      this.articles = this.rankArticles(deduped, this.preferenceScores, this.topArticleIds);
       this.hasMore = latest.length > 0;
       this.nextPage = 1;
     } catch (e) {
@@ -170,7 +173,6 @@ export struct HomePage {
     }
     this.refreshing = true;
     await this.reloadArticles();
-    this.articles = this.shuffleArticles(this.articles);
     this.refreshing = false;
   }
 
@@ -191,7 +193,8 @@ export struct HomePage {
         return;
       }
       const merged = [...this.articles, ...latest];
-      this.articles = this.dedupArticles(merged);
+      const deduped = this.dedupArticles(merged);
+      this.articles = this.rankArticles(deduped, this.preferenceScores, this.topArticleIds);
       this.nextPage += 1;
     } catch (e) {
       this.errorMsg = (e as Error)?.message ?? '加载失败';
@@ -260,6 +263,92 @@ export struct HomePage {
     }
   }
 
+  private async openCategoryPage(cid?: number) {
+    try {
+      await router.pushUrl({
+        url: 'pages/CategoryPage',
+        params: cid ? { cid } : undefined
+      });
+    } catch (e) {
+      promptAction.showToast({ message: '无法打开分类页' });
+    }
+  }
+
+  private async buildRecommendationProfile(categories: Category[]): Promise<{
+    scores: Map<number, number>;
+    strategyText: string;
+    topics: Category[];
+  }> {
+    const ctx = this.hostCtx();
+    const uid = await FavoriteStore.getUid(ctx);
+    const favSet = uid === '0' ? new Set<number>() : await FavoriteStore.loadFavSet(ctx, uid);
+    const favArticles = favSet.size > 0
+      ? await FavoriteStore.pickCachedArticles(ctx, favSet)
+      : [];
+    const history = await HistoryStore.loadHistory(ctx);
+
+    const scores = new Map<number, number>();
+    const bumpScore = (cid: number, weight: number) => {
+      if (!cid || Number.isNaN(cid)) {
+        return;
+      }
+      scores.set(cid, (scores.get(cid) ?? 0) + weight);
+    };
+
+    favArticles.forEach(article => bumpScore(article.cid, 3));
+    history.forEach(article => bumpScore(article.cid, 1));
+
+    const reasons: string[] = [];
+    if (favArticles.length > 0) {
+      reasons.push('收藏');
+    }
+    if (history.length > 0) {
+      reasons.push('最近浏览');
+    }
+
+    const strategyText = reasons.length > 0
+      ? `根据你的${reasons.join('和')}，优先推荐相关分类内容`
+      : '基于热门与最新内容推荐，浏览/收藏后会更懂你';
+
+    const topics: Category[] = [];
+    const sortedPrefs = Array.from(scores.entries()).sort((a, b) => b[1] - a[1]);
+    sortedPrefs.forEach(([cid]) => {
+      const matched = categories.find(item => item.cid === cid);
+      if (matched) {
+        topics.push(matched);
+      }
+    });
+
+    const supplement = categories.filter(item => !topics.some(topic => topic.cid === item.cid));
+    const combined = [...topics, ...supplement].slice(0, 6);
+    return { scores, strategyText, topics: combined };
+  }
+
+  private rankArticles(
+    list: Article[],
+    scores: Map<number, number>,
+    topIds: Set<number>
+  ): Article[] {
+    const ranked = list.map((item, index) => {
+      const preferenceScore = scores.get(item.cid) ?? 0;
+      const topBonus = topIds.has(item.id) ? 2 : 0;
+      return {
+        item,
+        index,
+        score: preferenceScore + topBonus
+      };
+    });
+
+    ranked.sort((a, b) => {
+      if (b.score === a.score) {
+        return a.index - b.index;
+      }
+      return b.score - a.score;
+    });
+
+    return ranked.map(entry => entry.item);
+  }
+
   /**
    * UI构建方法
    * 创建首页文章流界面
@@ -291,6 +380,42 @@ export struct HomePage {
         .shadow({ radius: 14, color: '#14000000', offsetX: 0, offsetY: 6 })
         .opacity(this.headerOpacity)
         .translate({ x: 0, y: this.headerOffset })
+
+        Column({ space: 10 }) {
+          Text('推荐策略')
+            .fontSize(16)
+            .fontWeight(FontWeight.Medium)
+          Text(this.strategyText)
+            .fontSize(12)
+            .opacity(0.7)
+
+          if (this.topics.length > 0) {
+            Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.Start, alignItems: ItemAlign.Center }) {
+              ForEach(this.topics, (topic: Category) => {
+                Text(topic.name)
+                  .fontSize(12)
+                  .padding({ left: 12, right: 12, top: 6, bottom: 6 })
+                  .margin({ right: 8, bottom: 8 })
+                  .backgroundColor('#F1F5F9')
+                  .borderRadius(14)
+                  .onClick(async () => await this.openCategoryPage(topic.cid))
+              })
+            }
+          }
+
+          Row() {
+            Text('查看全部专题')
+              .fontSize(12)
+              .fontColor('#3B82F6')
+              .onClick(async () => await this.openCategoryPage())
+            Blank().layoutWeight(1)
+          }
+        }
+        .padding(14)
+        .margin({ left: 16, right: 16, bottom: 12 })
+        .backgroundColor('#FFFFFF')
+        .borderRadius(16)
+        .shadow({ radius: 12, color: '#12000000', offsetX: 0, offsetY: 4 })
 
         // 内容区域
         if (this.loading) {
