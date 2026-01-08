@@ -35,6 +35,22 @@ import { HistoryStore } from '../store/HistoryStore';
 AppStorage.setOrCreate('fav_version', 0);
 AppStorage.setOrCreate('session_version', 0);
 
+interface CategoryRouteParams {
+  cid: number;
+}
+
+interface RecommendationProfile {
+  scores: Map<number, number>;
+  strategyText: string;
+  topics: Category[];
+}
+
+interface RankedArticle {
+  item: Article;
+  index: number;
+  score: number;
+}
+
 /**
  * 首页组件
  * 核心职责：文章流展示和用户交互
@@ -265,20 +281,17 @@ export struct HomePage {
 
   private async openCategoryPage(cid?: number) {
     try {
+      const params: CategoryRouteParams | undefined = cid ? { cid } : undefined;
       await router.pushUrl({
         url: 'pages/CategoryPage',
-        params: cid ? { cid } : undefined
+        params
       });
     } catch (e) {
       promptAction.showToast({ message: '无法打开分类页' });
     }
   }
 
-  private async buildRecommendationProfile(categories: Category[]): Promise<{
-    scores: Map<number, number>;
-    strategyText: string;
-    topics: Category[];
-  }> {
+  private async buildRecommendationProfile(categories: Category[]): Promise<RecommendationProfile> {
     const ctx = this.hostCtx();
     const uid = await FavoriteStore.getUid(ctx);
     const favSet = uid === '0' ? new Set<number>() : await FavoriteStore.loadFavSet(ctx, uid);
@@ -288,15 +301,19 @@ export struct HomePage {
     const history = await HistoryStore.loadHistory(ctx);
 
     const scores = new Map<number, number>();
-    const bumpScore = (cid: number, weight: number) => {
+    const bumpScore = (cid: number, weight: number): void => {
       if (!cid || Number.isNaN(cid)) {
         return;
       }
       scores.set(cid, (scores.get(cid) ?? 0) + weight);
     };
 
-    favArticles.forEach(article => bumpScore(article.cid, 3));
-    history.forEach(article => bumpScore(article.cid, 1));
+    favArticles.forEach((article: Article): void => {
+      bumpScore(article.cid, 3);
+    });
+    history.forEach((article: Article): void => {
+      bumpScore(article.cid, 1);
+    });
 
     const reasons: string[] = [];
     if (favArticles.length > 0) {
@@ -311,8 +328,10 @@ export struct HomePage {
       : '基于热门与最新内容推荐，浏览/收藏后会更懂你';
 
     const topics: Category[] = [];
-    const sortedPrefs = Array.from(scores.entries()).sort((a, b) => b[1] - a[1]);
-    sortedPrefs.forEach(([cid]) => {
+    const sortedPrefs = Array.from(scores.entries()) as Array<[number, number]>;
+    sortedPrefs.sort((a: [number, number], b: [number, number]) => b[1] - a[1]);
+    sortedPrefs.forEach((entry: [number, number]) => {
+      const cid = entry[0];
       const matched = categories.find(item => item.cid === cid);
       if (matched) {
         topics.push(matched);
@@ -321,7 +340,8 @@ export struct HomePage {
 
     const supplement = categories.filter(item => !topics.some(topic => topic.cid === item.cid));
     const combined = [...topics, ...supplement].slice(0, 6);
-    return { scores, strategyText, topics: combined };
+    const profile: RecommendationProfile = { scores, strategyText, topics: combined };
+    return profile;
   }
 
   private rankArticles(
@@ -329,7 +349,7 @@ export struct HomePage {
     scores: Map<number, number>,
     topIds: Set<number>
   ): Article[] {
-    const ranked = list.map((item, index) => {
+    const ranked = list.map((item: Article, index: number): RankedArticle => {
       const preferenceScore = scores.get(item.cid) ?? 0;
       const topBonus = topIds.has(item.id) ? 2 : 0;
       return {

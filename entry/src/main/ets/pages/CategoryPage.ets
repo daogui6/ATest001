@@ -32,6 +32,10 @@ import { FavoriteStore } from '../store/FavoriteStore';
 import { fetchArticlesByCid, fetchCategories } from '../service/WanService';
 import { ArticleStore } from '../store/ArticleStore';
 
+interface CategoryPageParams {
+  cid?: number | string;
+}
+
 /**
  *  分类页面主组件
  * 
@@ -178,7 +182,7 @@ export struct CategoryPage {
     try {
       const remote = await fetchCategories();
       this.categories = remote;
-      const params = router.getParams() as { cid?: number | string } | undefined;
+      const params = router.getParams() as CategoryPageParams | undefined;
       const rawCid = params?.cid;
       const requestedCid = typeof rawCid === 'number' ? rawCid : Number(rawCid);
       const matchedCid = remote.some(item => item.cid === requestedCid) ? requestedCid : 0;
