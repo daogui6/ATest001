@@ -439,7 +439,7 @@ export struct HomePage {
             .opacity(0.7)
 
           if (this.topics.length > 0) {
-            Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.Center, alignItems: ItemAlign.Center }) {
+            Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.Start, alignItems: ItemAlign.Center }) {
               ForEach(this.topics, (topic: Category) => {
                 Text(topic.name)
                   .fontSize(12)
