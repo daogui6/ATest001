@@ -138,6 +138,7 @@ export class UserStore {
     ctx: common.UIAbilityContext,
     username: string,
     password: string,
+    confirmPassword: string,
     nickname: string,
     bio: string = '这个人很懒，还没有签名～'
   ): Promise<{ ok: true; user: WanUser } | { ok: false; message: string }> {
@@ -146,11 +147,13 @@ export class UserStore {
     if (!username || !password) {
       return { ok: false, message: '用户名和密码不能为空' };
     }
-
+    if (password !== confirmPassword) {
+      return { ok: false, message: '两次输入的密码不一致' };
+    }
     try {
       // 调用注册API
-      const { user, cookie } = await registerUser(username, password, password);
-      
+      const { user, cookie } = await registerUser(username, password, confirmPassword);
+
       // 应用个人资料覆盖并保存会话
       const finalUser: WanUser = await UserStore.applyProfileOverrides(ctx, {
         ...user,

@@ -33,6 +33,7 @@ export struct RegisterPage {
   // 表单输入状态
   @State regUsername: string = '' // 用户名输入
   @State regPassword: string = '' // 密码输入
+  @State regConfirmPassword: string = '' // 确认密码输入
   @State regNickname: string = '' // 昵称输入（可选）
   @State registerAgree: boolean = false // 协议同意状态
   @State message: string = '' // 错误消息提示
@@ -65,6 +66,7 @@ export struct RegisterPage {
       this.hostCtx(),
       this.regUsername.trim(),
       this.regPassword,
+      this.regConfirmPassword,
       this.regNickname.trim() || this.regUsername.trim(),
       '这个人是新用户，快来打个招呼吧～'
     );
@@ -149,6 +151,14 @@ export struct RegisterPage {
           TextInput({ text: this.regPassword, placeholder: '设置密码' })
             .type(InputType.Password)
             .onChange((v) => { this.regPassword = v; })
+            .padding({ left: 12, right: 12 })
+            .borderRadius(10)
+            .backgroundColor('#F6F7FB')
+
+          // 确认密码输入框
+          TextInput({ text: this.regConfirmPassword, placeholder: '确认密码' })
+            .type(InputType.Password)
+            .onChange((v) => { this.regConfirmPassword = v; })
             .padding({ left: 12, right: 12 })
             .borderRadius(10)
             .backgroundColor('#F6F7FB')
