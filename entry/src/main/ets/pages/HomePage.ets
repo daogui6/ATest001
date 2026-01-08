@@ -1,29 +1,58 @@
+/**
+ * 首页 - 文章流展示页面
+ * 
+ * 功能概述：
+ * - 展示置顶文章和最新文章
+ * - 支持下拉刷新和上拉加载更多
+ * - 文章收藏状态管理
+ * - 搜索功能入口
+ * 
+ * 组件结构：
+ * - Component组件封装首页逻辑
+ * - 响应式状态管理文章数据
+ * - 全局状态同步收藏状态
+ * 
+ * 状态管理：
+ * - 文章列表和分页状态
+ * - 收藏ID集合管理
+ * - 加载和错误状态
+ * - 动画效果状态
+ */
+
 import type common from '@ohos.app.ability.common';
 import promptAction from '@ohos.promptAction';
 import router from '@ohos.router';
 
+// 数据模型和存储导入
 import type { Article } from '../model/Article';
 import { FavoriteStore } from '../store/FavoriteStore';
 import { fetchLatestArticles, fetchTopArticles } from '../service/WanService';
 import { ArticleStore } from '../store/ArticleStore';
 
-// ✅ 确保 key 存在（避免首次为 undefined）
+// 确保全局状态key存在
 AppStorage.setOrCreate('fav_version', 0);
 AppStorage.setOrCreate('session_version', 0);
 
+/**
+ * 首页组件
+ * 核心职责：文章流展示和用户交互
+ */
 @Component
 export struct HomePage {
   private hostCtx(): common.UIAbilityContext {
     return this.getUIContext().getHostContext() as common.UIAbilityContext;
   }
 
-  // ✅ 监听：收藏变化 / 登录变化
+  // 全局状态同步
   @StorageLink('fav_version')
   @Watch('onFavVersionChange')
   favVersion: number = 0;
+  
   @StorageLink('session_version')
   @Watch('onSessionVersionChange')
   sessionVersion: number = 0;
+
+  // 文章数据状态
   @State articles: Article[] = [];
   @State loading: boolean = true;
   @State refreshing: boolean = false;
@@ -33,11 +62,14 @@ export struct HomePage {
   @State favIds: Set<number> = new Set<number>();
   @State nextPage: number = 0;
   @State hasMore: boolean = true;
+  
+  // UI动画状态
   @State showBackToTop: boolean = false;
   @State headerOpacity: number = 0;
   @State headerOffset: number = 12;
   @State backTopOpacity: number = 0;
   @State backTopScale: number = 0.9;
+  
   private listScroller: Scroller = new Scroller();
 
   private onFavVersionChange() {
@@ -48,13 +80,17 @@ export struct HomePage {
     this.refreshFav();
   }
 
+  /**
+   * 刷新收藏状态
+   * 获取当前用户的收藏列表
+   */
   private async refreshFav() {
     const ctx = this.hostCtx();
     const uid = await FavoriteStore.getUid(ctx);
     this.uid = uid;
 
     if (uid === '0') {
-      // ✅ 未登录：主页红心全部熄灭
+      // 未登录用户清空收藏状态
       this.favIds = new Set<number>();
       return;
     }
@@ -62,11 +98,17 @@ export struct HomePage {
     this.favIds = await FavoriteStore.loadFavSet(ctx, uid);
   }
 
+  /**
+   * 组件生命周期：页面即将显示
+   */
   async aboutToAppear() {
     await this.reloadArticles();
     await this.refreshFav();
   }
 
+  /**
+   * 文章去重工具
+   */
   private dedupArticles(list: Article[]): Article[] {
     const seen = new Set<number>();
     const result: Article[] = [];
@@ -79,6 +121,9 @@ export struct HomePage {
     return result;
   }
 
+  /**
+   * 文章随机排序
+   */
   private shuffleArticles(list: Article[]): Article[] {
     const result = [...list];
     for (let i = result.length - 1; i > 0; i -= 1) {
@@ -90,6 +135,10 @@ export struct HomePage {
     return result;
   }
 
+  /**
+   * 重新加载文章
+   * 获取置顶和最新文章
+   */
   private async reloadArticles() {
     this.loading = true;
     this.errorMsg = '';
@@ -112,6 +161,9 @@ export struct HomePage {
     }
   }
 
+  /**
+   * 刷新文章列表
+   */
   private async refreshArticles() {
     if (this.refreshing) {
       return;
@@ -122,6 +174,9 @@ export struct HomePage {
     this.refreshing = false;
   }
 
+  /**
+   * 加载更多文章
+   */
   private async loadMoreArticles() {
     if (this.loadingMore || this.loading || !this.hasMore) {
       return;
@@ -172,7 +227,9 @@ export struct HomePage {
     AppStorage.set('fav_version', v + 1);
   }
 
-  // private async toggleFav(id: number) {
+  /**
+   * 切换收藏状态
+   */
   private async toggleFav(article: Article) {
     const ctx = this.hostCtx();
     const uid = await FavoriteStore.getUid(ctx);
@@ -182,21 +239,16 @@ export struct HomePage {
     }
 
     const next = new Set(this.favIds);
-    // if (next.has(id)) {
-    //   next.delete(id);
     if (next.has(article.id)) {
       next.delete(article.id);
       await FavoriteStore.removeArticleSnapshot(ctx, article.id);
     } else {
-      // next.add(id);
       next.add(article.id);
       await FavoriteStore.saveArticleSnapshot(ctx, article);
     }
 
     this.favIds = next;
     await FavoriteStore.saveFavSet(ctx, uid, next);
-
-    // 通知其他页面（收藏页/主页自己）
     await this.bumpFavVersion();
   }
 
@@ -208,9 +260,14 @@ export struct HomePage {
     }
   }
 
+  /**
+   * UI构建方法
+   * 创建首页文章流界面
+   */
   build() {
     Stack() {
       Column() {
+        // 头部导航栏
         Row() {
           Blank().width(36)
           Text('首页')
@@ -218,7 +275,7 @@ export struct HomePage {
             .fontWeight(FontWeight.Bold)
             .layoutWeight(1)
             .textAlign(TextAlign.Center)
-          Text('🔍')
+          Text('搜索')
             .fontSize(18)
             .backgroundColor('#F3F4F6')
             .padding(6)
@@ -235,6 +292,7 @@ export struct HomePage {
         .opacity(this.headerOpacity)
         .translate({ x: 0, y: this.headerOffset })
 
+        // 内容区域
         if (this.loading) {
           Row({ space: 8 }) {
             LoadingProgress()
@@ -249,6 +307,7 @@ export struct HomePage {
           .padding({ left: 16, right: 16, bottom: 6 })
         }
 
+        // 下拉刷新容器
         Refresh({ refreshing: this.refreshing }) {
           List({ scroller: this.listScroller }) {
             ForEach(this.articles, (item: Article) => {
@@ -264,48 +323,47 @@ export struct HomePage {
                   Text(this.favIds.has(item.id) ? '★' : '☆')
                     .fontSize(22)
                     .margin({ left: 10 })
-                  // .onClick(async () => await this.toggleFav(item.id))
-                  .onClick(async () => await this.toggleFav(item))
-              }
-              .padding(12)
-              .margin({ left: 16, right: 16, bottom: 12 })
-                .borderRadius(16)
-                .backgroundColor('#FFFFFF')
-                .shadow({ radius: 12, color: '#1A000000', offsetX: 0, offsetY: 5 })
-              .onClick(() => {
-                ArticleStore.setArticles(this.articles);
-                router.pushUrl({
-                  url: 'pages/ArticleDetailPage',
-                  params: { id: item.id, article: item }
+                    .onClick(async () => await this.toggleFav(item))
+                }
+                .padding(12)
+                .margin({ left: 16, right: 16, bottom: 12 })
+                  .borderRadius(16)
+                  .backgroundColor('#FFFFFF')
+                  .shadow({ radius: 12, color: '#1A000000', offsetX: 0, offsetY: 5 })
+                .onClick(() => {
+                  ArticleStore.setArticles(this.articles);
+                  router.pushUrl({
+                    url: 'pages/ArticleDetailPage',
+                    params: { id: item.id, article: item }
+                  })
                 })
-              })
-            }
-          })
-
-          ListItem() {
-            if (this.loadingMore) {
-              Row({ space: 8 }) {
-                LoadingProgress().width(20).height(20)
-                Text('加载中...').fontSize(13).opacity(0.7)
               }
-              .padding(12)
-              .justifyContent(FlexAlign.Center)
-            } else if (!this.hasMore) {
-              Text('已经到底了').fontSize(12).opacity(0.6).padding(12)
-            } else {
-              Text('上拉加载更多').fontSize(12).opacity(0.5).padding(12)
+            })
+
+            // 列表底部状态
+            ListItem() {
+              if (this.loadingMore) {
+                Row({ space: 8 }) {
+                  LoadingProgress().width(20).height(20)
+                  Text('加载中...').fontSize(13).opacity(0.7)
+                }
+                .padding(12)
+                .justifyContent(FlexAlign.Center)
+              } else if (!this.hasMore) {
+                Text('已经到底了').fontSize(12).opacity(0.6).padding(12)
+              } else {
+                Text('上拉加载更多').fontSize(12).opacity(0.5).padding(12)
+              }
             }
-          }
-          }
-          .width('100%')
-          .layoutWeight(1)
-          .onScrollIndex((first, last) => {
-            // 靠近底部时触发加载
-            if (last >= this.articles.length - 1) {
-              this.loadMoreArticles();
             }
-            this.updateBackToTop(first > 0);
-          })
+            .width('100%')
+            .layoutWeight(1)
+            .onScrollIndex((first, last) => {
+              if (last >= this.articles.length - 1) {
+                this.loadMoreArticles();
+              }
+              this.updateBackToTop(first > 0);
+            })
         }
         .onRefreshing(async () => {
           await this.refreshArticles();
@@ -314,19 +372,19 @@ export struct HomePage {
       .width('100%')
       .height('100%')
       .onAppear(() => {
-        // 进入首页时也刷新一次（更稳）
         this.refreshFav();
         this.animateHeader();
       })
 
+      // 返回顶部按钮
       Button('↑')
         .backgroundColor('#FFFFFF')
         .fontColor('#444444')
         .border({ width: 1, color: '#E3E5EA', style: BorderStyle.Solid })
         .borderRadius(20)
         .padding({ left: 10, right: 10, top: 8, bottom: 8 })
-        .position({ x: '85%', y: '92%' }) // 先定位到父容器右下角
-        .margin({ right: 16, bottom: 24 })    // 再通过负边距回拉
+        .position({ x: '85%', y: '92%' })
+        .margin({ right: 16, bottom: 24 })
         .shadow({ radius: 10, color: '#1A000000', offsetX: 0, offsetY: 4 })
         .opacity(this.backTopOpacity)
         .scale({ x: this.backTopScale, y: this.backTopScale })

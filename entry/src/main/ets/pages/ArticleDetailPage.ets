@@ -131,8 +131,8 @@ struct ArticleDetailPage {
   @State aiQuestion: string = ''; // 用户提问的问题
   @State aiAnswer: string = ''; // AI回答的内容
   @State aiQaLoading: boolean = false; // AI答疑加载状态
-  private aiSourceContent: string = '';
-  private aiSourceLink: string = '';
+  private aiSourceContent: string = ''; // 缓存已读取的原文正文，避免重复请求
+  private aiSourceLink: string = '';// 记录缓存对应的链接，便于更新时刷新缓存
   
   /**
    *  全局状态同步
@@ -295,6 +295,7 @@ struct ArticleDetailPage {
   }
 
   private async resolveAiContent(): Promise<string> {
+    // 优先使用原文链接正文，失败时回退到摘要内容
     if (!this.article) {
       return '';
     }
@@ -302,10 +303,12 @@ struct ArticleDetailPage {
     if (link.length === 0) {
       return this.article.content;
     }
+    // 同一链接命中缓存时直接复用
     if (this.aiSourceContent && this.aiSourceLink === link) {
       return this.aiSourceContent;
     }
     try {
+      // 拉取原文正文并缓存
       const text = await fetchArticleContent(link);
       if (text.trim().length > 0) {
         this.aiSourceContent = text;
@@ -313,6 +316,7 @@ struct ArticleDetailPage {
         return text;
       }
     } catch (e) {
+      // 原文不可用时提示并降级为摘要
       promptAction.showToast({ message: '原文读取失败，已使用摘要生成' });
     }
     return this.article.content;
@@ -979,11 +983,15 @@ struct ArticleDetailPage {
                 .onClick(async () => await this.runAiQuestion())
 
               if (this.aiQaLoading) {
-                Row({ space: 8 }) {
+                Stack({ alignContent: Alignment.Center }) {
                   LoadingProgress()
-                  Text('AI思考中…').opacity(0.7)
+                  Text('AI思考中…')
+                    .opacity(0.7)
+                    .fontSize(14)
+                    .textAlign(TextAlign.Center)
                 }
-                .alignItems(VerticalAlign.Center)
+                .width('100%')
+                .height(160)
               } else if (this.aiAnswer) {
                 Text(this.aiAnswer)
                   .fontSize(14)
