@@ -62,7 +62,7 @@ export struct HomePage {
   @State favIds: Set<number> = new Set<number>();
   @State nextPage: number = 0;
   @State hasMore: boolean = true;
-  
+
   // UI动画状态
   @State showBackToTop: boolean = false;
   @State headerOpacity: number = 0;
