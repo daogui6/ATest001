@@ -1,25 +1,25 @@
 /*
  * SearchPage.ets - 搜索页面
- * 
+ *
  * 功能说明：
  * - 支持关键词搜索WanAndroid文章
  * - 搜索历史记录管理（添加、删除、清空）
  * - 搜索结果展示与收藏功能
  * - 文章详情页面跳转
  * - 动画过渡效果
- * 
+ *
  * 页面架构：
  * - 头部导航栏（返回按钮 + 页面标题）
  * - 搜索输入区域（搜索框 + 搜索按钮）
  * - 搜索历史记录区域
  * - 搜索结果列表区域
  * - 状态提示区域（加载中、错误、空结果）
- * 
+ *
  * 状态管理：
  * - @State: 管理组件内部状态
  * - @StorageLink: 跨页面状态同步（收藏状态、会话状态）
  * - @Watch: 监听状态变化
- * 
+ *
  * 数据流：
  * - 本地搜索历史：SearchHistoryStore
  * - 远程搜索API：WanService.searchArticles
@@ -43,7 +43,7 @@ AppStorage.setOrCreate('session_version', 0); // 会话版本号
 
 /**
  * 搜索页面组件
- * 
+ *
  * 主要功能：
  * 1. 关键词搜索WanAndroid文章
  * 2. 搜索历史记录管理
@@ -59,7 +59,7 @@ export struct SearchPage {
   private recommendKeywords: string[] = ['性能优化', '动画', '架构', '网络请求', '组件化'];
 
   // ========== 上下文获取 ==========
-  
+
   /**
    * 获取宿主UIAbility的Context
    * 为数据存储等系统能力提供稳定的上下文参数
@@ -69,60 +69,60 @@ export struct SearchPage {
   }
 
   // ========== 搜索相关状态 ==========
-  
+
   /** 搜索关键词 */
   @State keyword: string = '';
-  
+
   /** 搜索结果列表 */
   @State results: Article[] = [];
-  
+
   /** 加载状态 */
   @State loading: boolean = false;
-  
+
   /** 错误消息 */
   @State errorMsg: string = '';
-  
+
   /** 是否已执行过搜索 */
   @State hasSearched: boolean = false;
-  
+
   /** 是否正在编辑搜索词 */
   @State isEditing: boolean = false;
 
   // ========== 用户相关状态 ==========
-  
+
   /** 用户ID */
   @State uid: string = '0';
-  
+
   /** 收藏的文章ID集合 */
   @State favIds: Set<number> = new Set<number>();
-  
+
   /** 搜索历史记录 */
   @State searchHistory: string[] = [];
 
   // ========== 动画效果状态 ==========
-  
+
   /** 头部动画效果 */
   @State headerOpacity: number = 0;
   @State headerOffset: number = 12;
-  
+
   /** 内容面板动画效果 */
   @State panelOpacity: number = 0;
   @State panelOffset: number = 16;
 
   // ========== 全局状态监听 ==========
-  
+
   /** 收藏版本号变化监听 */
   @StorageLink('fav_version')
   @Watch('onFavVersionChange')
   favVersion: number = 0;
-  
+
   /** 会话版本号变化监听 */
   @StorageLink('session_version')
   @Watch('onSessionVersionChange')
   sessionVersion: number = 0;
 
   // ========== 生命周期方法 ==========
-  
+
   /**
    * 页面即将显示时调用
    * 初始化数据和加载资源
@@ -149,7 +149,7 @@ export struct SearchPage {
   }
 
   // ========== 数据管理方法 ==========
-  
+
   /**
    * 刷新收藏状态
    * 根据用户登录状态加载收藏的文章ID集合
@@ -158,12 +158,12 @@ export struct SearchPage {
     const ctx = this.hostCtx();
     const uid = await FavoriteStore.getUid(ctx);
     this.uid = uid;
-    
+
     if (uid === '0') {
       this.favIds = new Set<number>();
       return;
     }
-    
+
     this.favIds = await FavoriteStore.loadFavSet(ctx, uid);
   }
 
@@ -176,7 +176,7 @@ export struct SearchPage {
 
   /**
    * 保存搜索关键词到历史记录
-   * 
+   *
    * @param keyword 要保存的搜索关键词
    */
   private async saveSearchKeyword(keyword: string) {
@@ -186,7 +186,7 @@ export struct SearchPage {
 
   /**
    * 从历史记录中删除特定关键词
-   * 
+   *
    * @param keyword 要删除的搜索关键词
    */
   private async removeSearchKeyword(keyword: string) {
@@ -211,14 +211,14 @@ export struct SearchPage {
   }
 
   // ========== 搜索功能方法 ==========
-  
+
   /**
    * 执行搜索操作
    * 包括关键词验证、历史记录保存、API调用和结果处理
    */
   private async performSearch() {
     const kw = this.keyword.trim();
-    
+
     // 关键词验证
     if (kw.length === 0) {
       promptAction.showToast({ message: '请输入关键词' });
@@ -227,7 +227,7 @@ export struct SearchPage {
 
     // 保存搜索历史
     await this.saveSearchKeyword(kw);
-    
+
     // 设置搜索状态
     this.loading = true;
     this.errorMsg = '';
@@ -253,6 +253,7 @@ export struct SearchPage {
   /**
    * 构建关键词标签组
    */
+  @Builder
   private buildKeywordChips(title: string, keywords: string[]) {
     Column({ space: 8 }) {
       Text(title)
@@ -278,7 +279,7 @@ export struct SearchPage {
   }
 
   // ========== 收藏功能方法 ==========
-  
+
   /**
    * 触发全局收藏版本号更新
    * 用于通知其他页面刷新收藏状态
@@ -290,13 +291,13 @@ export struct SearchPage {
 
   /**
    * 切换文章收藏状态
-   * 
+   *
    * @param article 要操作的文章对象
    */
   private async toggleFav(article: Article) {
     const ctx = this.hostCtx();
     const uid = await FavoriteStore.getUid(ctx);
-    
+
     // 登录状态验证
     if (uid === '0') {
       promptAction.showToast({ message: '请先在【我的】里登录' });
@@ -322,17 +323,17 @@ export struct SearchPage {
   }
 
   // ========== 页面跳转方法 ==========
-  
+
   /**
    * 打开文章详情页面
-   * 
+   *
    * @param article 要查看的文章对象
    */
   private async openDetail(article: Article) {
     try {
       // 设置文章列表供详情页使用
       ArticleStore.setArticles(this.results);
-      
+
       // 跳转到详情页
       await router.pushUrl({
         url: 'pages/ArticleDetailPage',
@@ -344,7 +345,7 @@ export struct SearchPage {
   }
 
   // ========== 页面构建方法 ==========
-  
+
   /**
    * 构建搜索页面UI
    * 根据不同的状态显示相应的内容区域
@@ -379,7 +380,7 @@ export struct SearchPage {
         Row({ space: 8 }) {
           // 搜索图标
           Text('🔍').fontSize(16).opacity(0.6)
-          
+
           // 搜索输入框
           TextInput({ placeholder: '输入关键词', text: this.keyword })
             .layoutWeight(1)
@@ -402,6 +403,22 @@ export struct SearchPage {
       .opacity(this.panelOpacity)
       .translate({ x: 0, y: this.panelOffset })
 
+      // ========== 提示语（搜索前） ==========
+      if (!this.hasSearched) {
+        Text('支持远端搜索 WanAndroid 文章，试试输入"鸿蒙"或"AI"。')
+          .fontSize(13)
+          .opacity(0.7)
+          .margin({ left: 16, right: 16, bottom: 8 })
+          .opacity(this.panelOpacity)
+          .translate({ x: 0, y: this.panelOffset })
+      }
+
+      // ========== 热搜词/推荐词 ==========
+      if (!this.hasSearched || this.isEditing) {
+        this.buildKeywordChips('热搜词', this.hotKeywords);
+        this.buildKeywordChips('推荐词', this.recommendKeywords);
+      }
+
       // ========== 搜索历史记录区域 ==========
       if (this.searchHistory.length > 0 && (this.isEditing || !this.hasSearched)) {
         Column({ space: 8 }) {
@@ -411,12 +428,21 @@ export struct SearchPage {
               .fontSize(14)
               .fontWeight(FontWeight.Medium)
               .layoutWeight(1)
+              .textAlign(TextAlign.Center)
             Text('清空')
               .fontSize(12)
               .opacity(0.6)
               .onClick(async () => await this.clearSearchHistory())
           }
           .padding({ left: 16, right: 16 })
+
+
+          Text('提示：点击关键词快速搜索，右侧可删除单条，清空后不可恢复。')
+            .fontSize(11)
+            .opacity(0.55)
+            .padding({ left: 16, right: 16, bottom: 8 })
+            .opacity(this.panelOpacity)
+            .translate({ x: 0, y: this.panelOffset })
 
           // 历史记录列表
           Column({ space: 6 }) {
@@ -429,7 +455,7 @@ export struct SearchPage {
                   .onClick(async () => {
                     await this.applyKeyword(item);
                   })
-                
+
                 // 删除按钮
                 Text('删除')
                   .fontSize(12)
@@ -447,43 +473,20 @@ export struct SearchPage {
               .margin({ left: 16, right: 16 })
             }, (item: string) => item)
           }
-
-          Text('提示：点击关键词快速搜索，右侧可删除单条，清空后不可恢复。')
-            .fontSize(11)
-            .opacity(0.55)
-            .padding({ left: 16, right: 16 })
         }
         .padding({ bottom: 12 })
         .opacity(this.panelOpacity)
         .translate({ x: 0, y: this.panelOffset })
+        .margin({ top: 20 })
       } else if (this.searchHistory.length === 0 && (this.isEditing || !this.hasSearched)) {
         Column({ space: 6 }) {
           Text('暂无搜索记录')
             .fontSize(13)
             .fontWeight(FontWeight.Medium)
-          Text('试试下面的热搜词或推荐词，发现更多内容。')
-            .fontSize(12)
-            .opacity(0.6)
         }
         .padding({ left: 16, right: 16, bottom: 12 })
         .opacity(this.panelOpacity)
         .translate({ x: 0, y: this.panelOffset })
-      }
-
-      // ========== 热搜词/推荐词 ==========
-      if (!this.hasSearched || this.isEditing) {
-        this.buildKeywordChips('热搜词', this.hotKeywords);
-        this.buildKeywordChips('推荐词', this.recommendKeywords);
-      }
-
-      // ========== 引导提示（未搜索状态） ==========
-      if (!this.hasSearched) {
-        Text('支持远端搜索 WanAndroid 文章，试试输入"鸿蒙"或"AI"。')
-          .fontSize(13)
-          .opacity(0.7)
-          .margin({ left: 16, right: 16, bottom: 8 })
-          .opacity(this.panelOpacity)
-          .translate({ x: 0, y: this.panelOffset })
       }
 
       // ========== 加载状态提示 ==========
@@ -495,7 +498,7 @@ export struct SearchPage {
         .padding(16)
         .opacity(this.panelOpacity)
         .translate({ x: 0, y: this.panelOffset })
-      } 
+      }
       // ========== 错误状态提示 ==========
       else if (this.errorMsg) {
         Column({ space: 6 }) {
@@ -505,7 +508,7 @@ export struct SearchPage {
         .padding({ left: 16, right: 16, bottom: 6 })
         .opacity(this.panelOpacity)
         .translate({ x: 0, y: this.panelOffset })
-      } 
+      }
       // ========== 空结果提示 ==========
       else if (this.hasSearched && this.results.length === 0) {
         Column({ space: 6 }) {

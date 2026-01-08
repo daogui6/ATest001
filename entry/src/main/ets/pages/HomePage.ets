@@ -434,12 +434,14 @@ export struct HomePage {
           Text('推荐策略')
             .fontSize(16)
             .fontWeight(FontWeight.Medium)
+            .textAlign(TextAlign.Center)
           Text(this.strategyText)
             .fontSize(12)
             .opacity(0.7)
+            .textAlign(TextAlign.Center)
 
           if (this.topics.length > 0) {
-            Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.Start, alignItems: ItemAlign.Center }) {
+            Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.Center, alignItems: ItemAlign.Center }) {
               ForEach(this.topics, (topic: Category) => {
                 Text(topic.name)
                   .fontSize(12)
