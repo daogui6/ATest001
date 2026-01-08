@@ -8,6 +8,7 @@
     "pages/LikedPage",
     "pages/CommentedPage",
     "pages/NotificationPage",
-    "pages/RegisterPage"
+    "pages/RegisterPage",
+    "pages/CategoryPage"
   ]
 }

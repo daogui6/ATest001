@@ -45,6 +45,7 @@ interface CategoryPageParams {
  * - 收藏状态实时同步
  * - 平滑的动画交互体验
  */
+@Entry
 @Component
 export struct CategoryPage {
   /**
