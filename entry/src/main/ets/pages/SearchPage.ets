@@ -54,6 +54,10 @@ AppStorage.setOrCreate('session_version', 0); // 会话版本号
 @Entry
 @Component
 export struct SearchPage {
+  // ========== 推荐关键词 ==========
+  private hotKeywords: string[] = ['鸿蒙', 'HarmonyOS', 'Compose', 'Kotlin', 'AI'];
+  private recommendKeywords: string[] = ['性能优化', '动画', '架构', '网络请求', '组件化'];
+
   // ========== 上下文获取 ==========
   
   /**
@@ -198,6 +202,14 @@ export struct SearchPage {
     this.searchHistory = [];
   }
 
+  /**
+   * 快捷应用关键词（热搜/推荐/历史点击）
+   */
+  private async applyKeyword(keyword: string) {
+    this.keyword = keyword;
+    await this.performSearch();
+  }
+
   // ========== 搜索功能方法 ==========
   
   /**
@@ -233,6 +245,35 @@ export struct SearchPage {
     } finally {
       // 清理加载状态
       this.loading = false;
+    }
+  }
+
+  // ========== 构建工具方法 ==========
+
+  /**
+   * 构建关键词标签组
+   */
+  private buildKeywordChips(title: string, keywords: string[]) {
+    Column({ space: 8 }) {
+      Text(title)
+        .fontSize(13)
+        .fontWeight(FontWeight.Medium)
+        .padding({ left: 16, right: 16 })
+
+      Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.Start, alignItems: ItemAlign.Center }) {
+        ForEach(keywords, (item: string) => {
+          Text(item)
+            .fontSize(12)
+            .padding({ left: 12, right: 12, top: 6, bottom: 6 })
+            .margin({ right: 8, bottom: 8 })
+            .backgroundColor('#F1F5F9')
+            .borderRadius(14)
+            .onClick(async () => {
+              await this.applyKeyword(item);
+            })
+        }, (item: string) => item)
+      }
+      .padding({ left: 16, right: 16 })
     }
   }
 
@@ -386,8 +427,7 @@ export struct SearchPage {
                   .layoutWeight(1)
                   .fontSize(13)
                   .onClick(async () => {
-                    this.keyword = item;
-                    await this.performSearch();
+                    await this.applyKeyword(item);
                   })
                 
                 // 删除按钮
@@ -407,10 +447,33 @@ export struct SearchPage {
               .margin({ left: 16, right: 16 })
             }, (item: string) => item)
           }
+
+          Text('提示：点击关键词快速搜索，右侧可删除单条，清空后不可恢复。')
+            .fontSize(11)
+            .opacity(0.55)
+            .padding({ left: 16, right: 16 })
         }
         .padding({ bottom: 12 })
         .opacity(this.panelOpacity)
         .translate({ x: 0, y: this.panelOffset })
+      } else if (this.searchHistory.length === 0 && (this.isEditing || !this.hasSearched)) {
+        Column({ space: 6 }) {
+          Text('暂无搜索记录')
+            .fontSize(13)
+            .fontWeight(FontWeight.Medium)
+          Text('试试下面的热搜词或推荐词，发现更多内容。')
+            .fontSize(12)
+            .opacity(0.6)
+        }
+        .padding({ left: 16, right: 16, bottom: 12 })
+        .opacity(this.panelOpacity)
+        .translate({ x: 0, y: this.panelOffset })
+      }
+
+      // ========== 热搜词/推荐词 ==========
+      if (!this.hasSearched || this.isEditing) {
+        this.buildKeywordChips('热搜词', this.hotKeywords);
+        this.buildKeywordChips('推荐词', this.recommendKeywords);
       }
 
       // ========== 引导提示（未搜索状态） ==========
@@ -445,9 +508,15 @@ export struct SearchPage {
       } 
       // ========== 空结果提示 ==========
       else if (this.hasSearched && this.results.length === 0) {
-        Text('未找到相关内容').margin({ left: 16, right: 16, bottom: 8 }).opacity(0.7)
-          .opacity(this.panelOpacity)
-          .translate({ x: 0, y: this.panelOffset })
+        Column({ space: 6 }) {
+          Text('未找到相关内容').fontSize(13).opacity(0.8)
+          Text('可以尝试更短的关键词，或点击上方热搜词快速搜索。')
+            .fontSize(12)
+            .opacity(0.6)
+        }
+        .margin({ left: 16, right: 16, bottom: 8 })
+        .opacity(this.panelOpacity)
+        .translate({ x: 0, y: this.panelOffset })
       }
 
       // ========== 搜索结果列表 ==========
