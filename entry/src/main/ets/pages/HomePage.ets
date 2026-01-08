@@ -148,7 +148,7 @@ export struct HomePage {
    * 重新加载文章
    * 获取置顶和最新文章
    */
-  private async reloadArticles() {
+  private async reloadArticles(randomize: boolean = false) {
     this.loading = true;
     this.errorMsg = '';
     this.hasMore = true;
@@ -169,7 +169,7 @@ export struct HomePage {
       this.topics = profile.topics;
       const merged: Article[] = [...top, ...latest];
       const deduped = this.dedupArticles(merged);
-      this.articles = this.rankArticles(deduped, this.preferenceScores, this.topArticleIds);
+      this.articles = this.rankArticles(deduped, this.preferenceScores, this.topArticleIds, randomize);
       this.hasMore = latest.length > 0;
       this.nextPage = 1;
     } catch (e) {
@@ -189,7 +189,7 @@ export struct HomePage {
       return;
     }
     this.refreshing = true;
-    await this.reloadArticles();
+    await this.reloadArticles(true);
     this.refreshing = false;
   }
 
@@ -345,10 +345,21 @@ export struct HomePage {
     return profile;
   }
 
+  private shuffleInPlace<T>(list: T[]): void {
+    for (let i = list.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp = list[i];
+      list[i] = list[j];
+      list[j] = temp;
+
+    }
+  }
+
   private rankArticles(
     list: Article[],
     scores: Map<number, number>,
-    topIds: Set<number>
+    topIds: Set<number>,
+    randomize: boolean = false
   ): Article[] {
     const ranked = list.map((item: Article, index: number): RankedArticle => {
       const preferenceScore = scores.get(item.cid) ?? 0;
@@ -366,6 +377,23 @@ export struct HomePage {
       }
       return b.score - a.score;
     });
+
+    if (randomize) {
+      let start = 0;
+      while (start < ranked.length) {
+        const score = ranked[start].score;
+        let end = start + 1;
+        while (end < ranked.length && ranked[end].score === score) {
+          end += 1;
+        }
+        const group = ranked.slice(start, end);
+        this.shuffleInPlace(group);
+        for (let i = 0; i < group.length; i += 1) {
+          ranked[start + i] = group[i];
+        }
+        start = end;
+      }
+    }
 
     return ranked.map(entry => entry.item);
   }
@@ -411,11 +439,16 @@ export struct HomePage {
             .opacity(0.7)
 
           if (this.topics.length > 0) {
-            Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.Start, alignItems: ItemAlign.Center }) {
+            Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.Center, alignItems: ItemAlign.Center }) {
               ForEach(this.topics, (topic: Category) => {
                 Text(topic.name)
                   .fontSize(12)
-                  .padding({ left: 12, right: 12, top: 6, bottom: 6 })
+                  .padding({
+                    left: 12,
+                    right: 12,
+                    top: 6,
+                    bottom: 6
+                  })
                   .margin({ right: 8, bottom: 8 })
                   .backgroundColor('#F1F5F9')
                   .borderRadius(14)
