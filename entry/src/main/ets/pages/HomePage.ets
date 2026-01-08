@@ -36,7 +36,8 @@ AppStorage.setOrCreate('fav_version', 0);
 AppStorage.setOrCreate('session_version', 0);
 
 interface CategoryRouteParams {
-  cid: number;
+  cid?: number;
+  fromHome?: boolean;
 }
 
 interface RecommendationProfile {
@@ -281,7 +282,7 @@ export struct HomePage {
 
   private async openCategoryPage(cid?: number) {
     try {
-      const params: CategoryRouteParams | undefined = cid ? { cid } : undefined;
+      const params: CategoryRouteParams | undefined = cid ? { cid, fromHome: true } : { fromHome: true };
       await router.pushUrl({
         url: 'pages/CategoryPage',
         params

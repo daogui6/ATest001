@@ -34,6 +34,7 @@ import { ArticleStore } from '../store/ArticleStore';
 
 interface CategoryPageParams {
   cid?: number | string;
+  fromHome?: boolean;
 }
 
 /**
@@ -75,7 +76,8 @@ export struct CategoryPage {
   @State nextPage: number = 0; // 下一页页码（分页用）
   @State hasMore: boolean = true; // 是否还有更多数据
   @State showBackToTop: boolean = false; // 是否显示返回顶部按钮
-  
+  @State showBackButton: boolean = false; // 是否显示返回按钮
+
   //  动画相关状态
   @State headerOpacity: number = 0; // 头部标题透明度
   @State headerOffset: number = 12; // 头部标题偏移量
@@ -128,7 +130,9 @@ export struct CategoryPage {
     // 确保全局状态key存在（避免首次为undefined）
     AppStorage.setOrCreate('fav_version', 0);
     AppStorage.setOrCreate('session_version', 0);
-    
+    const params = router.getParams() as CategoryPageParams | undefined;
+    this.showBackButton = Boolean(params?.fromHome);
+
     // 初始化数据
     await this.refreshFav(); // 刷新收藏状态
     await this.loadCategories(); // 加载分类数据
@@ -399,11 +403,20 @@ export struct CategoryPage {
       Column() {
         //  头部标题区域（带动画效果）
         Row() {
+          if (this.showBackButton) {
+            Text('←')
+              .fontSize(22)
+              .onClick(() => router.back())
+              .width(40)
+          } else {
+            Blank().width(40)
+          }
           Text('分类')
             .fontSize(22)
             .fontWeight(FontWeight.Bold)
             .layoutWeight(1)
             .textAlign(TextAlign.Center)
+          Blank().width(40)
         }
         .width('100%')
         .padding(12)
