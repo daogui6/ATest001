@@ -139,7 +139,7 @@ export async function callZhipu(title: string, content: string, mode: AiMode, qu
 
     // 验证HTTP状态码
     if (status < 200 || status >= 300) {
-      throw new Error(`AI接口失败(${status})：${raw.slice(0, 200)}`);
+      throw new Error(`AI接口失败(${status})：${raw.slice(0, 200)}`);  //如果不是 2xx 状态码就抛错，并截取 200 个字符用于错误提示。
     }
 
     // 解析JSON响应

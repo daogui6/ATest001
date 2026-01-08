@@ -352,6 +352,20 @@ export struct MinePage {
     }
   }
 
+  /**
+   * 打开反馈入口
+   */
+  private async openFeedback() {
+    promptAction.showToast({ message: '反馈入口即将上线，敬请期待' });
+  }
+
+  /**
+   * 打开版本更新日志
+   */
+  private async openChangelog() {
+    promptAction.showToast({ message: '当前版本暂无更新日志' });
+  }
+
   // ========== 页面构建方法 ==========
   
   /**
@@ -485,6 +499,28 @@ export struct MinePage {
               .backgroundColor('#F6F7FB')
               .border({ width: 1, color: '#E9EEF5' })
               .onClick(async () => await this.openNotifications())
+
+              Column({ space: 6 }) {
+                Text('🧾').fontSize(22)
+                Text('更新日志').fontSize(12)
+              }
+              .layoutWeight(1)
+              .padding(12)
+              .borderRadius(12)
+              .backgroundColor('#F6F7FB')
+              .border({ width: 1, color: '#E9EEF5' })
+              .onClick(async () => await this.openChangelog())
+
+              Column({ space: 6 }) {
+                Text('🐞').fontSize(22)
+                Text('反馈').fontSize(12)
+              }
+              .layoutWeight(1)
+              .padding(12)
+              .borderRadius(12)
+              .backgroundColor('#F6F7FB')
+              .border({ width: 1, color: '#E9EEF5' })
+              .onClick(async () => await this.openFeedback())
             }
           }
           .padding(16)
