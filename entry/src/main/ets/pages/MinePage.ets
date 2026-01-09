@@ -413,7 +413,7 @@ export struct MinePage {
    */
   private async openFavoritePage() {
     try {
-      await router.pushUrl({ url: 'pages/FavoritePage', params: { showBack: true } });
+      await router.pushUrl({ url: 'pages/FavoritePage', params: { showBackButton: true } });
     } catch (e) {
       promptAction.showToast({ message: '跳转失败：页面不存在或参数错误' });
     }

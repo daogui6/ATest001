@@ -32,6 +32,7 @@ import { fetchArticlesByIds } from '../service/WanService';
 
 interface FavoritePageParams {
   showBackButton?: boolean;
+  showBack?: boolean;
 }
 
 // 确保全局状态key存在（避免首次get为undefined）
@@ -92,7 +93,7 @@ export struct FavoritePage {
    */
   private updateBackButton() {
     const params = router.getParams() as FavoritePageParams | undefined;
-    this.showBackButton = Boolean(params?.showBackButton);
+    this.showBackButton = Boolean(params?.showBackButton ?? params?.showBack);
   }
 
   /**
@@ -241,32 +242,36 @@ export struct FavoritePage {
   build() {
     Column() {
       // 顶部标题栏
-      Row() {
-        if (this.showBackButton) {
-          Text('←')
-            .fontSize(22)
-            .onClick(() => router.back())
-            .width(40)
-        } else {
-          Blank().width(40)
+      Stack({ alignContent: Alignment.Center }) {
+        Row() {
+          if (this.showBackButton) {
+            Text('←')
+              .fontSize(22)
+              .onClick(() => router.back())
+              .width(40)
+          } else {
+            Blank().width(40)
+          }
+
+          Blank().layoutWeight(1)
+
+          // 收藏数量统计
+          Text(`共 ${this.favArticles.length} 条`)
+            .fontSize(14)
+            .opacity(0.7)
+            .textAlign(TextAlign.End)
+            .padding({ right: 8 })
         }
+        .alignItems(VerticalAlign.Center)
+        .width('100%')
 
         // 页面标题
         Text('收藏')
-          .layoutWeight(1)
           .fontSize(22)
           .fontWeight(FontWeight.Bold)
           .textAlign(TextAlign.Center)
 
-        // 收藏数量统计
-        Text(`共 ${this.favArticles.length} 条`)
-          .layoutWeight(1)
-          .fontSize(14)
-          .opacity(0.7)
-          .textAlign(TextAlign.End)
-          .padding({ right: 8 })
       }
-      .alignItems(VerticalAlign.Center)
       .padding(12)
       .margin({ top: 12, left: 16, right: 16, bottom: 12 })
       .width('100%')
