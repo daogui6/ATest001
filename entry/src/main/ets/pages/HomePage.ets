@@ -52,6 +52,13 @@ interface RankedArticle {
   score: number;
 }
 
+interface BannerItem {
+  id: string;
+  title: string;
+  subtitle: string;
+  image: string;
+}
+
 /**
  * 首页组件
  * 核心职责：文章流展示和用户交互
@@ -83,6 +90,7 @@ export struct HomePage {
   @State hasMore: boolean = true;
   @State strategyText: string = '基于热门与最新内容推荐，浏览/收藏后会更懂你';
   @State topics: Category[] = [];
+  @State showStrategy: boolean = false;
 
   // UI动画状态
   @State showBackToTop: boolean = false;
@@ -94,6 +102,26 @@ export struct HomePage {
   private listScroller: Scroller = new Scroller();
   private preferenceScores: Map<number, number> = new Map<number, number>();
   private topArticleIds: Set<number> = new Set<number>();
+  private bannerItems: BannerItem[] = [
+    {
+      id: 'banner-1',
+      title: '今日推荐 · 热门趋势',
+      subtitle: '精选全站最新热门内容',
+      image: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80'
+    },
+    {
+      id: 'banner-2',
+      title: '灵感速递 · 专题合集',
+      subtitle: '知识专题一键掌握',
+      image: 'https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1200&q=80'
+    },
+    {
+      id: 'banner-3',
+      title: '高效工作流',
+      subtitle: '工具与方法高效整理',
+      image: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1200&q=80'
+    }
+  ];
 
   private onFavVersionChange() {
     this.refreshFav();
@@ -407,7 +435,15 @@ export struct HomePage {
       Column() {
         // 头部导航栏
         Row() {
-          Blank().width(36)
+          Button(this.showStrategy ? '收起策略' : '推荐策略', { type: ButtonType.Capsule })
+            .fontSize(12)
+            .fontColor('#4F46E5')
+            .backgroundColor('#EEF2FF')
+            .height(28)
+            .padding({ left: 10, right: 10 })
+            .onClick(() => {
+              this.showStrategy = !this.showStrategy;
+            })
           Text('首页')
             .fontSize(22)
             .fontWeight(FontWeight.Bold)
@@ -430,48 +466,50 @@ export struct HomePage {
         .opacity(this.headerOpacity)
         .translate({ x: 0, y: this.headerOffset })
 
-        Column({ space: 10 }) {
-          Text('推荐策略')
-            .fontSize(16)
-            .fontWeight(FontWeight.Medium)
-            .textAlign(TextAlign.Center)
-          Text(this.strategyText)
-            .fontSize(12)
-            .opacity(0.7)
-            .textAlign(TextAlign.Center)
+        if (this.showStrategy) {
+          Column({ space: 10 }) {
+            Text('推荐策略')
+              .fontSize(16)
+              .fontWeight(FontWeight.Medium)
+              .textAlign(TextAlign.Center)
+            Text(this.strategyText)
+              .fontSize(12)
+              .opacity(0.7)
+              .textAlign(TextAlign.Center)
 
-          if (this.topics.length > 0) {
-            Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.Center, alignItems: ItemAlign.Center }) {
-              ForEach(this.topics, (topic: Category) => {
-                Text(topic.name)
-                  .fontSize(12)
-                  .padding({
-                    left: 12,
-                    right: 12,
-                    top: 6,
-                    bottom: 6
-                  })
-                  .margin({ right: 8, bottom: 8 })
-                  .backgroundColor('#F1F5F9')
-                  .borderRadius(14)
-                  .onClick(async () => await this.openCategoryPage(topic.cid))
-              })
+            if (this.topics.length > 0) {
+              Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.Center, alignItems: ItemAlign.Center }) {
+                ForEach(this.topics, (topic: Category) => {
+                  Text(topic.name)
+                    .fontSize(12)
+                    .padding({
+                      left: 12,
+                      right: 12,
+                      top: 6,
+                      bottom: 6
+                    })
+                    .margin({ right: 8, bottom: 8 })
+                    .backgroundColor('#F1F5F9')
+                    .borderRadius(14)
+                    .onClick(async () => await this.openCategoryPage(topic.cid))
+                })
+              }
+          }
+
+            Row() {
+              Text('查看全部专题')
+                .fontSize(12)
+                .fontColor('#3B82F6')
+                .onClick(async () => await this.openCategoryPage())
+              Blank().layoutWeight(1)
             }
           }
-
-          Row() {
-            Text('查看全部专题')
-              .fontSize(12)
-              .fontColor('#3B82F6')
-              .onClick(async () => await this.openCategoryPage())
-            Blank().layoutWeight(1)
-          }
+          .padding(14)
+          .margin({ left: 16, right: 16, bottom: 12 })
+          .backgroundColor('#FFFFFF')
+          .borderRadius(16)
+          .shadow({ radius: 12, color: '#12000000', offsetX: 0, offsetY: 4 })
         }
-        .padding(14)
-        .margin({ left: 16, right: 16, bottom: 12 })
-        .backgroundColor('#FFFFFF')
-        .borderRadius(16)
-        .shadow({ radius: 12, color: '#12000000', offsetX: 0, offsetY: 4 })
 
         // 内容区域
         if (this.loading) {
@@ -491,6 +529,34 @@ export struct HomePage {
         // 下拉刷新容器
         Refresh({ refreshing: this.refreshing }) {
           List({ scroller: this.listScroller }) {
+            ListItem() {
+              Column() {
+                Swiper({ autoPlay: true, interval: 3200, indicator: true }) {
+                  ForEach(this.bannerItems, (banner: BannerItem) => {
+                    Stack({ alignContent: Alignment.BottomStart }) {
+                      Image(banner.image)
+                        .width('100%')
+                        .height('100%')
+                        .objectFit(ImageFit.Cover)
+                      Column({ space: 4 }) {
+                        Text(banner.title).fontSize(16).fontWeight(FontWeight.Bold).fontColor('#FFFFFF')
+                        Text(banner.subtitle).fontSize(12).opacity(0.85).fontColor('#FFFFFF')
+                      }
+                      .padding(12)
+                      .backgroundColor('#66000000')
+                      .borderRadius(12)
+                      .margin(12)
+                    }
+                  }, (banner: BannerItem) => banner.id)
+                }
+                .height(160)
+              }
+              .padding(12)
+              .margin({ left: 16, right: 16, bottom: 12 })
+              .backgroundColor('#FFFFFF')
+              .borderRadius(16)
+              .shadow({ radius: 12, color: '#14000000', offsetX: 0, offsetY: 6 })
+            }
             ForEach(this.articles, (item: Article) => {
               ListItem() {
                 Row() {

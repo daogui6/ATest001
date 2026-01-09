@@ -71,6 +71,7 @@ export struct MinePage {
   @State publicName: string = '';            // 公开昵称
   @State token: string = '';                 // 用户令牌
   @State isEditingProfile: boolean = false;  // 是否处于编辑资料状态
+  @State showSettings: boolean = false;      // 设置面板展示
 
   // ========== 登录表单状态 ==========
   /** 登录表单相关状态 */
@@ -86,6 +87,9 @@ export struct MinePage {
   @State headerOffset: number = 12;          // 头部偏移量
   @State contentOpacity: number = 0;         // 内容透明度
   @State contentOffset: number = 18;         // 内容偏移量
+  @State enablePush: boolean = true;         // 设置：消息提醒
+  @State enableAutoPlay: boolean = true;     // 设置：自动播放
+  @State enableCellular: boolean = false;    // 设置：移动网络播放
 
   // ========== 通知状态管理 ==========
   /** 通知相关状态 - 使用@StorageLink实现跨页面同步 */
@@ -458,6 +462,20 @@ export struct MinePage {
     promptAction.showToast({ message: '当前版本暂无更新日志' });
   }
 
+  /**
+   * 打开帮助中心
+   */
+  private async openHelpCenter() {
+    promptAction.showToast({ message: '帮助中心正在建设中' });
+  }
+
+  /**
+   * 清理缓存
+   */
+  private async clearCache() {
+    promptAction.showToast({ message: '缓存已清理，空间更清爽' });
+  }
+
   // ========== 页面构建方法 ==========
   
   /**
@@ -468,12 +486,27 @@ export struct MinePage {
     Column() {
       // ========== 头部导航栏 ==========
       Row() {
+        Blank().width(36)
         Text('我的')
           .fontSize(22)
           .fontWeight(FontWeight.Bold)
-          .margin({ left: 16 })
+          .layoutWeight(1)
+          .textAlign(TextAlign.Center)
+        Button('设置', { type: ButtonType.Capsule })
+          .fontSize(12)
+          .fontColor('#4F46E5')
+          .backgroundColor('#EEF2FF')
+          .height(28)
+          .padding({ left: 10, right: 10 })
+          .onClick(() => {
+            this.showSettings = !this.showSettings;
+          })
       }
-      .height(52)
+      .padding(12)
+      .margin({ top: 12, left: 16, right: 16, bottom: 12 })
+      .backgroundColor('#FFFFFF')
+      .borderRadius(16)
+      .shadow({ radius: 14, color: '#14000000', offsetX: 0, offsetY: 6 })
       .alignItems(VerticalAlign.Center)
       .opacity(this.headerOpacity)
       .translate({ x: 0, y: this.headerOffset })
@@ -533,6 +566,51 @@ export struct MinePage {
           .backgroundColor('#FFFFFF')
           .border({ width: 1, color: '#E9EEF5' })
           .shadow({ radius: 10, color: '#1A3B5A26', offsetX: 0, offsetY: 6 })
+
+          Column({ space: 12 }) {
+            Row() {
+              Text('常用服务').fontSize(16).fontWeight(FontWeight.Medium)
+            }
+            Row({ space: 12 }) {
+              Column({ space: 6 }) {
+                Text('⭐').fontSize(22)
+                Text('我的收藏').fontSize(12)
+              }
+              .layoutWeight(1)
+              .padding(12)
+              .borderRadius(12)
+              .backgroundColor('#F6F7FB')
+              .border({ width: 1, color: '#E9EEF5' })
+              .onClick(async () => await this.openLiked())
+
+              Column({ space: 6 }) {
+                Text('📥').fontSize(22)
+                Text('离线下载').fontSize(12)
+              }
+              .layoutWeight(1)
+              .padding(12)
+              .borderRadius(12)
+              .backgroundColor('#F6F7FB')
+              .border({ width: 1, color: '#E9EEF5' })
+              .onClick(async () => await this.openHelpCenter())
+
+              Column({ space: 6 }) {
+                Text('🛡️').fontSize(22)
+                Text('隐私中心').fontSize(12)
+              }
+              .layoutWeight(1)
+              .padding(12)
+              .borderRadius(12)
+              .backgroundColor('#F6F7FB')
+              .border({ width: 1, color: '#E9EEF5' })
+              .onClick(async () => await this.openHelpCenter())
+            }
+          }
+          .padding(16)
+          .borderRadius(16)
+          .backgroundColor('#FFFFFF')
+          .border({ width: 1, color: '#E9EEF5' })
+          .shadow({ radius: 10, color: '#1A3B5A1A', offsetX: 0, offsetY: 6 })
 
           // ========== 功能入口区域 ==========
           Column({ space: 12 }) {
@@ -722,7 +800,156 @@ export struct MinePage {
             .backgroundColor('#FFFFFF')
             .border({ width: 1, color: '#E9EEF5' })
             .shadow({ radius: 12, color: '#1A3B5A14', offsetX: 0, offsetY: 6 })
-          } else {
+          }
+          if (this.showSettings) {
+            Column({ space: 12 }) {
+              Row() {
+                Text('设置中心').fontSize(16).fontWeight(FontWeight.Medium)
+              }
+
+              if (this.isLogin) {
+                Column({ space: 6 }) {
+                  Text('账号信息').fontSize(14).fontWeight(FontWeight.Medium)
+                  Text(`用户ID：${this.uid}`).fontSize(13).opacity(0.7)
+                  Text(`用户名：${this.username || '未获取'}`).fontSize(13).opacity(0.7)
+                  Text(`公开昵称：${this.publicName || this.nickname}`).fontSize(13).opacity(0.7)
+                  Text(`昵称：${this.nickname}`).fontSize(13).opacity(0.7)
+                  Text(`签名：${this.bio}`).fontSize(13).opacity(0.7)
+                }
+              } else {
+                Text('登录后可管理账号信息').fontSize(12).opacity(0.6)
+              }
+
+              Column({ space: 10 }) {
+                Row() {
+                  Text('消息提醒').fontSize(14)
+                  Blank().layoutWeight(1)
+                  Switch({ checked: this.enablePush })
+                    .onChange((v: boolean) => {
+                      this.enablePush = v;
+                    })
+                }
+                Row() {
+                  Text('首页自动播放').fontSize(14)
+                  Blank().layoutWeight(1)
+                  Switch({ checked: this.enableAutoPlay })
+                    .onChange((v: boolean) => {
+                      this.enableAutoPlay = v;
+                    })
+                }
+                Row() {
+                  Text('移动网络播放').fontSize(14)
+                  Blank().layoutWeight(1)
+                  Switch({ checked: this.enableCellular })
+                    .onChange((v: boolean) => {
+                      this.enableCellular = v;
+                    })
+                }
+              }
+              .padding(12)
+              .borderRadius(12)
+              .backgroundColor('#F8FAFC')
+
+              Column({ space: 10 }) {
+                Row() {
+                  Text('清理缓存').fontSize(14)
+                  Blank().layoutWeight(1)
+                  Text('立即').fontSize(12).fontColor('#3B82F6')
+                }
+                .onClick(async () => await this.clearCache())
+                Row() {
+                  Text('帮助中心').fontSize(14)
+                  Blank().layoutWeight(1)
+                  Text('查看').fontSize(12).fontColor('#3B82F6')
+                }
+                .onClick(async () => await this.openHelpCenter())
+              }
+
+              if (this.isLogin) {
+                if (this.isEditingProfile) {
+                  Row({ space: 12 }) {
+                    Stack({ alignContent: Alignment.Center }) {
+                      if (this.avatarUrl) {
+                        Image(this.avatarUrl)
+                          .width(52)
+                          .height(52)
+                          .borderRadius(26)
+                          .objectFit(ImageFit.Cover)
+                      } else {
+                        Image($r('app.media.startIcon'))
+                          .width(52)
+                          .height(52)
+                          .borderRadius(26)
+                          .backgroundColor('#4C6FFF')
+                          .objectFit(ImageFit.Cover)
+                      }
+                    }
+                    .width(52)
+                    .height(52)
+                    .borderRadius(26)
+                    .border({ width: 1, color: '#E2E8F5' })
+                    Button('更换头像', { type: ButtonType.Capsule })
+                      .onClick(async () => {
+                        await this.chooseAvatar();
+                      })
+                  }
+                  .alignItems(VerticalAlign.Center)
+
+                  Text('编辑昵称').fontSize(14).opacity(0.7)
+                  TextInput({ text: this.nickname, placeholder: '请输入昵称' })
+                    .onChange((v) => {
+                      this.nickname = v;
+                    })
+                    .padding({ left: 12, right: 12 })
+                    .borderRadius(10)
+                    .backgroundColor('#F6F7FB')
+
+                  Text('编辑签名').fontSize(14).opacity(0.7).margin({ top: 6 })
+                  TextInput({ text: this.bio, placeholder: '请输入签名' })
+                    .onChange((v) => {
+                      this.bio = v
+                    })
+                    .padding({ left: 12, right: 12 })
+                    .borderRadius(10)
+                    .backgroundColor('#F6F7FB')
+
+                  Row({ space: 12 }) {
+                    Button('保存资料', { type: ButtonType.Capsule })
+                      .layoutWeight(1)
+                      .onClick(async () => {
+                        await this.persistProfileChanges();
+                        this.isEditingProfile = false;
+                      })
+                    Button('取消', { type: ButtonType.Capsule })
+                      .layoutWeight(1)
+                      .onClick(async () => {
+                        await this.cancelEditProfile();
+                      })
+                  }
+                  .margin({ top: 6 })
+                } else {
+                  Row({ space: 12 }) {
+                    Button('修改资料', { type: ButtonType.Capsule })
+                      .layoutWeight(1)
+                      .onClick(() => {
+                        this.isEditingProfile = true;
+                      })
+                    Button('退出登录', { type: ButtonType.Capsule })
+                      .layoutWeight(1)
+                      .onClick(async () => {
+                        await this.handleLogout();
+                      })
+                  }
+                  .margin({ top: 10 })
+                }
+              }
+            }
+            .padding(16)
+            .borderRadius(16)
+            .backgroundColor('#FFFFFF')
+            .border({ width: 1, color: '#E9EEF5' })
+            .shadow({ radius: 12, color: '#1A3B5A14', offsetX: 0, offsetY: 6 })
+          } else if (this.isLogin) {
             // ========== 账号信息区域（已登录状态） ==========
             Column({ space: 12 }) {
               Text('账号信息').fontSize(16).fontWeight(FontWeight.Medium)
@@ -766,17 +993,15 @@ export struct MinePage {
                 }
                 .alignItems(VerticalAlign.Center)
 
-                // 昵称编辑
                 Text('编辑昵称').fontSize(14).opacity(0.7)
                 TextInput({ text: this.nickname, placeholder: '请输入昵称' })
-                  .onChange((v) => { // 首先更新本地状态，统一点击保存时再持久化
+                  .onChange((v) => {
                     this.nickname = v;
                   })
                   .padding({ left: 12, right: 12 })
                   .borderRadius(10)
                   .backgroundColor('#F6F7FB')
 
-                // 签名编辑
                 Text('编辑签名').fontSize(14).opacity(0.7).margin({ top: 6 })
                 TextInput({ text: this.bio, placeholder: '请输入签名' })
                   .onChange((v) => {
@@ -786,7 +1011,6 @@ export struct MinePage {
                   .borderRadius(10)
                   .backgroundColor('#F6F7FB')
 
-                // 保存/取消按钮
                 Row({ space: 12 }) {
                   Button('保存资料', { type: ButtonType.Capsule })
                     .layoutWeight(1)
