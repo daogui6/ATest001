@@ -104,7 +104,7 @@ export struct SplashPage {
        * 全屏背景图片
        * 使用app.media.background资源，覆盖整个屏幕
        */
-      Image($r('app.media.background'))
+      Image($r('app.media.beijingtu'))
         .width('100%')
         .height('100%')
         .objectFit(ImageFit.Cover)
