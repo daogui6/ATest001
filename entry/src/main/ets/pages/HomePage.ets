@@ -531,7 +531,7 @@ export struct HomePage {
           List({ scroller: this.listScroller }) {
             ListItem() {
               Column() {
-                Swiper({ autoPlay: true, interval: 3200, indicator: true }) {
+                Swiper() {
                   ForEach(this.bannerItems, (banner: BannerItem) => {
                     Stack({ alignContent: Alignment.BottomStart }) {
                       Image(banner.image)
@@ -549,6 +549,9 @@ export struct HomePage {
                     }
                   }, (banner: BannerItem) => banner.id)
                 }
+                .autoPlay(true)
+                .interval(3200)
+                .indicator(true)
                 .height(160)
               }
               .padding(12)

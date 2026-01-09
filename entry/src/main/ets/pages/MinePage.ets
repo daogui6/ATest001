@@ -824,7 +824,7 @@ export struct MinePage {
                 Row() {
                   Text('消息提醒').fontSize(14)
                   Blank().layoutWeight(1)
-                  Switch({ checked: this.enablePush })
+                  Toggle({ type: ToggleType.Switch, isOn: this.enablePush })
                     .onChange((v: boolean) => {
                       this.enablePush = v;
                     })
@@ -832,7 +832,7 @@ export struct MinePage {
                 Row() {
                   Text('首页自动播放').fontSize(14)
                   Blank().layoutWeight(1)
-                  Switch({ checked: this.enableAutoPlay })
+                  Toggle({ type: ToggleType.Switch, isOn: this.enableAutoPlay })
                     .onChange((v: boolean) => {
                       this.enableAutoPlay = v;
                     })
@@ -840,7 +840,7 @@ export struct MinePage {
                 Row() {
                   Text('移动网络播放').fontSize(14)
                   Blank().layoutWeight(1)
-                  Switch({ checked: this.enableCellular })
+                  Toggle({ type: ToggleType.Switch, isOn: this.enableCellular })
                     .onChange((v: boolean) => {
                       this.enableCellular = v;
                     })
