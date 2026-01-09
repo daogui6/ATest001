@@ -135,7 +135,7 @@ export struct SplashPage {
          * 使用app.media.xuexi资源
          * 应用透明度动画和缩放动画效果
          */
-        Image($r('app.media.xuexi')
+        Image($r('app.media.xuexi'))
           .width(140)
           .height(140)
           .objectFit(ImageFit.Contain)
