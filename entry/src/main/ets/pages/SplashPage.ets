@@ -58,6 +58,12 @@ export struct SplashPage {
    */
   @State iconScale: number = 0.9;
 
+  /**
+   * 进度条数值
+   * 初始值为0，动画过程中逐渐变为100（完成）
+   */
+  @State loadingProgress: number = 0;
+
   // ========== 生命周期方法 ==========
   
   /**
@@ -66,9 +72,10 @@ export struct SplashPage {
    */
   aboutToAppear() {
     // 执行图标动画效果
-    animateTo({ duration: 800, curve: Curve.EaseOut }, () => {
+    animateTo({ duration: 1800, curve: Curve.EaseOut }, () => {
       this.iconOpacity = 1;     // 完全显示
       this.iconScale = 1;       // 原始大小
+      this.loadingProgress = 100; // 进度条完成
     });
 
     // 设置跳转定时器
@@ -113,11 +120,22 @@ export struct SplashPage {
       
       Column({ space: 16 }) {
         /**
+         * 进度条
+         * 位于图标上方，用于提示加载进度
+         */
+        Progress({ value: this.loadingProgress, total: 100, style: ProgressStyle.Linear })
+          .width(220)
+          .height(6)
+          .color('#4C7DFF')
+          .backgroundColor('#E1E6F5')
+          .borderRadius(3)
+
+        /**
          * 应用图标
-         * 使用app.media.startIcon资源
+         * 使用app.media.xuexi资源
          * 应用透明度动画和缩放动画效果
          */
-        Image($r('app.media.startIcon'))
+        Image($r('app.media.xuexi')
           .width(140)
           .height(140)
           .objectFit(ImageFit.Contain)
