@@ -117,7 +117,7 @@ export struct SplashPage {
          * 应用透明度动画和缩放动画效果
          */
         AppLoadingProgress({
-          size: 140,
+          iconSize: 140,
           orbitRadius: 96,
           orbitImageSize: 40
         })
