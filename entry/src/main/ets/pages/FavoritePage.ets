@@ -30,6 +30,10 @@ import { FavoriteStore } from '../store/FavoriteStore';
 import { ArticleStore } from '../store/ArticleStore';
 import { fetchArticlesByIds } from '../service/WanService';
 
+interface FavoritePageParams {
+  showBackButton?: boolean;
+}
+
 // 确保全局状态key存在（避免首次get为undefined）
 AppStorage.setOrCreate('fav_version', 0);
 AppStorage.setOrCreate('session_version', 0);
@@ -87,7 +91,7 @@ export struct FavoritePage {
    * 用于判断是否显示返回按钮
    */
   private updateBackButton() {
-    const params = router.getParams() as { showBackButton?: boolean } | undefined;
+    const params = router.getParams() as FavoritePageParams | undefined;
     this.showBackButton = Boolean(params?.showBackButton);
   }
 
