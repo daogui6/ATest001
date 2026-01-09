@@ -43,6 +43,7 @@ export struct SplashPage {
    * 用于在启动动画完成后自动跳转到主页面
    */
   private navigateTimer?: number;
+  private orbitTimer?: number;
 
   // ========== 动画状态管理 ==========
   
@@ -63,6 +64,11 @@ export struct SplashPage {
    * 初始值为0，动画过程中逐渐变为100（完成）
    */
   @State loadingProgress: number = 0;
+  @State orbitAngle: number = 0;
+
+  private readonly orbitRadius: number = 96;
+  private readonly orbitTickMs: number = 16;
+  private readonly orbitSpeed: number = 2;
 
   // ========== 生命周期方法 ==========
   
@@ -83,6 +89,8 @@ export struct SplashPage {
     this.navigateTimer = setTimeout(() => {
       router.replaceUrl({ url: 'pages/Index' });
     }, 1800);
+
+    this.startOrbitAnimation();
   }
 
   /**
@@ -95,6 +103,19 @@ export struct SplashPage {
       clearTimeout(this.navigateTimer);
       this.navigateTimer = undefined;
     }
+    if (this.orbitTimer !== undefined) {
+      clearInterval(this.orbitTimer);
+      this.orbitTimer = undefined;
+    }
+  }
+
+  private startOrbitAnimation() {
+    if (this.orbitTimer !== undefined) {
+      clearInterval(this.orbitTimer);
+    }
+    this.orbitTimer = setInterval(() => {
+      this.orbitAngle = (this.orbitAngle + this.orbitSpeed) % 360;
+    }, this.orbitTickMs);
   }
 
   // ========== 页面构建方法 ==========
@@ -135,13 +156,27 @@ export struct SplashPage {
          * 使用app.media.xuexi资源
          * 应用透明度动画和缩放动画效果
          */
-        Image($r('app.media.xuexi'))
-          .width(140)
-          .height(140)
-          .objectFit(ImageFit.Contain)
-          .opacity(this.iconOpacity)        // 动态透明度
-          .scale({ x: this.iconScale, y: this.iconScale })  // 动态缩放
-          .borderRadius(28)                 // 圆角效果
+        Stack({ alignContent: Alignment.Center }) {
+          Image($r('app.media.xuexi'))
+            .width(140)
+            .height(140)
+            .objectFit(ImageFit.Contain)
+            .opacity(this.iconOpacity)        // 动态透明度
+            .scale({ x: this.iconScale, y: this.iconScale })  // 动态缩放
+            .borderRadius(28)                 // 圆角效果
+
+          Image($r('app.media.luobo'))
+            .width(40)
+            .height(40)
+            .objectFit(ImageFit.Contain)
+            .translate({
+              x: this.orbitRadius * Math.cos(this.orbitAngle * Math.PI / 180),
+              y: this.orbitRadius * Math.sin(this.orbitAngle * Math.PI / 180)
+            })
+            .opacity(this.iconOpacity)
+        }
+        .width(220)
+        .height(220)
 
         /**
          * 加载提示文本
