@@ -38,7 +38,7 @@ import { ArticleStore } from '../store/ArticleStore';
 import { fetchArticleContent } from '../service/ArticleContentService';
 import { fetchArticleById } from '../service/WanService';
 import type { Comment } from '../model/Comment';
-import { LoadingProgress } from '../components/LoadingProgress';
+import { AppLoadingProgress } from '../components/AppLoadingProgress';
 import { InteractionStore, type LikeState } from '../store/InteractionStore';
 import { UserActionStore } from '../store/UserActionStore';
 import { UserStore } from '../store/UserStore';
@@ -950,7 +950,7 @@ struct ArticleDetailPage {
             Column() {
               if (this.aiLoading) {
                 Column({ space: 8 }) {
-                  LoadingProgress()
+                  AppLoadingProgress()
                   Text('AI生成中…').opacity(0.7)
                 }
                 .padding(12)
@@ -992,7 +992,7 @@ struct ArticleDetailPage {
 
               if (this.aiQaLoading) {
                 Stack({ alignContent: Alignment.Center }) {
-                  LoadingProgress()
+                  AppLoadingProgress()
                   Text('AI思考中…')
                     .opacity(0.7)
                     .fontSize(14)

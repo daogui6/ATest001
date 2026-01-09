@@ -31,7 +31,7 @@ import type { Category } from '../model/Category';
 import { FavoriteStore } from '../store/FavoriteStore';
 import { fetchArticlesByCid, fetchCategories } from '../service/WanService';
 import { ArticleStore } from '../store/ArticleStore';
-import { LoadingProgress } from '../components/LoadingProgress';
+import { AppLoadingProgress } from '../components/AppLoadingProgress';
 
 interface CategoryPageParams {
   cid?: number | string;
@@ -468,7 +468,7 @@ export struct CategoryPage {
             //  加载状态显示
             if (this.loadingCats || this.loadingArticles) {
               Row({ space: 8 }) {
-                LoadingProgress()
+                AppLoadingProgress()
                 Text('正在加载数据...').opacity(0.7)
               }
               .padding(12)
@@ -524,7 +524,7 @@ export struct CategoryPage {
                   ListItem() {
                     if (this.loadingMore) {
                       Row({ space: 8 }) {
-                        LoadingProgress({ size: 16, orbitRadius: 8, orbitImageSize: 8 })
+                        AppLoadingProgress({ size: 16, orbitRadius: 8, orbitImageSize: 8 })
                         Text('加载中...').fontSize(13).opacity(0.7)
                       }
                       .padding(12)

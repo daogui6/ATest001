@@ -30,7 +30,7 @@ import { fetchCategories, fetchLatestArticles, fetchTopArticles } from '../servi
 import { ArticleStore } from '../store/ArticleStore';
 import type { Category } from '../model/Category';
 import { HistoryStore } from '../store/HistoryStore';
-import { LoadingProgress } from '../components/LoadingProgress';
+import { AppLoadingProgress } from '../components/AppLoadingProgress';
 
 // 确保全局状态key存在
 AppStorage.setOrCreate('fav_version', 0);
@@ -515,7 +515,7 @@ export struct HomePage {
         // 内容区域
         if (this.loading) {
           Row({ space: 8 }) {
-            LoadingProgress()
+            AppLoadingProgress()
             Text('正在加载文章...').opacity(0.7)
           }
           .padding(16)
@@ -595,7 +595,7 @@ export struct HomePage {
             ListItem() {
               if (this.loadingMore) {
                 Row({ space: 8 }) {
-                  LoadingProgress({ size: 16, orbitRadius: 8, orbitImageSize: 8 })
+                  AppLoadingProgress({ size: 16, orbitRadius: 8, orbitImageSize: 8 })
                   Text('加载中...').fontSize(13).opacity(0.7)
                 }
                 .padding(12)

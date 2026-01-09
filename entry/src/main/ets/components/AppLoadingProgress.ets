@@ -1,5 +1,5 @@
 /**
- * LoadingProgress.ets - 应用统一加载动画
+ * AppLoadingProgress.ets - 应用统一加载动画
  *
  * 功能说明：
  * - 使用学犀(app.media.xuexi)作为中心图标
@@ -8,7 +8,7 @@
  */
 
 @Component
-export struct LoadingProgress {
+export struct AppLoadingProgress {
   @State private orbitAngle: number = 0;
 
   @Prop size: number = 28;

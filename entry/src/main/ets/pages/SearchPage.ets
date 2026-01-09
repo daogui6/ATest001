@@ -36,7 +36,7 @@ import { ArticleStore } from '../store/ArticleStore';
 import { FavoriteStore } from '../store/FavoriteStore';
 import { SearchHistoryStore } from '../store/SearchHistoryStore';
 import { searchArticles } from '../service/WanService';
-import { LoadingProgress } from '../components/LoadingProgress';
+import { AppLoadingProgress } from '../components/AppLoadingProgress';
 
 // 全局状态管理 - 用于跨页面同步
 AppStorage.setOrCreate('fav_version', 0);     // 收藏版本号
@@ -493,7 +493,7 @@ export struct SearchPage {
       // ========== 加载状态提示 ==========
       if (this.loading) {
         Row({ space: 8 }) {
-          LoadingProgress()
+          AppLoadingProgress()
           Text('正在搜索...').opacity(0.7)
         }
         .padding(16)

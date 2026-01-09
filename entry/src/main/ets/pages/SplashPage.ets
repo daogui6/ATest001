@@ -23,7 +23,7 @@
  */
 
 import router from '@ohos.router';
-import { LoadingProgress } from '../components/LoadingProgress';
+import { AppLoadingProgress } from '../components/AppLoadingProgress';
 
 /**
  * 启动页面组件
@@ -116,7 +116,7 @@ export struct SplashPage {
          * 使用app.media.xuexi资源
          * 应用透明度动画和缩放动画效果
          */
-        LoadingProgress({
+        AppLoadingProgress({
           size: 140,
           orbitRadius: 96,
           orbitImageSize: 40
