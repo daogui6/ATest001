@@ -95,6 +95,7 @@ export interface WanUser {
   publicName: string;  // 公开名称
   token?: string;      // 用户令牌（可选）
   bio?: string;        // 用户简介（可选）
+  avatarUrl?: string;  // 头像地址（可选）
 }
 
 /**

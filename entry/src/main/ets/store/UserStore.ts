@@ -140,7 +140,8 @@ export class UserStore {
     password: string,
     confirmPassword: string,
     nickname: string,
-    bio: string = '这个人很懒，还没有签名～'
+    bio: string = '这个人很懒，还没有签名～',
+    avatarUrl: string = ''
   ): Promise<{ ok: true; user: WanUser } | { ok: false; message: string }> {
     // 参数验证和清理
     username = username.trim();
@@ -158,10 +159,14 @@ export class UserStore {
       const finalUser: WanUser = await UserStore.applyProfileOverrides(ctx, {
         ...user,
         nickname: nickname || user.nickname,
-        bio
+        bio,
+        avatarUrl
       });
       
       await UserStore.saveSession(ctx, finalUser, cookie);
+      if (avatarUrl) {
+        await UserStore.updateProfile(ctx, { nickname: finalUser.nickname, bio: finalUser.bio, avatarUrl });
+      }
       return { ok: true, user: finalUser };
     } catch (e) {
       // 错误处理
@@ -270,7 +275,7 @@ export class UserStore {
    */
   static async updateProfile(
     ctx: common.UIAbilityContext,
-    profile: Pick<WanUser, 'nickname' | 'bio'>
+    profile: Pick<WanUser, 'nickname' | 'bio' | 'avatarUrl'>
   ): Promise<void> {
     // 获取当前用户
     const current = await UserStore.currentUser(ctx);
@@ -282,7 +287,8 @@ export class UserStore {
     const next: WanUser = {
       ...current,
       nickname: profile.nickname ?? current.nickname,
-      bio: profile.bio ?? current.bio
+      bio: profile.bio ?? current.bio,
+      avatarUrl: profile.avatarUrl ?? current.avatarUrl
     };
     
     // 更新会话数据
@@ -292,7 +298,7 @@ export class UserStore {
     await Prefs.putString(
       ctx,
       UserStore.profileOverrideKey(next.id),
-      JSON.stringify({ nickname: next.nickname, bio: next.bio })
+      JSON.stringify({ nickname: next.nickname, bio: next.bio, avatarUrl: next.avatarUrl })
     );
   }
 

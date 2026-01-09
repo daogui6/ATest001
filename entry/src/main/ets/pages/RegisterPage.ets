@@ -21,6 +21,7 @@
 
 import type common from '@ohos.app.ability.common';
 import promptAction from '@ohos.promptAction';
+import picker from '@ohos.file.picker';
 import router from '@ohos.router';
 import { UserStore } from '../store/UserStore';
 
@@ -35,6 +36,7 @@ export struct RegisterPage {
   @State regPassword: string = '' // 密码输入
   @State regConfirmPassword: string = '' // 确认密码输入
   @State regNickname: string = '' // 昵称输入（可选）
+  @State regAvatarUrl: string = '' // 头像地址（可选）
   @State registerAgree: boolean = false // 协议同意状态
   @State message: string = '' // 错误消息提示
   
@@ -68,7 +70,8 @@ export struct RegisterPage {
       this.regPassword,
       this.regConfirmPassword,
       this.regNickname.trim() || this.regUsername.trim(),
-      '这个人是新用户，快来打个招呼吧～'
+      '这个人是新用户，快来打个招呼吧～',
+      this.regAvatarUrl
     );
 
     // 注册结果处理
@@ -97,6 +100,39 @@ export struct RegisterPage {
       // 回退失败时跳转到我的页面
       await router.pushUrl({ url: 'pages/MinePage' });
     }
+  }
+
+  /**
+   * 选择注册头像
+   */
+  private async chooseAvatar() {
+    try {
+      const photoPicker = new picker.PhotoViewPicker();
+      const options = new picker.PhotoSelectOptions();
+      options.MIMEType = picker.PhotoViewMIMETypes.IMAGE_TYPE;
+      options.maxSelectNumber = 1;
+      const result = await photoPicker.select(options);
+      if (result?.photoUris?.length) {
+        this.regAvatarUrl = result.photoUris[0];
+      }
+    } catch (e) {
+      promptAction.showToast({ message: '头像选择失败，请稍后重试' });
+    }
+  }
+
+  /**
+   * 查看协议弹窗
+   */
+  private showAgreement(type: 'user' | 'privacy') {
+    const title = type === 'user' ? '用户协议' : '隐私政策';
+    const message = type === 'user'
+      ? '感谢使用本应用。本协议用于说明账号服务与使用规范，注册即代表您同意遵守相关规则。'
+      : '我们仅在提供服务所需范围内处理必要信息，并采取合理措施保护您的数据安全。';
+    promptAction.showDialog({
+      title,
+      message,
+      buttons: [{ text: '我知道了', color: '#4C6FFF' }]
+    });
   }
 
   /**
@@ -139,7 +175,41 @@ export struct RegisterPage {
           Row({ space: 8 }) {
             Text('注册').fontSize(16).fontWeight(FontWeight.Medium)
           }
-          
+
+          // 头像上传
+          Row({ space: 12 }) {
+            Stack({ alignContent: Alignment.Center }) {
+              if (this.regAvatarUrl) {
+                Image(this.regAvatarUrl)
+                  .width(56)
+                  .height(56)
+                  .borderRadius(28)
+                  .objectFit(ImageFit.Cover)
+              } else {
+                Image($r('app.media.startIcon'))
+                  .width(56)
+                  .height(56)
+                  .borderRadius(28)
+                  .backgroundColor('#4C6FFF')
+                  .objectFit(ImageFit.Cover)
+              }
+            }
+            .width(56)
+            .height(56)
+            .borderRadius(28)
+            .border({ width: 1, color: '#E2E8F5' })
+            Column({ space: 6 }) {
+              Text('上传头像').fontSize(14).fontWeight(FontWeight.Medium)
+              Text('可选').fontSize(12).opacity(0.6)
+            }
+            .layoutWeight(1)
+            Button('选择图片', { type: ButtonType.Normal })
+              .onClick(async () => {
+                await this.chooseAvatar();
+              })
+          }
+          .alignItems(VerticalAlign.Center)
+
           // 用户名输入框
           TextInput({ text: this.regUsername, placeholder: '设置用户名' })
             .onChange((v) => { this.regUsername = v; })
@@ -182,14 +252,25 @@ export struct RegisterPage {
               })
             
             // 协议文本（可点击）
-            Text('我已阅读并同意《用户协议》和《隐私政策》').fontSize(12)
-              .onClick(() => {
-                const next = !this.registerAgree;
-                this.registerAgree = next;
-                if (next) {
-                  this.message = '';
-                }
-              })
+            Text() {
+              TextSpan('我已阅读并同意').fontSize(12)
+              TextSpan('《用户协议》')
+                .fontSize(12)
+                .fontColor('#3D6DFF')
+                .onClick(() => this.showAgreement('user'))
+              TextSpan('和').fontSize(12)
+              TextSpan('《隐私政策》')
+                .fontSize(12)
+                .fontColor('#3D6DFF')
+                .onClick(() => this.showAgreement('privacy'))
+            }
+            .onClick(() => {
+              const next = !this.registerAgree;
+              this.registerAgree = next;
+              if (next) {
+                this.message = '';
+              }
+            })
           }
           .alignItems(VerticalAlign.Center)
           .margin({ top: 4 })
@@ -207,6 +288,7 @@ export struct RegisterPage {
         .borderRadius(16)
         .backgroundColor('#FFFFFF')
         .border({ width: 1, color: '#E9EEF5' })
+        .shadow({ radius: 12, color: '#1A3B5A14', offsetX: 0, offsetY: 6 })
         .opacity(this.cardOpacity)
         .translate({ x: 0, y: this.cardOffset })
       }
@@ -215,7 +297,7 @@ export struct RegisterPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F6F7FB')
+    .backgroundColor('#EFF2F9')
     .onAppear(() => {
       // 页面显示时的动画效果
       animateTo({ duration: 220, curve: Curve.EaseOut }, () => {

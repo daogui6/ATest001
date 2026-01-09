@@ -28,6 +28,7 @@
 
 import type common from '@ohos.app.ability.common';
 import promptAction from '@ohos.promptAction';
+import picker from '@ohos.file.picker';
 import router from '@ohos.router';
 import { Prefs } from '../store/Prefs';
 import { UserStore } from '../store/UserStore';
@@ -53,6 +54,7 @@ export struct MinePage {
   private KEY_LOGIN = 'session.isLogin';     // 登录状态存储键
   private KEY_NICK = 'profile.nickname';     // 昵称存储键
   private KEY_BIO = 'profile.bio';           // 签名存储键
+  private KEY_AVATAR = 'profile.avatar';     // 头像存储键
 
   // ========== 用户状态管理 ==========
   /** 登录状态 - 控制页面显示不同的内容区域 */
@@ -61,10 +63,12 @@ export struct MinePage {
   /** 用户基本信息 */
   @State nickname: string = '用户1';         // 用户昵称
   @State bio: string = '这个人很懒，还没有签名～'; // 用户签名
+  @State avatarUrl: string = '';             // 用户头像
   @State uid: string = '0';                  // 用户唯一标识
   @State username: string = '';              // 用户名
   @State publicName: string = '';            // 公开昵称
   @State token: string = '';                 // 用户令牌
+  @State isEditingProfile: boolean = false;  // 是否处于编辑资料状态
 
   // ========== 登录表单状态 ==========
   /** 登录表单相关状态 */
@@ -134,6 +138,7 @@ export struct MinePage {
       this.uid = String(user.id);
       this.nickname = user.nickname || user.username;
       this.bio = user.bio ?? '这个人很懒，还没有签名～';
+      this.avatarUrl = user.avatarUrl ?? '';
       this.username = user.username;
       this.publicName = user.publicName;
       this.token = user.token ?? '';
@@ -147,6 +152,7 @@ export struct MinePage {
 
     this.nickname = await Prefs.getString(this.hostCtx(), this.KEY_NICK, '用户1');
     this.bio = await Prefs.getString(this.hostCtx(), this.KEY_BIO, '这个人很懒，还没有签名～');
+    this.avatarUrl = await Prefs.getString(this.hostCtx(), this.KEY_AVATAR, '');
     this.uid = uid;
   }
 
@@ -158,12 +164,14 @@ export struct MinePage {
     await Prefs.putBool(this.hostCtx(), this.KEY_LOGIN, this.isLogin); // 兼容性保留
     await Prefs.putString(this.hostCtx(), this.KEY_NICK, this.nickname);
     await Prefs.putString(this.hostCtx(), this.KEY_BIO, this.bio);
+    await Prefs.putString(this.hostCtx(), this.KEY_AVATAR, this.avatarUrl);
 
     // 如果已登录，同步到服务器
     if (this.isLogin && this.uid !== '0') {
       await UserStore.updateProfile(this.hostCtx(), { 
-        nickname: this.nickname, 
-        bio: this.bio 
+        nickname: this.nickname,
+        bio: this.bio,
+        avatarUrl: this.avatarUrl
       });
     }
   }
@@ -185,6 +193,39 @@ export struct MinePage {
     AppStorage.set('session_version', v + 1);
     
     promptAction.showToast({ message: '已保存个人资料' });
+  }
+
+  /**
+   * 打开头像选择器
+   */
+  private async chooseAvatar() {
+    try {
+      const photoPicker = new picker.PhotoViewPicker();
+      const options = new picker.PhotoSelectOptions();
+      options.MIMEType = picker.PhotoViewMIMETypes.IMAGE_TYPE;
+      options.maxSelectNumber = 1;
+      const result = await photoPicker.select(options);
+      if (result?.photoUris?.length) {
+        this.avatarUrl = result.photoUris[0];
+      }
+    } catch (e) {
+      promptAction.showToast({ message: '头像选择失败，请稍后重试' });
+    }
+  }
+
+  /**
+   * 查看协议弹窗
+   */
+  private showAgreement(type: 'user' | 'privacy') {
+    const title = type === 'user' ? '用户协议' : '隐私政策';
+    const message = type === 'user'
+      ? '感谢使用本应用。本协议用于说明账号服务与使用规范，注册即代表您同意遵守相关规则。'
+      : '我们仅在提供服务所需范围内处理必要信息，并采取合理措施保护您的数据安全。';
+    promptAction.showDialog({
+      title,
+      message,
+      buttons: [{ text: '我知道了', color: '#4C6FFF' }]
+    });
   }
 
   // ========== 用户认证方法 ==========
@@ -214,6 +255,7 @@ export struct MinePage {
     this.uid = String(user.id);
     this.nickname = user.nickname || user.username;
     this.bio = user.bio ?? '这个人很懒，还没有签名～';
+    this.avatarUrl = user.avatarUrl ?? '';
     this.username = user.username;
     this.publicName = user.publicName;
     this.token = user.token ?? '';
@@ -238,10 +280,12 @@ export struct MinePage {
     this.username = '';
     this.publicName = '';
     this.token = '';
+    this.avatarUrl = '';
     this.isLogin = false;
     this.message = '';
     this.loginAgree = false;
-    
+    this.isEditingProfile = false;
+
     // 根据记住密码设置决定是否清空密码
     if (!this.rememberPassword) {
       this.loginPassword = '';
@@ -264,6 +308,14 @@ export struct MinePage {
     
     await this.refreshNotifications();
     promptAction.showToast({ message: '已退出登录' });
+  }
+
+  /**
+   * 取消编辑资料
+   */
+  private async cancelEditProfile() {
+    await this.loadSession();
+    this.isEditingProfile = false;
   }
 
   // ========== 页面跳转方法 ==========
@@ -393,20 +445,30 @@ export struct MinePage {
           Row({ space: 12 }) {
             // 用户头像区域
             Stack({ alignContent: Alignment.Center }) {
-              Image($r('app.media.startIcon'))
-                .width(52)
-                .height(52)
-                .borderRadius(26)
-                .backgroundColor('#4C6FFF')
-                .objectFit(ImageFit.Cover)
-              Text(this.isLogin ? (this.nickname ? this.nickname.slice(0, 1) : '我') : '访')
-                .fontSize(18)
-                .fontWeight(FontWeight.Bold)
-                .fontColor('#FFFFFF')
-                .textAlign(TextAlign.Center)
+              if (this.avatarUrl) {
+                Image(this.avatarUrl)
+                  .width(52)
+                  .height(52)
+                  .borderRadius(26)
+                  .objectFit(ImageFit.Cover)
+              } else {
+                Image($r('app.media.startIcon'))
+                  .width(52)
+                  .height(52)
+                  .borderRadius(26)
+                  .backgroundColor('#4C6FFF')
+                  .objectFit(ImageFit.Cover)
+                Text(this.isLogin ? (this.nickname ? this.nickname.slice(0, 1) : '我') : '访')
+                  .fontSize(18)
+                  .fontWeight(FontWeight.Bold)
+                  .fontColor('#FFFFFF')
+                  .textAlign(TextAlign.Center)
+              }
             }
             .width(52)
             .height(52)
+            .borderRadius(26)
+            .border({ width: 1, color: '#E2E8F5' })
 
             // 用户信息文本区域
             Column({ space: 4 }) {
@@ -430,6 +492,7 @@ export struct MinePage {
           .borderRadius(16)
           .backgroundColor('#FFFFFF')
           .border({ width: 1, color: '#E9EEF5' })
+          .shadow({ radius: 10, color: '#1A3B5A26', offsetX: 0, offsetY: 6 })
 
           // ========== 功能入口区域 ==========
           Column({ space: 12 }) {
@@ -527,6 +590,7 @@ export struct MinePage {
           .borderRadius(16)
           .backgroundColor('#FFFFFF')
           .border({ width: 1, color: '#E9EEF5' })
+          .shadow({ radius: 10, color: '#1A3B5A1A', offsetX: 0, offsetY: 6 })
 
           // ========== 登录/注册区域（未登录状态） ==========
           if (!this.isLogin) {
@@ -567,30 +631,42 @@ export struct MinePage {
                       this.message = '';
                     }
                   })
-                Text('我已阅读并同意《用户协议》和《隐私政策》').fontSize(12)
-                  .onClick(() => {
-                    const next = !this.loginAgree;
-                    this.loginAgree = next;
-                    if (next) {
-                      this.message = '';
-                    }
-                  })
+                Text() {
+                  TextSpan('我已阅读并同意').fontSize(12)
+                  TextSpan('《用户协议》')
+                    .fontSize(12)
+                    .fontColor('#3D6DFF')
+                    .onClick(() => this.showAgreement('user'))
+                  TextSpan('和').fontSize(12)
+                  TextSpan('《隐私政策》')
+                    .fontSize(12)
+                    .fontColor('#3D6DFF')
+                    .onClick(() => this.showAgreement('privacy'))
+                }
+                .onClick(() => {
+                  const next = !this.loginAgree;
+                  this.loginAgree = next;
+                  if (next) {
+                    this.message = '';
+                  }
+                })
               }
               .alignItems(VerticalAlign.Center)
               .margin({ top: 4 })
-              
-              // 登录按钮
-              Button('登录', { type: ButtonType.Capsule })
-                .onClick(async () => { await this.handleLogin(); })
 
-              Divider().margin({ top: 6, bottom: 6 })
-
-              // 注册按钮
-              Button('注册', { type: ButtonType.Capsule })
-                .onClick(async () => {
-                  this.message = '';
-                  await this.openRegisterPage();
-                })
+              // 登录/注册按钮同一行
+              Row({ space: 12 }) {
+                Button('登录', { type: ButtonType.Capsule })
+                  .layoutWeight(1)
+                  .onClick(async () => { await this.handleLogin(); })
+                Button('注册', { type: ButtonType.Capsule })
+                  .layoutWeight(1)
+                  .onClick(async () => {
+                    this.message = '';
+                    await this.openRegisterPage();
+                  })
+              }
+              .margin({ top: 4 })
 
               // 错误消息显示
               if (this.message) {
@@ -601,6 +677,7 @@ export struct MinePage {
             .borderRadius(16)
             .backgroundColor('#FFFFFF')
             .border({ width: 1, color: '#E9EEF5' })
+            .shadow({ radius: 12, color: '#1A3B5A14', offsetX: 0, offsetY: 6 })
           } else {
             // ========== 账号信息区域（已登录状态） ==========
             Column({ space: 12 }) {
@@ -616,44 +693,91 @@ export struct MinePage {
                 Text(`签名：${this.bio}`).fontSize(14).opacity(0.7)
               }
 
-              // 昵称编辑
-              Text('编辑昵称').fontSize(14).opacity(0.7)
-              TextInput({ text: this.nickname, placeholder: '请输入昵称' })
-                .onChange((v) => { // 首先更新本地状态，统一点击保存时再持久化
-                  this.nickname = v;
-                })
-                .padding({ left: 12, right: 12 })
-                .borderRadius(10)
-                .backgroundColor('#F6F7FB')
+              if (this.isEditingProfile) {
+                Row({ space: 12 }) {
+                  Stack({ alignContent: Alignment.Center }) {
+                    if (this.avatarUrl) {
+                      Image(this.avatarUrl)
+                        .width(52)
+                        .height(52)
+                        .borderRadius(26)
+                        .objectFit(ImageFit.Cover)
+                    } else {
+                      Image($r('app.media.startIcon'))
+                        .width(52)
+                        .height(52)
+                        .borderRadius(26)
+                        .backgroundColor('#4C6FFF')
+                        .objectFit(ImageFit.Cover)
+                    }
+                  }
+                  .width(52)
+                  .height(52)
+                  .borderRadius(26)
+                  .border({ width: 1, color: '#E2E8F5' })
+                  Button('更换头像', { type: ButtonType.Normal })
+                    .onClick(async () => {
+                      await this.chooseAvatar();
+                    })
+                }
+                .alignItems(VerticalAlign.Center)
 
-              // 签名编辑
-              Text('编辑签名').fontSize(14).opacity(0.7).margin({ top: 6 })
-              TextInput({ text: this.bio, placeholder: '请输入签名' })
-                .onChange((v) => {
-                  this.bio = v
-                })
-                .padding({ left: 12, right: 12 })
-                .borderRadius(10)
-                .backgroundColor('#F6F7FB')
+                // 昵称编辑
+                Text('编辑昵称').fontSize(14).opacity(0.7)
+                TextInput({ text: this.nickname, placeholder: '请输入昵称' })
+                  .onChange((v) => { // 首先更新本地状态，统一点击保存时再持久化
+                    this.nickname = v;
+                  })
+                  .padding({ left: 12, right: 12 })
+                  .borderRadius(10)
+                  .backgroundColor('#F6F7FB')
 
-              // 保存资料按钮
-              Button('保存资料', { type: ButtonType.Capsule })
-                .onClick(async () => {
-                  await this.persistProfileChanges();
-                })
+                // 签名编辑
+                Text('编辑签名').fontSize(14).opacity(0.7).margin({ top: 6 })
+                TextInput({ text: this.bio, placeholder: '请输入签名' })
+                  .onChange((v) => {
+                    this.bio = v
+                  })
+                  .padding({ left: 12, right: 12 })
+                  .borderRadius(10)
+                  .backgroundColor('#F6F7FB')
+
+                // 保存/取消按钮
+                Row({ space: 12 }) {
+                  Button('保存资料', { type: ButtonType.Capsule })
+                    .layoutWeight(1)
+                    .onClick(async () => {
+                      await this.persistProfileChanges();
+                      this.isEditingProfile = false;
+                    })
+                  Button('取消', { type: ButtonType.Normal })
+                    .layoutWeight(1)
+                    .onClick(async () => {
+                      await this.cancelEditProfile();
+                    })
+                }
                 .margin({ top: 6 })
-
-              // 退出登录按钮
-              Button('退出登录', { type: ButtonType.Capsule })
-                .onClick(async () => {
-                  await this.handleLogout();
-                })
+              } else {
+                Row({ space: 12 }) {
+                  Button('修改资料', { type: ButtonType.Capsule })
+                    .layoutWeight(1)
+                    .onClick(() => {
+                      this.isEditingProfile = true;
+                    })
+                  Button('退出登录', { type: ButtonType.Capsule })
+                    .layoutWeight(1)
+                    .onClick(async () => {
+                      await this.handleLogout();
+                    })
+                }
                 .margin({ top: 10 })
+              }
             }
             .padding(16)
             .borderRadius(16)
             .backgroundColor('#FFFFFF')
             .border({ width: 1, color: '#E9EEF5' })
+            .shadow({ radius: 12, color: '#1A3B5A14', offsetX: 0, offsetY: 6 })
           }
         }
         .padding({ left: 16, right: 16, bottom: 16 })
@@ -664,7 +788,7 @@ export struct MinePage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F6F7FB')
+    .backgroundColor('#EFF2F9')
     .onAppear(() => {
       // 页面进入动画效果
       animateTo({ duration: 220, curve: Curve.EaseOut }, () => {
