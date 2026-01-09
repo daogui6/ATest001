@@ -253,16 +253,20 @@ export struct RegisterPage {
             
             // 协议文本（可点击）
             Text() {
-              TextSpan('我已阅读并同意').fontSize(12)
-              TextSpan('《用户协议》')
+              Span('我已阅读并同意').fontSize(12)
+              Span('《用户协议》')
                 .fontSize(12)
                 .fontColor('#3D6DFF')
-                .onClick(() => this.showAgreement('user'))
-              TextSpan('和').fontSize(12)
-              TextSpan('《隐私政策》')
+                .onClick((): void => {
+                  this.showAgreement('user');
+                })
+              Span('和').fontSize(12)
+              Span('《隐私政策》')
                 .fontSize(12)
                 .fontColor('#3D6DFF')
-                .onClick(() => this.showAgreement('privacy'))
+                .onClick((): void => {
+                  this.showAgreement('privacy');
+                })
             }
             .onClick(() => {
               const next = !this.registerAgree;
