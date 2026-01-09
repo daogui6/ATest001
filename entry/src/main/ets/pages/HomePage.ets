@@ -514,10 +514,14 @@ export struct HomePage {
 
         // 内容区域
         if (this.loading) {
-          Row({ space: 8 }) {
+          Column({ space: 8 }) {
             AppLoadingProgress()
-            Text('正在加载文章...').opacity(0.7)
+            Text('正在加载文章...')
+              .opacity(0.7)
+              .textAlign(TextAlign.Center)
           }
+          .alignItems(HorizontalAlign.Center)
+          .width('100%')
           .padding(16)
         } else if (this.errorMsg) {
           Column({ space: 6 }) {

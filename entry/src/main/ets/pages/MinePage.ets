@@ -33,11 +33,17 @@ import router from '@ohos.router';
 import { Prefs } from '../store/Prefs';
 import { UserStore } from '../store/UserStore';
 import { NotificationStore } from '../store/NotificationStore';
+import { HistoryStore } from '../store/HistoryStore';
+import { FavoriteStore } from '../store/FavoriteStore';
+import { ReadingListStore } from '../store/ReadingListStore';
 
 // 全局会话版本号，用于跨页面同步登录状态
 AppStorage.setOrCreate('session_version', 0);
 // 全局通知版本号，用于跨页面同步通知状态
 AppStorage.setOrCreate('notification_version', 0);
+AppStorage.setOrCreate('history_version', 0);
+AppStorage.setOrCreate('fav_version', 0);
+AppStorage.setOrCreate('reading_version', 0);
 
 /**
  * 个人中心页面组件
@@ -101,9 +107,24 @@ export struct MinePage {
   @Watch('onSessionVersionChange')
   sessionVersion: number = 0;
 
+  @StorageLink('history_version')
+  @Watch('onHistoryVersionChange')
+  historyVersion: number = 0;
+
+  @StorageLink('fav_version')
+  @Watch('onFavVersionChange')
+  favVersion: number = 0;
+
+  @StorageLink('reading_version')
+  @Watch('onReadingVersionChange')
+  readingVersion: number = 0;
+
   /** 未读通知数量 */
   @State unreadNotifications: number = 0;
   @State recommendCount: number = 3;
+  @State readingStreakDays: number = 0;
+  @State weeklyFavCount: number = 0;
+  @State readingListCount: number = 0;
 
   // ========== 工具方法 ==========
   
@@ -127,6 +148,7 @@ export struct MinePage {
     await this.loadSession();        // 加载用户会话
     await this.refreshNotifications(); // 刷新通知
     this.refreshRecommendCount();
+    await this.refreshReadingStats();
   }
 
   /**
@@ -144,6 +166,19 @@ export struct MinePage {
   private onSessionVersionChange() {
     this.loadSession();
     this.refreshNotifications();
+    this.refreshReadingStats();
+  }
+
+  private onHistoryVersionChange() {
+    this.refreshReadingStats();
+  }
+
+  private onFavVersionChange() {
+    this.refreshReadingStats();
+  }
+
+  private onReadingVersionChange() {
+    this.refreshReadingStats();
   }
 
   // ========== 数据加载方法 ==========
@@ -489,6 +524,68 @@ export struct MinePage {
     this.recommendCount = Math.floor(Math.random() * 9) + 1;
   }
 
+  private formatDateKey(ts: number): string {
+    const date = new Date(ts);
+    return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+  }
+
+  private calcReadingStreak(viewedAtList: number[]): number {
+    const daySet = new Set(viewedAtList.map((ts) => this.formatDateKey(ts)));
+    if (daySet.size === 0) {
+      return 0;
+    }
+    let streak = 0;
+    const cursor = new Date();
+    while (true) {
+      const key = `${cursor.getFullYear()}-${cursor.getMonth()}-${cursor.getDate()}`;
+      if (!daySet.has(key)) {
+        break;
+      }
+      streak += 1;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+    return streak;
+  }
+
+  private async refreshReadingStats() {
+    const ctx = this.hostCtx();
+    const history = await HistoryStore.loadHistory(ctx);
+    const viewedAtList = history
+      .map(item => item.viewedAt)
+      .filter((item): item is number => typeof item === 'number');
+    this.readingStreakDays = this.calcReadingStreak(viewedAtList);
+
+    const uid = await FavoriteStore.getUid(ctx);
+    if (uid === '0') {
+      this.weeklyFavCount = 0;
+      this.readingListCount = 0;
+      return;
+    }
+    const favSet = await FavoriteStore.loadFavSet(ctx, uid);
+    const times = await FavoriteStore.loadFavTimes(ctx, uid);
+    let timesUpdated = false;
+    favSet.forEach((id) => {
+      if (!times.has(id)) {
+        times.set(id, Date.now());
+        timesUpdated = true;
+      }
+    });
+    if (timesUpdated) {
+      await FavoriteStore.saveFavTimes(ctx, uid, times);
+    }
+    const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    let weekCount = 0;
+    times.forEach((ts) => {
+      if (ts >= oneWeekAgo) {
+        weekCount += 1;
+      }
+    });
+    this.weeklyFavCount = weekCount;
+
+    const list = await ReadingListStore.loadList(ctx, uid);
+    this.readingListCount = list.size;
+  }
+
   /**
    * 打开反馈入口
    */
@@ -508,6 +605,22 @@ export struct MinePage {
    */
   private async openHelpCenter() {
     promptAction.showToast({ message: '帮助中心正在建设中' });
+  }
+
+  private async openOfflineDownloads() {
+    try {
+      await router.pushUrl({ url: 'pages/OfflineDownloadsPage' });
+    } catch (e) {
+      promptAction.showToast({ message: '跳转失败：页面不存在或参数错误' });
+    }
+  }
+
+  private async openPrivacyCenter() {
+    try {
+      await router.pushUrl({ url: 'pages/PrivacyCenterPage' });
+    } catch (e) {
+      promptAction.showToast({ message: '跳转失败：页面不存在或参数错误' });
+    }
   }
 
   /**
@@ -633,7 +746,7 @@ export struct MinePage {
               .borderRadius(12)
               .backgroundColor('#F6F7FB')
               .border({ width: 1, color: '#E9EEF5' })
-              .onClick(async () => await this.openHelpCenter())
+              .onClick(async () => await this.openOfflineDownloads())
 
               Column({ space: 6 }) {
                 Text('🛡️').fontSize(22)
@@ -644,7 +757,7 @@ export struct MinePage {
               .borderRadius(12)
               .backgroundColor('#F6F7FB')
               .border({ width: 1, color: '#E9EEF5' })
-              .onClick(async () => await this.openHelpCenter())
+              .onClick(async () => await this.openPrivacyCenter())
             }
           }
           .padding(16)
@@ -757,22 +870,21 @@ export struct MinePage {
             }
             Row({ space: 12 }) {
               Column({ space: 4 }) {
-                Text('12').fontSize(18).fontWeight(FontWeight.Bold)
+                Text(`${this.readingStreakDays}`).fontSize(18).fontWeight(FontWeight.Bold)
                 Text('连续阅读日').fontSize(11).opacity(0.6)
               }
               .layoutWeight(1)
               Column({ space: 4 }) {
-                Text('38').fontSize(18).fontWeight(FontWeight.Bold)
+                Text(`${this.weeklyFavCount}`).fontSize(18).fontWeight(FontWeight.Bold)
                 Text('本周收藏').fontSize(11).opacity(0.6)
               }
               .layoutWeight(1)
               .onClick(async () => await this.openFavoritePage())
               Column({ space: 4 }) {
-                Text('4').fontSize(18).fontWeight(FontWeight.Bold)
+                Text(`${this.readingListCount}`).fontSize(18).fontWeight(FontWeight.Bold)
                 Text('待读清单').fontSize(11).opacity(0.6)
               }
               .layoutWeight(1)
-              .onClick(async () => await this.openFavoritePage())
             }
             .padding(12)
             .borderRadius(12)

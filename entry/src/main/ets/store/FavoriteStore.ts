@@ -51,6 +51,16 @@ export class FavoriteStore {
     return 'fav.cache.articles';
   }
 
+  /**
+   * 生成收藏时间戳存储键名
+   *
+   * @param uid 用户ID
+   * @returns 收藏时间戳存储键名
+   */
+  private static timeKey(uid: string): string {
+    return `fav.${uid}.times`;
+  }
+
   // ========== 用户会话管理 ==========
   
   /**
@@ -99,6 +109,45 @@ export class FavoriteStore {
     const arr = Array.from(set);
     // 保存到本地存储
     await Prefs.putString(ctx, FavoriteStore.key(uid), JSON.stringify(arr));
+  }
+
+  /**
+   * 加载收藏时间戳映射
+   *
+   * @param ctx UIAbility上下文
+   * @param uid 用户ID
+   * @returns 文章ID -> 收藏时间戳的Map
+   */
+  static async loadFavTimes(ctx: common.UIAbilityContext, uid: string): Promise<Map<number, number>> {
+    const raw = await Prefs.getString(ctx, FavoriteStore.timeKey(uid), '{}');
+    try {
+      const obj = JSON.parse(raw) as Record<string, number>;
+      const map = new Map<number, number>();
+      Object.keys(obj).forEach((key) => {
+        const id = Number(key);
+        if (!Number.isNaN(id)) {
+          map.set(id, obj[key]);
+        }
+      });
+      return map;
+    } catch {
+      return new Map<number, number>();
+    }
+  }
+
+  /**
+   * 保存收藏时间戳映射
+   *
+   * @param ctx UIAbility上下文
+   * @param uid 用户ID
+   * @param map 文章ID -> 收藏时间戳的Map
+   */
+  static async saveFavTimes(ctx: common.UIAbilityContext, uid: string, map: Map<number, number>): Promise<void> {
+    const obj: Record<string, number> = {};
+    map.forEach((value, key) => {
+      obj[String(key)] = value;
+    });
+    await Prefs.putString(ctx, FavoriteStore.timeKey(uid), JSON.stringify(obj));
   }
 
   // ========== 文章详情缓存管理方法 ==========

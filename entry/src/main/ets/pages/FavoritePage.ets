@@ -208,10 +208,13 @@ export struct FavoritePage {
     const next = new Set(this.favIds);
     next.delete(id);
     this.favIds = next;
-    
+
+    const times = await FavoriteStore.loadFavTimes(ctx, this.uid);
+    times.delete(id);
     // 保存到持久化存储
     await FavoriteStore.saveFavSet(ctx, this.uid, next);
-    
+    await FavoriteStore.saveFavTimes(ctx, this.uid, times);
+
     // 更新UI显示
     this.favArticles = this.favArticles.filter(item => item.id !== id);
     

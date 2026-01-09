@@ -44,6 +44,8 @@ import { UserActionStore } from '../store/UserActionStore';
 import { UserStore } from '../store/UserStore';
 import { NotificationStore } from '../store/NotificationStore';
 import type { NotificationItem } from '../model/Notification';
+import { ReadingListStore } from '../store/ReadingListStore';
+import { DownloadStore } from '../store/DownloadStore';
 
 /**
  * 页面路由参数接口
@@ -65,6 +67,8 @@ AppStorage.setOrCreate('history_version', 0);
 AppStorage.setOrCreate('liked_version', 0);
 AppStorage.setOrCreate('commented_version', 0);
 AppStorage.setOrCreate('notification_version', 0);
+AppStorage.setOrCreate('reading_version', 0);
+AppStorage.setOrCreate('download_version', 0);
 
 /**
  * 评论视图接口 - 扩展基础评论模型
@@ -150,7 +154,15 @@ struct ArticleDetailPage {
   @StorageLink('session_version')
   @Watch('onSessionVersionChange')
   sessionVersion: number = 0; // 会话版本号，用于同步登录状态
-  
+
+  @StorageLink('reading_version')
+  @Watch('onReadingVersionChange')
+  readingVersion: number = 0;
+
+  @StorageLink('download_version')
+  @Watch('onDownloadVersionChange')
+  downloadVersion: number = 0;
+
   //  评论相关状态
   @State comments: CommentView[] = []; // 评论列表（树形结构）
   @State commentCount: number = 0; // 评论总数
@@ -159,7 +171,9 @@ struct ArticleDetailPage {
   @State likeCount: number = 0; // 文章点赞数
   @State liked: boolean = false; // 当前用户是否点赞
   @State commentSectionTop: number = 0; // 评论区域顶部位置，用于滚动定位
-  
+  @State readingListIds: Set<number> = new Set<number>(); // 待读清单ID集合
+  @State downloadedIds: Set<number> = new Set<number>(); // 已下载ID集合
+
   /**
    * 滚动控制器
    * 用于实现精确的滚动控制，如滚动到评论区域
@@ -223,6 +237,16 @@ struct ArticleDetailPage {
   private onSessionVersionChange() {
     this.refreshFav();
     this.refreshInteractions();
+    this.refreshReadingList();
+    this.refreshDownloads();
+  }
+
+  private onReadingVersionChange() {
+    this.refreshReadingList();
+  }
+
+  private onDownloadVersionChange() {
+    this.refreshDownloads();
   }
 
   /**
@@ -242,6 +266,8 @@ struct ArticleDetailPage {
       promptAction.showToast({ message: '文章参数缺失，无法打开' });
       await this.refreshFav();
       await this.refreshInteractions();
+      await this.refreshReadingList();
+      await this.refreshDownloads();
       return;
     }
 
@@ -293,6 +319,8 @@ struct ArticleDetailPage {
     // 6) 刷新用户交互状态
     await this.refreshFav();
     await this.refreshInteractions();
+    await this.refreshReadingList();
+    await this.refreshDownloads();
   }
 
   private async resolveAiContent(): Promise<string> {
@@ -463,6 +491,16 @@ struct ArticleDetailPage {
     AppStorage.set('notification_version', v + 1);
   }
 
+  private bumpReadingVersion() {
+    const v = (AppStorage.get('reading_version') as number) ?? 0;
+    AppStorage.set('reading_version', v + 1);
+  }
+
+  private bumpDownloadVersion() {
+    const v = (AppStorage.get('download_version') as number) ?? 0;
+    AppStorage.set('download_version', v + 1);
+  }
+
   /**
    *  收藏/取消收藏切换
    * 支持登录验证、本地状态更新、数据持久化
@@ -479,11 +517,14 @@ struct ArticleDetailPage {
 
     // 更新本地收藏状态
     const next = new Set(this.favIds);
+    const times = await FavoriteStore.loadFavTimes(ctx, uid);
     if (next.has(id)) {
       next.delete(id);
+      times.delete(id);
       await FavoriteStore.removeArticleSnapshot(ctx, id);
     } else {
       next.add(id);
+      times.set(id, Date.now());
       if (this.article) {
         await FavoriteStore.saveArticleSnapshot(ctx, this.article);
       }
@@ -491,7 +532,69 @@ struct ArticleDetailPage {
 
     this.favIds = next;
     await FavoriteStore.saveFavSet(ctx, uid, next);
+    await FavoriteStore.saveFavTimes(ctx, uid, times);
     this.bumpFavVersion(); // 触发全局收藏状态更新
+  }
+
+  private async refreshReadingList() {
+    const ctx = this.hostCtx();
+    const uid = await ReadingListStore.getUid(ctx);
+    if (uid === '0') {
+      this.readingListIds = new Set<number>();
+      return;
+    }
+    this.readingListIds = await ReadingListStore.loadList(ctx, uid);
+  }
+
+  private async refreshDownloads() {
+    const ctx = this.hostCtx();
+    const uid = await DownloadStore.getUid(ctx);
+    const list = await DownloadStore.loadDownloads(ctx, uid);
+    this.downloadedIds = new Set(list.map(item => item.id));
+  }
+
+  private async toggleReadingList(id: number) {
+    const ctx = this.hostCtx();
+    const uid = await ReadingListStore.getUid(ctx);
+    if (uid === '0') {
+      promptAction.showToast({ message: '请先在【我的】里登录' });
+      return;
+    }
+    const next = new Set(this.readingListIds);
+    if (next.has(id)) {
+      next.delete(id);
+      promptAction.showToast({ message: '已从待读清单移除' });
+    } else {
+      next.add(id);
+      promptAction.showToast({ message: '已加入待读清单' });
+    }
+    this.readingListIds = next;
+    await ReadingListStore.saveList(ctx, uid, next);
+    this.bumpReadingVersion();
+  }
+
+  private async handleDownload() {
+    if (!this.article) {
+      return;
+    }
+    const ctx = this.hostCtx();
+    const uid = await DownloadStore.getUid(ctx);
+    const link = this.article.link?.trim() ?? '';
+    let content = this.article.content;
+    if (link.length > 0) {
+      try {
+        const text = await fetchArticleContent(link);
+        if (text.trim().length > 0) {
+          content = text;
+        }
+      } catch {
+        promptAction.showToast({ message: '原文下载失败，已保存摘要内容' });
+      }
+    }
+    await DownloadStore.addDownload(ctx, uid, this.article, content);
+    this.downloadedIds = new Set<number>([...this.downloadedIds, this.article.id]);
+    this.bumpDownloadVersion();
+    promptAction.showToast({ message: '已加入离线下载' });
   }
 
   /**
@@ -899,6 +1002,14 @@ struct ArticleDetailPage {
             Text('🔗')
               .fontSize(20)
               .onClick(async () => await this.shareArticle())
+
+            Text(this.readingListIds.has(this.article.id) ? '📌' : '📍')
+              .fontSize(20)
+              .onClick(async () => await this.toggleReadingList(this.article!.id))
+
+            Text(this.downloadedIds.has(this.article.id) ? '✅' : '📥')
+              .fontSize(20)
+              .onClick(async () => await this.handleDownload())
 
             Text(this.favIds.has(this.article.id) ? '★' : '☆')
               .fontSize(22)

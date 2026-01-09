@@ -11,6 +11,8 @@
     "pages/RegisterPage",
     "pages/CategoryPage",
     "pages/FavoritePage",
-    "pages/SettingsPage"
+    "pages/SettingsPage",
+    "pages/OfflineDownloadsPage",
+    "pages/PrivacyCenterPage"
   ]
 }
