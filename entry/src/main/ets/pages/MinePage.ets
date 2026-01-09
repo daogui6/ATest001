@@ -103,6 +103,7 @@ export struct MinePage {
 
   /** 未读通知数量 */
   @State unreadNotifications: number = 0;
+  @State recommendCount: number = 3;
 
   // ========== 工具方法 ==========
   
@@ -125,6 +126,7 @@ export struct MinePage {
   async aboutToAppear() {
     await this.loadSession();        // 加载用户会话
     await this.refreshNotifications(); // 刷新通知
+    this.refreshRecommendCount();
   }
 
   /**
@@ -406,6 +408,28 @@ export struct MinePage {
     }
   }
 
+  /**
+   * 打开收藏页面
+   */
+  private async openFavoritePage() {
+    try {
+      await router.pushUrl({ url: 'pages/FavoritePage' });
+    } catch (e) {
+      promptAction.showToast({ message: '跳转失败：页面不存在或参数错误' });
+    }
+  }
+
+  /**
+   * 打开首页（默认首页标签页）
+   */
+  private async openHomePage() {
+    try {
+      await router.pushUrl({ url: 'pages/Index' });
+    } catch (e) {
+      promptAction.showToast({ message: '跳转失败：页面不存在或参数错误' });
+    }
+  }
+
   // ========== 通知管理方法 ==========
   
   /**
@@ -456,6 +480,13 @@ export struct MinePage {
     } catch (e) {
       promptAction.showToast({ message: '跳转失败：页面不存在或参数错误' });
     }
+  }
+
+  /**
+   * 刷新个性化推荐数量
+   */
+  private refreshRecommendCount() {
+    this.recommendCount = Math.floor(Math.random() * 9) + 1;
   }
 
   /**
@@ -735,11 +766,13 @@ export struct MinePage {
                 Text('本周收藏').fontSize(11).opacity(0.6)
               }
               .layoutWeight(1)
+              .onClick(async () => await this.openFavoritePage())
               Column({ space: 4 }) {
                 Text('4').fontSize(18).fontWeight(FontWeight.Bold)
                 Text('待读清单').fontSize(11).opacity(0.6)
               }
               .layoutWeight(1)
+              .onClick(async () => await this.openFavoritePage())
             }
             .padding(12)
             .borderRadius(12)
@@ -747,7 +780,7 @@ export struct MinePage {
 
             Row({ space: 8 }) {
               Text('📌').fontSize(16)
-              Text('已为你更新 3 条个性化推荐').fontSize(12).opacity(0.7)
+              Text(`已为你更新 ${this.recommendCount} 条个性化推荐`).fontSize(12).opacity(0.7)
               Blank().layoutWeight(1)
               Text('查看').fontSize(12).fontColor('#3B82F6')
             }
@@ -755,6 +788,7 @@ export struct MinePage {
             .borderRadius(12)
             .backgroundColor('#F6F7FB')
             .border({ width: 1, color: '#E9EEF5' })
+            .onClick(async () => await this.openHomePage())
           }
           .padding(16)
           .borderRadius(16)

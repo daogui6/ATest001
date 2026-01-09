@@ -9,6 +9,8 @@
     "pages/CommentedPage",
     "pages/NotificationPage",
     "pages/RegisterPage",
-    "pages/CategoryPage"
+    "pages/CategoryPage",
+    "pages/FavoritePage",
+    "pages/SettingsPage"
   ]
 }

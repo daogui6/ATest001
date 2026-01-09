@@ -42,6 +42,7 @@ AppStorage.setOrCreate('session_version', 0);
  * - 响应全局状态变化实时更新
  * - 提供收藏文章的浏览和取消收藏功能
  */
+@Entry
 @Component
 export struct FavoritePage {
   /**
