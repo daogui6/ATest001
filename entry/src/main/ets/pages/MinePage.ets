@@ -552,7 +552,7 @@ export struct MinePage {
     const history = await HistoryStore.loadHistory(ctx);
     const viewedAtList = history
       .map(item => item.viewedAt)
-      .filter((item): item is number => typeof item === 'number');
+      .filter(item => typeof item === 'number') as number[];
     this.readingStreakDays = this.calcReadingStreak(viewedAtList);
 
     const uid = await FavoriteStore.getUid(ctx);

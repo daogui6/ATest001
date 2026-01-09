@@ -592,7 +592,9 @@ struct ArticleDetailPage {
       }
     }
     await DownloadStore.addDownload(ctx, uid, this.article, content);
-    this.downloadedIds = new Set<number>([...this.downloadedIds, this.article.id]);
+    const nextDownloadedIds = new Set<number>(Array.from(this.downloadedIds));
+    nextDownloadedIds.add(this.article.id);
+    this.downloadedIds = nextDownloadedIds;
     this.bumpDownloadVersion();
     promptAction.showToast({ message: '已加入离线下载' });
   }
