@@ -508,18 +508,25 @@ struct ArticleDetailPage {
    * 采用函数式更新，精确更新特定评论的点赞状态
    */
   private updateCommentLikeState(commentId: string, state: LikeState) {
+    // 定义递归函数update，用于遍历评论列表并更新指定评论的点赞状态
     const update = (items: CommentView[]): CommentView[] => {
+      // 使用map方法遍历每个评论项
       return items.map(item => {
+        // 如果当前评论的ID与目标ID匹配，则更新其点赞状态
         if (item.id === commentId) {
           return this.mergeCommentView(item, { liked: state.liked, likeCount: state.count });
         }
+        // 如果当前评论没有回复，则直接返回
         if (item.replies.length === 0) {
           return item;
         }
+        // 如果有回复，则递归处理子回复
         const nextReplies = update(item.replies);
+        // 更新当前评论的回复列表
         return this.mergeCommentView(item, { replies: nextReplies });
       });
     };
+    // 更新整个评论列表
     this.comments = update(this.comments);
   }
 

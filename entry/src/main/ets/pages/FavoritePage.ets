@@ -45,6 +45,7 @@ AppStorage.setOrCreate('session_version', 0);
 @Entry
 @Component
 export struct FavoritePage {
+  @State showBackButton: boolean = false; // 是否显示返回按钮
   /**
    * 获取宿主上下文
    * 用于访问UIAbility上下文，执行数据存储等操作
@@ -76,10 +77,19 @@ export struct FavoritePage {
   @State uid: string = '0'; // 当前用户ID
   @State favIds: Set<number> = new Set<number>(); // 用户收藏的文章ID集合
   @State favArticles: Article[] = []; // 收藏的文章列表（完整数据）
-  
+
   // 动画相关状态
   @State headerOpacity: number = 0; // 头部导航栏透明度
   @State headerOffset: number = 12; // 头部导航栏垂直偏移
+
+  /**
+   * 路由参数解析
+   * 用于判断是否显示返回按钮
+   */
+  private updateBackButton() {
+    const params = router.getParams() as { showBackButton?: boolean } | undefined;
+    this.showBackButton = Boolean(params?.showBackButton);
+  }
 
   /**
    * 收藏版本变化监听器
@@ -228,9 +238,14 @@ export struct FavoritePage {
     Column() {
       // 顶部标题栏
       Row() {
-        // 左侧空占位，确保中间标题被左右均衡
-        Text('')
-          .layoutWeight(1)
+        if (this.showBackButton) {
+          Text('←')
+            .fontSize(22)
+            .onClick(() => router.back())
+            .width(40)
+        } else {
+          Blank().width(40)
+        }
 
         // 页面标题
         Text('收藏')
@@ -306,6 +321,7 @@ export struct FavoritePage {
     .height('100%')
     .onAppear(() => {
       // 页面显示时的初始化操作
+      this.updateBackButton();
       this.refresh();
       this.animateHeader();
     })

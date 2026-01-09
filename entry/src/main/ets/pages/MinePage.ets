@@ -382,7 +382,7 @@ export struct MinePage {
    */
   private async openLiked() {
     if (!this.isLogin || this.uid === '0') {
-      promptAction.showToast({ message: '请先登录后查看点赞记录' });
+      promptAction.showToast({ message: '请先登录后查看收藏记录' });
       return;
     }
     try {
@@ -413,7 +413,7 @@ export struct MinePage {
    */
   private async openFavoritePage() {
     try {
-      await router.pushUrl({ url: 'pages/FavoritePage' });
+      await router.pushUrl({ url: 'pages/FavoritePage', params: { showBack: true } });
     } catch (e) {
       promptAction.showToast({ message: '跳转失败：页面不存在或参数错误' });
     }
@@ -424,7 +424,7 @@ export struct MinePage {
    */
   private async openHomePage() {
     try {
-      await router.pushUrl({ url: 'pages/Index' });
+      await router.replaceUrl({ url: 'pages/Index' });
     } catch (e) {
       promptAction.showToast({ message: '跳转失败：页面不存在或参数错误' });
     }
@@ -622,7 +622,7 @@ export struct MinePage {
               .borderRadius(12)
               .backgroundColor('#F6F7FB')
               .border({ width: 1, color: '#E9EEF5' })
-              .onClick(async () => await this.openLiked())
+              .onClick(async () => await this.openFavoritePage())
 
               Column({ space: 6 }) {
                 Text('📥').fontSize(22)
