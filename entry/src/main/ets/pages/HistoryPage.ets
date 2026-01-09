@@ -28,6 +28,7 @@ import router from '@ohos.router'; // 页面路由导航
 // 导入应用数据模型和存储模块
 import type { Article } from '../model/Article'; // 文章数据模型
 import { HistoryStore } from '../store/HistoryStore'; // 历史记录存储管理
+import { LoadingProgress } from '../components/LoadingProgress';
 
 /**
  * 全局状态初始化

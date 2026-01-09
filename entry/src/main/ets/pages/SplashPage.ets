@@ -23,6 +23,7 @@
  */
 
 import router from '@ohos.router';
+import { LoadingProgress } from '../components/LoadingProgress';
 
 /**
  * 启动页面组件
@@ -43,7 +44,6 @@ export struct SplashPage {
    * 用于在启动动画完成后自动跳转到主页面
    */
   private navigateTimer?: number;
-  private orbitTimer?: number;
 
   // ========== 动画状态管理 ==========
   
@@ -60,19 +60,6 @@ export struct SplashPage {
   @State iconScale: number = 0.9;
 
   /**
-   * 进度条数值
-   * 初始值为0，动画过程中逐渐变为100（完成）
-   */
-  @State loadingProgress: number = 0;
-  @State orbitAngle: number = 0;
-
-  private readonly orbitRadius: number = 96;
-  private readonly orbitTickMs: number = 16;
-  private readonly orbitSpeed: number = 2;
-
-  // ========== 生命周期方法 ==========
-  
-  /**
    * 页面即将显示时调用
    * 执行启动动画和设置跳转定时器
    */
@@ -81,7 +68,6 @@ export struct SplashPage {
     animateTo({ duration: 1800, curve: Curve.EaseOut }, () => {
       this.iconOpacity = 1;     // 完全显示
       this.iconScale = 1;       // 原始大小
-      this.loadingProgress = 100; // 进度条完成
     });
 
     // 设置跳转定时器
@@ -89,8 +75,6 @@ export struct SplashPage {
     this.navigateTimer = setTimeout(() => {
       router.replaceUrl({ url: 'pages/Index' });
     }, 1800);
-
-    this.startOrbitAnimation();
   }
 
   /**
@@ -103,19 +87,6 @@ export struct SplashPage {
       clearTimeout(this.navigateTimer);
       this.navigateTimer = undefined;
     }
-    if (this.orbitTimer !== undefined) {
-      clearInterval(this.orbitTimer);
-      this.orbitTimer = undefined;
-    }
-  }
-
-  private startOrbitAnimation() {
-    if (this.orbitTimer !== undefined) {
-      clearInterval(this.orbitTimer);
-    }
-    this.orbitTimer = setInterval(() => {
-      this.orbitAngle = (this.orbitAngle + this.orbitSpeed) % 360;
-    }, this.orbitTickMs);
   }
 
   // ========== 页面构建方法 ==========
@@ -141,42 +112,17 @@ export struct SplashPage {
       
       Column({ space: 16 }) {
         /**
-         * 进度条
-         * 位于图标上方，用于提示加载进度
-         */
-        Progress({ value: this.loadingProgress, total: 100, style: ProgressStyle.Linear })
-          .width(220)
-          .height(6)
-          .color('#4C7DFF')
-          .backgroundColor('#E1E6F5')
-          .borderRadius(3)
-
-        /**
          * 应用图标
          * 使用app.media.xuexi资源
          * 应用透明度动画和缩放动画效果
          */
-        Stack({ alignContent: Alignment.Center }) {
-          Image($r('app.media.xuexi'))
-            .width(140)
-            .height(140)
-            .objectFit(ImageFit.Contain)
-            .opacity(this.iconOpacity)        // 动态透明度
-            .scale({ x: this.iconScale, y: this.iconScale })  // 动态缩放
-            .borderRadius(28)                 // 圆角效果
-
-          Image($r('app.media.luobo'))
-            .width(40)
-            .height(40)
-            .objectFit(ImageFit.Contain)
-            .translate({
-              x: this.orbitRadius * Math.cos(this.orbitAngle * Math.PI / 180),
-              y: this.orbitRadius * Math.sin(this.orbitAngle * Math.PI / 180)
-            })
-            .opacity(this.iconOpacity)
-        }
-        .width(220)
-        .height(220)
+        LoadingProgress({
+          size: 140,
+          orbitRadius: 96,
+          orbitImageSize: 40
+        })
+          .opacity(this.iconOpacity)
+          .scale({ x: this.iconScale, y: this.iconScale })
 
         /**
          * 加载提示文本

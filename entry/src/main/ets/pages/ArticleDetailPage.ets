@@ -38,6 +38,7 @@ import { ArticleStore } from '../store/ArticleStore';
 import { fetchArticleContent } from '../service/ArticleContentService';
 import { fetchArticleById } from '../service/WanService';
 import type { Comment } from '../model/Comment';
+import { LoadingProgress } from '../components/LoadingProgress';
 import { InteractionStore, type LikeState } from '../store/InteractionStore';
 import { UserActionStore } from '../store/UserActionStore';
 import { UserStore } from '../store/UserStore';

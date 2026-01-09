@@ -36,6 +36,7 @@ import { ArticleStore } from '../store/ArticleStore';
 import { FavoriteStore } from '../store/FavoriteStore';
 import { SearchHistoryStore } from '../store/SearchHistoryStore';
 import { searchArticles } from '../service/WanService';
+import { LoadingProgress } from '../components/LoadingProgress';
 
 // 全局状态管理 - 用于跨页面同步
 AppStorage.setOrCreate('fav_version', 0);     // 收藏版本号
