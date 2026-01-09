@@ -71,7 +71,6 @@ export struct MinePage {
   @State publicName: string = '';            // 公开昵称
   @State token: string = '';                 // 用户令牌
   @State isEditingProfile: boolean = false;  // 是否处于编辑资料状态
-  @State showSettings: boolean = false;      // 设置面板展示
 
   // ========== 登录表单状态 ==========
   /** 登录表单相关状态 */
@@ -449,6 +448,17 @@ export struct MinePage {
   }
 
   /**
+   * 打开设置页面
+   */
+  private async openSettingsPage() {
+    try {
+      await router.pushUrl({ url: 'pages/SettingsPage' });
+    } catch (e) {
+      promptAction.showToast({ message: '跳转失败：页面不存在或参数错误' });
+    }
+  }
+
+  /**
    * 打开反馈入口
    */
   private async openFeedback() {
@@ -498,8 +508,8 @@ export struct MinePage {
           .backgroundColor('#EEF2FF')
           .height(28)
           .padding({ left: 10, right: 10 })
-          .onClick(() => {
-            this.showSettings = !this.showSettings;
+          .onClick(async () => {
+            await this.openSettingsPage();
           })
       }
       .padding(12)
@@ -710,6 +720,48 @@ export struct MinePage {
           .border({ width: 1, color: '#E9EEF5' })
           .shadow({ radius: 10, color: '#1A3B5A1A', offsetX: 0, offsetY: 6 })
 
+          Column({ space: 12 }) {
+            Row() {
+              Text('我的动态').fontSize(16).fontWeight(FontWeight.Medium)
+            }
+            Row({ space: 12 }) {
+              Column({ space: 4 }) {
+                Text('12').fontSize(18).fontWeight(FontWeight.Bold)
+                Text('连续阅读日').fontSize(11).opacity(0.6)
+              }
+              .layoutWeight(1)
+              Column({ space: 4 }) {
+                Text('38').fontSize(18).fontWeight(FontWeight.Bold)
+                Text('本周收藏').fontSize(11).opacity(0.6)
+              }
+              .layoutWeight(1)
+              Column({ space: 4 }) {
+                Text('4').fontSize(18).fontWeight(FontWeight.Bold)
+                Text('待读清单').fontSize(11).opacity(0.6)
+              }
+              .layoutWeight(1)
+            }
+            .padding(12)
+            .borderRadius(12)
+            .backgroundColor('#F8FAFC')
+
+            Row({ space: 8 }) {
+              Text('📌').fontSize(16)
+              Text('已为你更新 3 条个性化推荐').fontSize(12).opacity(0.7)
+              Blank().layoutWeight(1)
+              Text('查看').fontSize(12).fontColor('#3B82F6')
+            }
+            .padding(12)
+            .borderRadius(12)
+            .backgroundColor('#F6F7FB')
+            .border({ width: 1, color: '#E9EEF5' })
+          }
+          .padding(16)
+          .borderRadius(16)
+          .backgroundColor('#FFFFFF')
+          .border({ width: 1, color: '#E9EEF5' })
+          .shadow({ radius: 10, color: '#1A3B5A1A', offsetX: 0, offsetY: 6 })
+
           // ========== 登录/注册区域（未登录状态） ==========
           if (!this.isLogin) {
             Column({ space: 12 }) {
@@ -793,252 +845,6 @@ export struct MinePage {
               // 错误消息显示
               if (this.message) {
                 Text(this.message).fontSize(14).fontColor(Color.Red).margin({ top: 4 })
-              }
-            }
-            .padding(16)
-            .borderRadius(16)
-            .backgroundColor('#FFFFFF')
-            .border({ width: 1, color: '#E9EEF5' })
-            .shadow({ radius: 12, color: '#1A3B5A14', offsetX: 0, offsetY: 6 })
-          }
-          if (this.showSettings) {
-            Column({ space: 12 }) {
-              Row() {
-                Text('设置中心').fontSize(16).fontWeight(FontWeight.Medium)
-              }
-
-              if (this.isLogin) {
-                Column({ space: 6 }) {
-                  Text('账号信息').fontSize(14).fontWeight(FontWeight.Medium)
-                  Text(`用户ID：${this.uid}`).fontSize(13).opacity(0.7)
-                  Text(`用户名：${this.username || '未获取'}`).fontSize(13).opacity(0.7)
-                  Text(`公开昵称：${this.publicName || this.nickname}`).fontSize(13).opacity(0.7)
-                  Text(`昵称：${this.nickname}`).fontSize(13).opacity(0.7)
-                  Text(`签名：${this.bio}`).fontSize(13).opacity(0.7)
-                }
-              } else {
-                Text('登录后可管理账号信息').fontSize(12).opacity(0.6)
-              }
-
-              Column({ space: 10 }) {
-                Row() {
-                  Text('消息提醒').fontSize(14)
-                  Blank().layoutWeight(1)
-                  Toggle({ type: ToggleType.Switch, isOn: this.enablePush })
-                    .onChange((v: boolean) => {
-                      this.enablePush = v;
-                    })
-                }
-                Row() {
-                  Text('首页自动播放').fontSize(14)
-                  Blank().layoutWeight(1)
-                  Toggle({ type: ToggleType.Switch, isOn: this.enableAutoPlay })
-                    .onChange((v: boolean) => {
-                      this.enableAutoPlay = v;
-                    })
-                }
-                Row() {
-                  Text('移动网络播放').fontSize(14)
-                  Blank().layoutWeight(1)
-                  Toggle({ type: ToggleType.Switch, isOn: this.enableCellular })
-                    .onChange((v: boolean) => {
-                      this.enableCellular = v;
-                    })
-                }
-              }
-              .padding(12)
-              .borderRadius(12)
-              .backgroundColor('#F8FAFC')
-
-              Column({ space: 10 }) {
-                Row() {
-                  Text('清理缓存').fontSize(14)
-                  Blank().layoutWeight(1)
-                  Text('立即').fontSize(12).fontColor('#3B82F6')
-                }
-                .onClick(async () => await this.clearCache())
-                Row() {
-                  Text('帮助中心').fontSize(14)
-                  Blank().layoutWeight(1)
-                  Text('查看').fontSize(12).fontColor('#3B82F6')
-                }
-                .onClick(async () => await this.openHelpCenter())
-              }
-
-              if (this.isLogin) {
-                if (this.isEditingProfile) {
-                  Row({ space: 12 }) {
-                    Stack({ alignContent: Alignment.Center }) {
-                      if (this.avatarUrl) {
-                        Image(this.avatarUrl)
-                          .width(52)
-                          .height(52)
-                          .borderRadius(26)
-                          .objectFit(ImageFit.Cover)
-                      } else {
-                        Image($r('app.media.startIcon'))
-                          .width(52)
-                          .height(52)
-                          .borderRadius(26)
-                          .backgroundColor('#4C6FFF')
-                          .objectFit(ImageFit.Cover)
-                      }
-                    }
-                    .width(52)
-                    .height(52)
-                    .borderRadius(26)
-                    .border({ width: 1, color: '#E2E8F5' })
-                    Button('更换头像', { type: ButtonType.Capsule })
-                      .onClick(async () => {
-                        await this.chooseAvatar();
-                      })
-                  }
-                  .alignItems(VerticalAlign.Center)
-
-                  Text('编辑昵称').fontSize(14).opacity(0.7)
-                  TextInput({ text: this.nickname, placeholder: '请输入昵称' })
-                    .onChange((v) => {
-                      this.nickname = v;
-                    })
-                    .padding({ left: 12, right: 12 })
-                    .borderRadius(10)
-                    .backgroundColor('#F6F7FB')
-
-                  Text('编辑签名').fontSize(14).opacity(0.7).margin({ top: 6 })
-                  TextInput({ text: this.bio, placeholder: '请输入签名' })
-                    .onChange((v) => {
-                      this.bio = v
-                    })
-                    .padding({ left: 12, right: 12 })
-                    .borderRadius(10)
-                    .backgroundColor('#F6F7FB')
-
-                  Row({ space: 12 }) {
-                    Button('保存资料', { type: ButtonType.Capsule })
-                      .layoutWeight(1)
-                      .onClick(async () => {
-                        await this.persistProfileChanges();
-                        this.isEditingProfile = false;
-                      })
-                    Button('取消', { type: ButtonType.Capsule })
-                      .layoutWeight(1)
-                      .onClick(async () => {
-                        await this.cancelEditProfile();
-                      })
-                  }
-                  .margin({ top: 6 })
-                } else {
-                  Row({ space: 12 }) {
-                    Button('修改资料', { type: ButtonType.Capsule })
-                      .layoutWeight(1)
-                      .onClick(() => {
-                        this.isEditingProfile = true;
-                      })
-                    Button('退出登录', { type: ButtonType.Capsule })
-                      .layoutWeight(1)
-                      .onClick(async () => {
-                        await this.handleLogout();
-                      })
-                  }
-                  .margin({ top: 10 })
-                }
-              }
-            }
-            .padding(16)
-            .borderRadius(16)
-            .backgroundColor('#FFFFFF')
-            .border({ width: 1, color: '#E9EEF5' })
-            .shadow({ radius: 12, color: '#1A3B5A14', offsetX: 0, offsetY: 6 })
-          } else if (this.isLogin) {
-            // ========== 账号信息区域（已登录状态） ==========
-            Column({ space: 12 }) {
-              Text('账号信息').fontSize(16).fontWeight(FontWeight.Medium)
-              
-              // 账号信息展示
-              Column({ space: 6 }) {
-                Text(`用户ID：${this.uid}`).fontSize(14)
-                Text(`用户名：${this.username || '未获取'}`).fontSize(14)
-                Text(`公开昵称：${this.publicName || this.nickname}`).fontSize(14)
-                Text(`Token：${this.token || '暂无'}`).fontSize(14).opacity(0.7)
-                Text(`昵称：${this.nickname}`).fontSize(14)
-                Text(`签名：${this.bio}`).fontSize(14).opacity(0.7)
-              }
-
-              if (this.isEditingProfile) {
-                Row({ space: 12 }) {
-                  Stack({ alignContent: Alignment.Center }) {
-                    if (this.avatarUrl) {
-                      Image(this.avatarUrl)
-                        .width(52)
-                        .height(52)
-                        .borderRadius(26)
-                        .objectFit(ImageFit.Cover)
-                    } else {
-                      Image($r('app.media.startIcon'))
-                        .width(52)
-                        .height(52)
-                        .borderRadius(26)
-                        .backgroundColor('#4C6FFF')
-                        .objectFit(ImageFit.Cover)
-                    }
-                  }
-                  .width(52)
-                  .height(52)
-                  .borderRadius(26)
-                  .border({ width: 1, color: '#E2E8F5' })
-                  Button('更换头像', { type: ButtonType.Capsule })
-                    .onClick(async () => {
-                      await this.chooseAvatar();
-                    })
-                }
-                .alignItems(VerticalAlign.Center)
-
-                Text('编辑昵称').fontSize(14).opacity(0.7)
-                TextInput({ text: this.nickname, placeholder: '请输入昵称' })
-                  .onChange((v) => {
-                    this.nickname = v;
-                  })
-                  .padding({ left: 12, right: 12 })
-                  .borderRadius(10)
-                  .backgroundColor('#F6F7FB')
-
-                Text('编辑签名').fontSize(14).opacity(0.7).margin({ top: 6 })
-                TextInput({ text: this.bio, placeholder: '请输入签名' })
-                  .onChange((v) => {
-                    this.bio = v
-                  })
-                  .padding({ left: 12, right: 12 })
-                  .borderRadius(10)
-                  .backgroundColor('#F6F7FB')
-
-                Row({ space: 12 }) {
-                  Button('保存资料', { type: ButtonType.Capsule })
-                    .layoutWeight(1)
-                    .onClick(async () => {
-                      await this.persistProfileChanges();
-                      this.isEditingProfile = false;
-                    })
-                  Button('取消', { type: ButtonType.Capsule })
-                    .layoutWeight(1)
-                    .onClick(async () => {
-                      await this.cancelEditProfile();
-                    })
-                }
-                .margin({ top: 6 })
-              } else {
-                Row({ space: 12 }) {
-                  Button('修改资料', { type: ButtonType.Capsule })
-                    .layoutWeight(1)
-                    .onClick(() => {
-                      this.isEditingProfile = true;
-                    })
-                  Button('退出登录', { type: ButtonType.Capsule })
-                    .layoutWeight(1)
-                    .onClick(async () => {
-                      await this.handleLogout();
-                    })
-                }
-                .margin({ top: 10 })
               }
             }
             .padding(16)
