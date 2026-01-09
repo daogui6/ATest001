@@ -34,6 +34,8 @@ import { Prefs } from '../store/Prefs';
 import { UserStore } from '../store/UserStore';
 import { NotificationStore } from '../store/NotificationStore';
 
+// 全局会话版本号，用于跨页面同步登录状态
+AppStorage.setOrCreate('session_version', 0);
 // 全局通知版本号，用于跨页面同步通知状态
 AppStorage.setOrCreate('notification_version', 0);
 
@@ -90,7 +92,12 @@ export struct MinePage {
   @StorageLink('notification_version')
   @Watch('onNotificationVersionChange')      // 监听通知版本变化
   notificationVersion: number = 0;
-  
+
+  /** 会话版本号 - 登录状态变化触发更新 */
+  @StorageLink('session_version')
+  @Watch('onSessionVersionChange')
+  sessionVersion: number = 0;
+
   /** 未读通知数量 */
   @State unreadNotifications: number = 0;
 
@@ -122,6 +129,15 @@ export struct MinePage {
    * 当全局通知版本号变化时自动刷新通知
    */
   private onNotificationVersionChange() {
+    this.refreshNotifications();
+  }
+
+  /**
+   * 监听会话版本变化
+   * 当登录状态更新时刷新用户信息
+   */
+  private onSessionVersionChange() {
+    this.loadSession();
     this.refreshNotifications();
   }
 
@@ -200,6 +216,11 @@ export struct MinePage {
    */
   private async chooseAvatar() {
     try {
+      const permitted = await this.requestPhotoPermission();
+      if (!permitted) {
+        promptAction.showToast({ message: '未授权相册权限，无法选择头像' });
+        return;
+      }
       const photoPicker = new picker.PhotoViewPicker();
       const options = new picker.PhotoSelectOptions();
       options.MIMEType = picker.PhotoViewMIMETypes.IMAGE_TYPE;
@@ -210,6 +231,25 @@ export struct MinePage {
       }
     } catch (e) {
       promptAction.showToast({ message: '头像选择失败，请稍后重试' });
+    }
+  }
+
+  /**
+   * 相册权限申请弹窗
+   */
+  private async requestPhotoPermission(): Promise<boolean> {
+    try {
+      const result = await promptAction.showDialog({
+        title: '申请相册权限',
+        message: '用于选择头像和上传图片，我们仅会在您主动操作时访问相册。',
+        buttons: [
+          { text: '暂不允许', color: '#666666' },
+          { text: '允许', color: '#4C6FFF' }
+        ]
+      });
+      return result?.index === 1;
+    } catch {
+      return false;
     }
   }
 
@@ -719,7 +759,7 @@ export struct MinePage {
                   .height(52)
                   .borderRadius(26)
                   .border({ width: 1, color: '#E2E8F5' })
-                  Button('更换头像', { type: ButtonType.Normal })
+                  Button('更换头像', { type: ButtonType.Capsule })
                     .onClick(async () => {
                       await this.chooseAvatar();
                     })
@@ -754,7 +794,7 @@ export struct MinePage {
                       await this.persistProfileChanges();
                       this.isEditingProfile = false;
                     })
-                  Button('取消', { type: ButtonType.Normal })
+                  Button('取消', { type: ButtonType.Capsule })
                     .layoutWeight(1)
                     .onClick(async () => {
                       await this.cancelEditProfile();

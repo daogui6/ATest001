@@ -86,6 +86,7 @@ export struct RegisterPage {
     AppStorage.set('session_version', v + 1);
     
     promptAction.showToast({ message: '注册成功，已登录' });
+    await this.requestNewUserPermissions();
     await this.goBack();
   }
 
@@ -107,6 +108,11 @@ export struct RegisterPage {
    */
   private async chooseAvatar() {
     try {
+      const permitted = await this.requestPhotoPermission();
+      if (!permitted) {
+        promptAction.showToast({ message: '未授权相册权限，无法选择头像' });
+        return;
+      }
       const photoPicker = new picker.PhotoViewPicker();
       const options = new picker.PhotoSelectOptions();
       options.MIMEType = picker.PhotoViewMIMETypes.IMAGE_TYPE;
@@ -117,6 +123,51 @@ export struct RegisterPage {
       }
     } catch (e) {
       promptAction.showToast({ message: '头像选择失败，请稍后重试' });
+    }
+  }
+
+  /**
+   * 相册权限申请弹窗
+   */
+  private async requestPhotoPermission(): Promise<boolean> {
+    try {
+      const result = await promptAction.showDialog({
+        title: '申请相册权限',
+        message: '用于选择头像和上传图片，我们仅会在您主动操作时访问相册。',
+        buttons: [
+          { text: '暂不允许', color: '#666666' },
+          { text: '允许', color: '#4C6FFF' }
+        ]
+      });
+      return result?.index === 1;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * 新用户权限申请引导
+   */
+  private async requestNewUserPermissions() {
+    try {
+      await promptAction.showDialog({
+        title: '申请通知权限',
+        message: '用于提醒评论回复、点赞消息等重要通知。',
+        buttons: [
+          { text: '暂不允许', color: '#666666' },
+          { text: '允许', color: '#4C6FFF' }
+        ]
+      });
+      await promptAction.showDialog({
+        title: '申请个性化推荐权限',
+        message: '用于根据您的浏览和收藏偏好生成更精准的推荐内容。',
+        buttons: [
+          { text: '暂不允许', color: '#666666' },
+          { text: '允许', color: '#4C6FFF' }
+        ]
+      });
+    } catch (e) {
+      // 忽略权限引导异常，避免阻塞注册流程
     }
   }
 
