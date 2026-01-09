@@ -595,7 +595,7 @@ export struct HomePage {
             ListItem() {
               if (this.loadingMore) {
                 Row({ space: 8 }) {
-                  AppLoadingProgress({ iconSize: 16, orbitRadius: 8, orbitImageSize: 8 })
+                  AppLoadingProgress()
                   Text('加载中...').fontSize(13).opacity(0.7)
                 }
                 .padding(12)

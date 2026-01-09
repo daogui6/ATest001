@@ -11,9 +11,9 @@
 export struct AppLoadingProgress {
   @State private orbitAngle: number = 0;
 
-  @Prop iconSize: number = 28;
-  @Prop orbitRadius: number = 14;
-  @Prop orbitImageSize: number = 10;
+  @Prop iconSize: number = 140;
+  @Prop orbitRadius: number = 96;
+  @Prop orbitImageSize: number = 40;
 
   private orbitTimer?: number;
   private readonly orbitTickMs: number = 16;
