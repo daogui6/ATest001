@@ -116,9 +116,21 @@ export struct MinePage {
   @State readingStreakDays: number = 0;
   @State weeklyFavCount: number = 0;
   @State readingListCount: number = 0;
+  @State pressedCardId: string = '';
 
   // ========== 工具方法 ==========
-  
+  private handleCardTouch(cardId: string, event: TouchEvent) {
+    if (event.type === TouchType.Down) {
+      this.pressedCardId = cardId;
+      return;
+    }
+    if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
+      if (this.pressedCardId === cardId) {
+        this.pressedCardId = '';
+      }
+    }
+  }
+
   /**
    * 获取宿主UIAbility的Context
    * 为Preferences/数据库等系统能力提供稳定的上下文参数
@@ -668,13 +680,12 @@ export struct MinePage {
                 .layoutWeight(1)
                 .padding(12)
                 .borderRadius(12)
-                .backgroundColor('#F6F7FB')
-                .stateStyles({
-                  pressed: { backgroundColor: '#B8D0EE' },
-                  hovered: { backgroundColor: '#B8D0EE' }
-                })
+                .backgroundColor(this.pressedCardId === 'favorite' ? '#B8D0EE' : '#F6F7FB')
                 .animation({ duration: 160, curve: Curve.EaseOut })
                 .border({ width: 1, color: '#E9EEF5' })
+                .onTouch((event: TouchEvent) => {
+                  this.handleCardTouch('favorite', event);
+                })
                 .onClick(async () => await this.openFavoritePage())
 
                 Column({ space: 6 }) {
@@ -684,13 +695,12 @@ export struct MinePage {
                 .layoutWeight(1)
                 .padding(12)
                 .borderRadius(12)
-                .backgroundColor('#F6F7FB')
-                .stateStyles({
-                  pressed: { backgroundColor: '#B8D0EE' },
-                  hovered: { backgroundColor: '#B8D0EE' }
-                })
+                .backgroundColor(this.pressedCardId === 'offline' ? '#B8D0EE' : '#F6F7FB')
                 .animation({ duration: 160, curve: Curve.EaseOut })
                 .border({ width: 1, color: '#E9EEF5' })
+                .onTouch((event: TouchEvent) => {
+                  this.handleCardTouch('offline', event);
+                })
                 .onClick(async () => await this.openOfflineDownloads())
 
                 Column({ space: 6 }) {
@@ -700,13 +710,12 @@ export struct MinePage {
                 .layoutWeight(1)
                 .padding(12)
                 .borderRadius(12)
-                .backgroundColor('#F6F7FB')
-                .stateStyles({
-                  pressed: { backgroundColor: '#B8D0EE' },
-                  hovered: { backgroundColor: '#B8D0EE' }
-                })
+                .backgroundColor(this.pressedCardId === 'privacy' ? '#B8D0EE' : '#F6F7FB')
                 .animation({ duration: 160, curve: Curve.EaseOut })
                 .border({ width: 1, color: '#E9EEF5' })
+                .onTouch((event: TouchEvent) => {
+                  this.handleCardTouch('privacy', event);
+                })
                 .onClick(async () => await this.openPrivacyCenter())
               }
             }
@@ -732,14 +741,13 @@ export struct MinePage {
                 .layoutWeight(1)
                 .padding(12)
                 .borderRadius(12)
-                .backgroundColor('#F6F7FB')
-                .stateStyles({
-                  pressed: { backgroundColor: '#B8D0EE' },
-                  hovered: { backgroundColor: '#B8D0EE' }
-                })
+                .backgroundColor(this.pressedCardId === 'history' ? '#B8D0EE' : '#F6F7FB')
                 .animation({ duration: 160, curve: Curve.EaseOut })
                 .border({ width: 1, color: '#E9EEF5' })
                 .onClick(async () => await this.openHistory())
+                .onTouch((event: TouchEvent) => {
+                  this.handleCardTouch('history', event);
+                })
 
                 // 点赞记录入口
                 Column({ space: 6 }) {
@@ -749,13 +757,12 @@ export struct MinePage {
                 .layoutWeight(1)
                 .padding(12)
                 .borderRadius(12)
-                .backgroundColor('#F6F7FB')
+                .backgroundColor(this.pressedCardId === 'liked' ? '#B8D0EE' : '#F6F7FB')
                 .border({ width: 1, color: '#E9EEF5' })
-                .stateStyles({
-                  pressed: { backgroundColor: '#B8D0EE' },
-                  hovered: { backgroundColor: '#B8D0EE' }
-                })
                 .animation({ duration: 160, curve: Curve.EaseOut })
+                .onTouch((event: TouchEvent) => {
+                  this.handleCardTouch('liked', event);
+                })
                 .onClick(async () => await this.openLiked())
 
                 // 评论记录入口
@@ -766,13 +773,12 @@ export struct MinePage {
                 .layoutWeight(1)
                 .padding(12)
                 .borderRadius(12)
-                .backgroundColor('#F6F7FB')
-                .stateStyles({
-                  pressed: { backgroundColor: '#B8D0EE' },
-                  hovered: { backgroundColor: '#B8D0EE' }
-                })
+                .backgroundColor(this.pressedCardId === 'commented' ? '#B8D0EE' : '#F6F7FB')
                 .animation({ duration: 160, curve: Curve.EaseOut })
                 .border({ width: 1, color: '#E9EEF5' })
+                .onTouch((event: TouchEvent) => {
+                  this.handleCardTouch('commented', event);
+                })
                 .onClick(async () => await this.openCommented())
               }
 
@@ -796,13 +802,12 @@ export struct MinePage {
                 .layoutWeight(1)
                 .padding(12)
                 .borderRadius(12)
-                .backgroundColor('#F6F7FB')
-                .stateStyles({
-                  pressed: { backgroundColor: '#B8D0EE' },
-                  hovered: { backgroundColor: '#B8D0EE' }
-                })
+                .backgroundColor(this.pressedCardId === 'notifications' ? '#B8D0EE' : '#F6F7FB')
                 .animation({ duration: 160, curve: Curve.EaseOut })
                 .border({ width: 1, color: '#E9EEF5' })
+                .onTouch((event: TouchEvent) => {
+                  this.handleCardTouch('notifications', event);
+                })
                 .onClick(async () => await this.openNotifications())
 
                 Column({ space: 6 }) {
@@ -812,13 +817,12 @@ export struct MinePage {
                 .layoutWeight(1)
                 .padding(12)
                 .borderRadius(12)
-                .backgroundColor('#F6F7FB')
-                .stateStyles({
-                  pressed: { backgroundColor: '#B8D0EE' },
-                  hovered: { backgroundColor: '#B8D0EE' }
-                })
+                .backgroundColor(this.pressedCardId === 'changelog' ? '#B8D0EE' : '#F6F7FB')
                 .animation({ duration: 160, curve: Curve.EaseOut })
                 .border({ width: 1, color: '#E9EEF5' })
+                .onTouch((event: TouchEvent) => {
+                  this.handleCardTouch('changelog', event);
+                })
                 .onClick(async () => await this.openChangelog())
 
                 Column({ space: 6 }) {
@@ -828,13 +832,12 @@ export struct MinePage {
                 .layoutWeight(1)
                 .padding(12)
                 .borderRadius(12)
-                .backgroundColor('#F6F7FB')
-                .stateStyles({
-                  pressed: { backgroundColor: '#B8D0EE' },
-                  hovered: { backgroundColor: '#B8D0EE' }
-                })
+                .backgroundColor(this.pressedCardId === 'feedback' ? '#B8D0EE' : '#F6F7FB')
                 .animation({ duration: 160, curve: Curve.EaseOut })
                 .border({ width: 1, color: '#E9EEF5' })
+                .onTouch((event: TouchEvent) => {
+                  this.handleCardTouch('feedback', event);
+                })
                 .onClick(async () => await this.openFeedback())
               }
             }
