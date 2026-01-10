@@ -86,21 +86,24 @@ export struct LoginPage {
         .height('100%')
         .objectFit(ImageFit.Cover)
       Column() {
-        Row() {
-          Button('返回', { type: ButtonType.Capsule })
-            .fontSize(12)
-            .fontColor('#4F46E5')
-            .backgroundColor('#EEF2FF')
-            .height(28)
-            .padding({ left: 10, right: 10 })
+        Flex({
+          alignItems: ItemAlign.Center,
+          justifyContent: FlexAlign.Center
+        }) {
+          Text('←')
+            .fontSize(20)
+            .margin({ left: 12 })
             .onClick(async () => {
               await this.goBack();
             })
           Blank().layoutWeight(1)
-          Text('登录').fontSize(18).fontWeight(FontWeight.Bold)
+          Text('登录')
+            .fontSize(22)
+            .fontWeight(FontWeight.Bold)
           Blank().layoutWeight(1)
         }
-        .padding({ top: 12, left: 16, right: 16 })
+        .width('100%')
+        .height(52)
         .opacity(this.headerOpacity)
         .translate({ x: 0, y: this.headerOffset })
 

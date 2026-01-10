@@ -630,7 +630,7 @@ export struct MinePage {
 
               // 用户信息文本区域
               Column({ space: 4 }) {
-                Text(this.isLogin ? this.nickname : '欢迎来到我的主页(点击登录)')
+                Text(this.isLogin ? this.nickname : '(点击登录)')
                   .fontSize(18)
                   .fontWeight(FontWeight.Medium)
                   .onClick(async () => {
