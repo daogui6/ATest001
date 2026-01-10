@@ -8,6 +8,7 @@
     "pages/LikedPage",
     "pages/CommentedPage",
     "pages/NotificationPage",
+    "pages/LoginPage",
     "pages/RegisterPage",
     "pages/CategoryPage",
     "pages/FavoritePage",

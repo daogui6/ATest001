@@ -12,7 +12,6 @@
  * - 头部导航栏
  * - 用户信息区域
  * - 功能入口网格
- * - 登录/注册表单（未登录状态）
  * - 账号信息编辑区域（已登录状态）
  * 
  * 状态管理：
@@ -77,14 +76,6 @@ export struct MinePage {
   @State publicName: string = '';            // 公开昵称
   @State token: string = '';                 // 用户令牌
   @State isEditingProfile: boolean = false;  // 是否处于编辑资料状态
-
-  // ========== 登录表单状态 ==========
-  /** 登录表单相关状态 */
-  @State loginUsername: string = '';         // 登录用户名
-  @State loginPassword: string = '';         // 登录密码
-  @State loginAgree: boolean = false;        // 是否同意协议
-  @State message: string = '';               // 消息提示
-  @State rememberPassword: boolean = false;  // 记住密码
 
   // ========== 动画效果状态 ==========
   /** 页面进入动画效果 */
@@ -294,64 +285,6 @@ export struct MinePage {
   }
 
   /**
-   * 查看协议弹窗
-   */
-  private showAgreement(type: 'user' | 'privacy') {
-    const title = type === 'user' ? '用户协议' : '隐私政策';
-    const message = type === 'user'
-      ? '感谢使用本应用。本协议用于说明账号服务与使用规范，注册即代表您同意遵守相关规则。'
-      : '我们仅在提供服务所需范围内处理必要信息，并采取合理措施保护您的数据安全。';
-    promptAction.showDialog({
-      title,
-      message,
-      buttons: [{ text: '我知道了', color: '#4C6FFF' }]
-    });
-  }
-
-  // ========== 用户认证方法 ==========
-  
-  /**
-   * 处理用户登录
-   * 验证表单并调用登录API
-   */
-  private async handleLogin() {
-    this.message = ''; // 清空错误消息
-    
-    // 验证用户协议
-    if (!this.loginAgree) {
-      this.message = '请先阅读并同意服务条款再登录';
-      return;
-    }
-    
-    // 调用登录API
-    const result = await UserStore.login(this.hostCtx(), this.loginUsername.trim(), this.loginPassword);
-    if (result.ok === false) {
-      this.message = result.message;
-      return;
-    }
-
-    // 登录成功，更新用户状态
-    const user = result.user;
-    this.uid = String(user.id);
-    this.nickname = user.nickname || user.username;
-    this.bio = user.bio ?? '这个人很懒，还没有签名～';
-    this.avatarUrl = user.avatarUrl ?? '';
-    this.username = user.username;
-    this.publicName = user.publicName;
-    this.token = user.token ?? '';
-    this.isLogin = true;
-    
-    await this.saveAll();
-    
-    // 触发全局状态更新
-    AppStorage.setOrCreate('session_version', 0);
-    const v = (AppStorage.get('session_version') as number) ?? 0;
-    AppStorage.set('session_version', v + 1);
-    
-    await this.refreshNotifications();
-  }
-
-  /**
    * 处理退出登录状态
    * 重置所有用户相关状态
    */
@@ -362,14 +295,7 @@ export struct MinePage {
     this.token = '';
     this.avatarUrl = '';
     this.isLogin = false;
-    this.message = '';
-    this.loginAgree = false;
     this.isEditingProfile = false;
-
-    // 根据记住密码设置决定是否清空密码
-    if (!this.rememberPassword) {
-      this.loginPassword = '';
-    }
   }
 
   /**
@@ -465,6 +391,17 @@ export struct MinePage {
     }
   }
 
+  /**
+   * 打开登录页面
+   */
+  private async openLoginPage() {
+    try {
+      await router.pushUrl({ url: 'pages/LoginPage' });
+    } catch (e) {
+      promptAction.showToast({ message: '跳转失败：页面不存在或参数错误' });
+    }
+  }
+
   // ========== 通知管理方法 ==========
   
   /**
@@ -490,17 +427,6 @@ export struct MinePage {
     }
     try {
       await router.pushUrl({ url: 'pages/NotificationPage' });
-    } catch (e) {
-      promptAction.showToast({ message: '跳转失败：页面不存在或参数错误' });
-    }
-  }
-
-  /**
-   * 打开注册页面
-   */
-  private async openRegisterPage() {
-    try {
-      await router.pushUrl({ url: 'pages/RegisterPage' });
     } catch (e) {
       promptAction.showToast({ message: '跳转失败：页面不存在或参数错误' });
     }
@@ -704,9 +630,14 @@ export struct MinePage {
 
               // 用户信息文本区域
               Column({ space: 4 }) {
-                Text(this.isLogin ? this.nickname : '欢迎来到我的主页')
+                Text(this.isLogin ? this.nickname : '欢迎来到我的主页(点击登录)')
                   .fontSize(18)
                   .fontWeight(FontWeight.Medium)
+                  .onClick(async () => {
+                    if (!this.isLogin) {
+                      await this.openLoginPage();
+                    }
+                  })
                 Text(
                   this.isLogin
                     ? `ID：${this.uid} · ${this.publicName || this.username || '未设置昵称'}`
@@ -912,98 +843,6 @@ export struct MinePage {
             .backgroundColor('#FFFFFF')
             .border({ width: 1, color: '#E9EEF5' })
             .shadow({ radius: 10, color: '#1A3B5A1A', offsetX: 0, offsetY: 6 })
-
-            // ========== 登录/注册区域（未登录状态） ==========
-            if (!this.isLogin) {
-              Column({ space: 12 }) {
-                Text('登录').fontSize(16).fontWeight(FontWeight.Medium)
-
-                // 用户名输入框
-                TextInput({ text: this.loginUsername, placeholder: '请输入用户名' })
-                  .onChange((v) => { this.loginUsername = v; })
-                  .padding({ left: 12, right: 12 })
-                  .borderRadius(10)
-                  .backgroundColor('#F6F7FB')
-
-                // 密码输入框
-                TextInput({ text: this.loginPassword, placeholder: '请输入密码' })
-                  .type(InputType.Password)
-                  .onChange((v) => { this.loginPassword = v; })
-                  .padding({ left: 12, right: 12 })
-                  .borderRadius(10)
-                  .backgroundColor('#F6F7FB')
-
-                // 记住密码选项
-                Row({ space: 8 }) {
-                  Checkbox({ name: 'rememberPassword', group: 'loginPrefs' })
-                    .select(this.rememberPassword)
-                    .onChange((value: boolean) => { this.rememberPassword = value; })
-                  Text('记住密码').fontSize(14)
-                }
-                .alignItems(VerticalAlign.Center)
-
-                // 用户协议选项
-                Row({ space: 8 }) {
-                  Checkbox({ name: 'loginAgree', group: 'loginAgreement' })
-                    .select(this.loginAgree)
-                    .onChange((value: boolean) => {
-                      this.loginAgree = value;
-                      if (value) {
-                        this.message = '';
-                      }
-                    })
-                  Text() {
-                    Span('我已阅读并同意').fontSize(12)
-                    Span('《用户协议》')
-                      .fontSize(12)
-                      .fontColor('#3D6DFF')
-                      .onClick((): void => {
-                        this.showAgreement('user');
-                      })
-                    Span('和').fontSize(12)
-                    Span('《隐私政策》')
-                      .fontSize(12)
-                      .fontColor('#3D6DFF')
-                      .onClick((): void => {
-                        this.showAgreement('privacy');
-                      })
-                  }
-                  .onClick(() => {
-                    const next = !this.loginAgree;
-                    this.loginAgree = next;
-                    if (next) {
-                      this.message = '';
-                    }
-                  })
-                }
-                .alignItems(VerticalAlign.Center)
-                .margin({ top: 4 })
-
-                // 登录/注册按钮同一行
-                Row({ space: 12 }) {
-                  Button('登录', { type: ButtonType.Capsule })
-                    .layoutWeight(1)
-                    .onClick(async () => { await this.handleLogin(); })
-                  Button('注册', { type: ButtonType.Capsule })
-                    .layoutWeight(1)
-                    .onClick(async () => {
-                      this.message = '';
-                      await this.openRegisterPage();
-                    })
-                }
-                .margin({ top: 4 })
-
-                // 错误消息显示
-                if (this.message) {
-                  Text(this.message).fontSize(14).fontColor(Color.Red).margin({ top: 4 })
-                }
-              }
-              .padding(16)
-              .borderRadius(16)
-              .backgroundColor('#FFFFFF')
-              .border({ width: 1, color: '#E9EEF5' })
-              .shadow({ radius: 12, color: '#1A3B5A14', offsetX: 0, offsetY: 6 })
-            }
           }
           .padding({ left: 16, right: 16, bottom: 16 })
           .opacity(this.contentOpacity)
