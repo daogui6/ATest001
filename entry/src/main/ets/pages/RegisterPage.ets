@@ -242,12 +242,16 @@ export struct RegisterPage {
                     .borderRadius(28)
                     .objectFit(ImageFit.Cover)
                 } else {
-                  Image($r('app.media.startIcon'))
+                  Image($r('app.media.mrtx'))
                     .width(56)
                     .height(56)
                     .borderRadius(28)
-                    .backgroundColor('#4C6FFF')
                     .objectFit(ImageFit.Cover)
+                  Text(this.regUsername ? this.regUsername.slice(0, 1) : '我')
+                    .fontSize(18)
+                    .fontWeight(FontWeight.Bold)
+                    .fontColor('#FFFFFF')
+                    .textAlign(TextAlign.Center)
                 }
               }
               .width(56)

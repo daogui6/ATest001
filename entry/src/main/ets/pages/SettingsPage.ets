@@ -292,12 +292,16 @@ export struct SettingsPage {
                           .borderRadius(26)
                           .objectFit(ImageFit.Cover)
                       } else {
-                        Image($r('app.media.startIcon'))
+                        Image($r('app.media.mrtx'))
                           .width(52)
                           .height(52)
                           .borderRadius(26)
-                          .backgroundColor('#4C6FFF')
                           .objectFit(ImageFit.Cover)
+                        Text(this.nickname ? this.nickname.slice(0, 1) : '我')
+                          .fontSize(18)
+                          .fontWeight(FontWeight.Bold)
+                          .fontColor('#FFFFFF')
+                          .textAlign(TextAlign.Center)
                       }
                     }
                     .width(52)

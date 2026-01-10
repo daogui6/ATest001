@@ -610,11 +610,10 @@ export struct MinePage {
                     .borderRadius(26)
                     .objectFit(ImageFit.Cover)
                 } else {
-                  Image($r('app.media.startIcon'))
+                  Image($r('app.media.mrtx'))
                     .width(52)
                     .height(52)
                     .borderRadius(26)
-                    .backgroundColor('#4C6FFF')
                     .objectFit(ImageFit.Cover)
                   Text(this.isLogin ? (this.nickname ? this.nickname.slice(0, 1) : '我') : '访')
                     .fontSize(18)
