@@ -68,86 +68,93 @@ export struct PrivacyCenterPage {
   }
 
   build() {
-    Column() {
-      Row() {
-        Text('←')
-          .fontSize(20)
-          .margin({ left: 16 })
-          .onClick(() => router.back());
-        Text('隐私中心')
-          .fontSize(20)
-          .fontWeight(FontWeight.Bold)
-          .layoutWeight(1)
-          .textAlign(TextAlign.Center)
-        Blank().width(36)
-      }
-      .alignItems(VerticalAlign.Center)
-      .padding({ top: 16, right: 16, bottom: 12 })
-
-      Scroll() {
-        Column({ space: 16 }) {
-          Column({ space: 10 }) {
-            Text('隐私设置').fontSize(16).fontWeight(FontWeight.Medium)
-
-            Row() {
-              Text('个性化推荐').fontSize(14)
-              Blank().layoutWeight(1)
-              Toggle({ type: ToggleType.Switch, isOn: this.personalized })
-                .onChange(async (value: boolean) => {
-                  this.personalized = value;
-                  await this.saveSetting(this.KEY_PERSONALIZED, value);
-                })
-            }
-            Row() {
-              Text('使用数据统计优化体验').fontSize(14)
-              Blank().layoutWeight(1)
-              Toggle({ type: ToggleType.Switch, isOn: this.analytics })
-                .onChange(async (value: boolean) => {
-                  this.analytics = value;
-                  await this.saveSetting(this.KEY_ANALYTICS, value);
-                })
-            }
-            Row() {
-              Text('个性化广告').fontSize(14)
-              Blank().layoutWeight(1)
-              Toggle({ type: ToggleType.Switch, isOn: this.ads })
-                .onChange(async (value: boolean) => {
-                  this.ads = value;
-                  await this.saveSetting(this.KEY_ADS, value);
-                })
-            }
-          }
-          .padding(16)
-          .borderRadius(16)
-          .backgroundColor('#FFFFFF')
-          .border({ width: 1, color: '#E9EEF5' })
-          .shadow({ radius: 12, color: '#1A3B5A14', offsetX: 0, offsetY: 6 })
-
-          Column({ space: 10 }) {
-            Text('数据管理').fontSize(16).fontWeight(FontWeight.Medium)
-            Button('查看隐私政策', { type: ButtonType.Capsule })
-              .onClick(async () => await this.openPolicy())
-            Button('清除浏览历史', { type: ButtonType.Capsule })
-              .backgroundColor('#FEF3C7')
-              .fontColor('#92400E')
-              .onClick(async () => await this.clearHistory())
-            Button('清除离线下载', { type: ButtonType.Capsule })
-              .backgroundColor('#FEE2E2')
-              .fontColor('#B91C1C')
-              .onClick(async () => await this.clearDownloads())
-          }
-          .padding(16)
-          .borderRadius(16)
-          .backgroundColor('#FFFFFF')
-          .border({ width: 1, color: '#E9EEF5' })
-          .shadow({ radius: 12, color: '#1A3B5A14', offsetX: 0, offsetY: 6 })
+    Stack() {
+      Image($r('app.media.bgt'))
+        .width('100%')
+        .height('100%')
+        .objectFit(ImageFit.Cover)
+      Column() {
+        Row() {
+          Text('←')
+            .fontSize(20)
+            .margin({ left: 16 })
+            .onClick(() => router.back());
+          Text('隐私中心')
+            .fontSize(20)
+            .fontWeight(FontWeight.Bold)
+            .layoutWeight(1)
+            .textAlign(TextAlign.Center)
+          Blank().width(36)
         }
-        .padding({ left: 16, right: 16, bottom: 16 })
+        .alignItems(VerticalAlign.Center)
+        .padding({ top: 16, right: 16, bottom: 12 })
+
+        Scroll() {
+          Column({ space: 16 }) {
+            Column({ space: 10 }) {
+              Text('隐私设置').fontSize(16).fontWeight(FontWeight.Medium)
+
+              Row() {
+                Text('个性化推荐').fontSize(14)
+                Blank().layoutWeight(1)
+                Toggle({ type: ToggleType.Switch, isOn: this.personalized })
+                  .onChange(async (value: boolean) => {
+                    this.personalized = value;
+                    await this.saveSetting(this.KEY_PERSONALIZED, value);
+                  })
+              }
+              Row() {
+                Text('使用数据统计优化体验').fontSize(14)
+                Blank().layoutWeight(1)
+                Toggle({ type: ToggleType.Switch, isOn: this.analytics })
+                  .onChange(async (value: boolean) => {
+                    this.analytics = value;
+                    await this.saveSetting(this.KEY_ANALYTICS, value);
+                  })
+              }
+              Row() {
+                Text('个性化广告').fontSize(14)
+                Blank().layoutWeight(1)
+                Toggle({ type: ToggleType.Switch, isOn: this.ads })
+                  .onChange(async (value: boolean) => {
+                    this.ads = value;
+                    await this.saveSetting(this.KEY_ADS, value);
+                  })
+              }
+            }
+            .padding(16)
+            .borderRadius(16)
+            .backgroundColor('#FFFFFF')
+            .border({ width: 1, color: '#E9EEF5' })
+            .shadow({ radius: 12, color: '#1A3B5A14', offsetX: 0, offsetY: 6 })
+
+          Column({ space: 10 }) {
+              Text('数据管理').fontSize(16).fontWeight(FontWeight.Medium)
+              Button('查看隐私政策', { type: ButtonType.Capsule })
+                .onClick(async () => await this.openPolicy())
+              Button('清除浏览历史', { type: ButtonType.Capsule })
+                .backgroundColor('#FEF3C7')
+                .fontColor('#92400E')
+                .onClick(async () => await this.clearHistory())
+              Button('清除离线下载', { type: ButtonType.Capsule })
+                .backgroundColor('#FEE2E2')
+                .fontColor('#B91C1C')
+                .onClick(async () => await this.clearDownloads())
+            }
+            .padding(16)
+            .borderRadius(16)
+            .backgroundColor('#FFFFFF')
+            .border({ width: 1, color: '#E9EEF5' })
+            .shadow({ radius: 12, color: '#1A3B5A14', offsetX: 0, offsetY: 6 })
+          }
+          .padding({ left: 16, right: 16, bottom: 16 })
+        }
+        .layoutWeight(1)
       }
-      .layoutWeight(1)
+      .width('100%')
+      .height('100%')
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#EFF2F9')
   }
 }

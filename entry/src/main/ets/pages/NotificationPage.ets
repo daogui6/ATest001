@@ -198,107 +198,114 @@ export struct NotificationPage {
    * 创建通知列表界面
    */
   build() {
-    Column() {
-      // 顶部导航栏
-      Row() {
-        Text('←')
-          .fontSize(20)
-          .margin({ left: 16 })
-          .onClick(() => router.back());
-
-        Text('通知')
-          .fontSize(20)
-          .fontWeight(FontWeight.Bold)
-          .layoutWeight(1)
-          .textAlign(TextAlign.Center)
-          .margin({ right: 36 })
-
-        // 全部已读按钮
-        Text('全部已读')
-          .fontSize(12)
-          .opacity(0.7)
-          .margin({ right: 16 })
-          .onClick(async () => await this.markAllRead());
-      }
-      .alignItems(VerticalAlign.Center)
-      .padding({ top: 16, right: 16, bottom: 12 })
-      .opacity(this.headerOpacity)
-      .translate({ x: 0, y: this.headerOffset })
-
-      // 主体内容区域
-      if (this.uid === '0') {
-        // 未登录状态提示
-        Text('请先去【我的】页登录').margin(16).opacity(0.7)
-          .opacity(this.listOpacity)
-          .translate({ x: 0, y: this.listOffset })
-      } else if (this.notifications.length === 0) {
-        // 空状态提示
-        Text('暂无通知').margin(16).opacity(0.7)
-          .opacity(this.listOpacity)
-          .translate({ x: 0, y: this.listOffset })
-      } else {
-        // 通知列表
-        List() {
-          ForEach(this.notifications, (item: NotificationItem) => {
-            ListItem() {
-              Column({ space: 6 }) {
-                // 通知标题行
-                Row({ space: 6 }) {
-                  // 未读状态指示器
-                  if (!item.read) {
-                    Text('●').fontSize(10).fontColor('#4C6FFF')
-                  }
-                  Text(this.renderTitle(item)).fontSize(14).fontWeight(FontWeight.Medium)
-                }
-                
-                // 关联文章信息
-                Text(`文章：${item.articleTitle}`).fontSize(12).opacity(0.7)
-                
-                // 通知内容（如果有）
-                if (item.content) {
-                  Text(item.content).fontSize(12).opacity(0.6).maxLines(2)
-                }
-                
-                // 通知时间
-                Text(this.formatTime(item.createdAt)).fontSize(11).opacity(0.5)
-              }
-              .width('100%')
-              .padding(12)
-              .margin({ bottom: 12 })
-              .borderRadius(16)
-              .backgroundColor('#FFFFFF')
-              .border({ width: 1, color: '#E9EEF5' })
-              .onClick(async () => {
-                // 点击通知：标记已读并跳转文章
-                await this.markNotificationRead(item);
-                await this.openArticle(item);
-              })
-            }
-          })
-        }
-        .padding({ left: 16, right: 16 })
+    Stack() {
+      Image($r('app.media.bgt'))
         .width('100%')
-        .layoutWeight(1)
-        .opacity(this.listOpacity)
-        .translate({ x: 0, y: this.listOffset })
+        .height('100%')
+        .objectFit(ImageFit.Cover)
+      Column() {
+        // 顶部导航栏
+        Row() {
+          Text('←')
+            .fontSize(20)
+            .margin({ left: 16 })
+            .onClick(() => router.back());
+
+          Text('通知')
+            .fontSize(20)
+            .fontWeight(FontWeight.Bold)
+            .layoutWeight(1)
+            .textAlign(TextAlign.Center)
+            .margin({ right: 36 })
+
+          // 全部已读按钮
+          Text('全部已读')
+            .fontSize(12)
+            .opacity(0.7)
+            .margin({ right: 16 })
+            .onClick(async () => await this.markAllRead());
+        }
+        .alignItems(VerticalAlign.Center)
+        .padding({ top: 16, right: 16, bottom: 12 })
+        .opacity(this.headerOpacity)
+        .translate({ x: 0, y: this.headerOffset })
+
+        // 主体内容区域
+        if (this.uid === '0') {
+          // 未登录状态提示
+          Text('请先去【我的】页登录').margin(16).opacity(0.7)
+            .opacity(this.listOpacity)
+            .translate({ x: 0, y: this.listOffset })
+        } else if (this.notifications.length === 0) {
+          // 空状态提示
+          Text('暂无通知').margin(16).opacity(0.7)
+            .opacity(this.listOpacity)
+            .translate({ x: 0, y: this.listOffset })
+        } else {
+          // 通知列表
+          List() {
+            ForEach(this.notifications, (item: NotificationItem) => {
+              ListItem() {
+                Column({ space: 6 }) {
+                  // 通知标题行
+                  Row({ space: 6 }) {
+                    // 未读状态指示器
+                    if (!item.read) {
+                      Text('●').fontSize(10).fontColor('#4C6FFF')
+                    }
+                    Text(this.renderTitle(item)).fontSize(14).fontWeight(FontWeight.Medium)
+                  }
+
+                  // 关联文章信息
+                  Text(`文章：${item.articleTitle}`).fontSize(12).opacity(0.7)
+
+                  // 通知内容（如果有）
+                  if (item.content) {
+                    Text(item.content).fontSize(12).opacity(0.6).maxLines(2)
+                  }
+
+                  // 通知时间
+                  Text(this.formatTime(item.createdAt)).fontSize(11).opacity(0.5)
+                }
+                .width('100%')
+                .padding(12)
+                .margin({ bottom: 12 })
+                .borderRadius(16)
+                .backgroundColor('#FFFFFF')
+                .border({ width: 1, color: '#E9EEF5' })
+                .onClick(async () => {
+                  // 点击通知：标记已读并跳转文章
+                  await this.markNotificationRead(item);
+                  await this.openArticle(item);
+                })
+              }
+            })
+          }
+          .padding({ left: 16, right: 16 })
+          .width('100%')
+          .layoutWeight(1)
+          .opacity(this.listOpacity)
+          .translate({ x: 0, y: this.listOffset })
+        }
       }
+      .width('100%')
+      .height('100%')
+      .onAppear(async () => {
+        // 页面显示时的初始化
+        await this.refresh();
+
+        // 分层动画效果
+        animateTo({ duration: 220, curve: Curve.EaseOut }, () => {
+          this.headerOpacity = 1;
+          this.headerOffset = 0;
+        });
+        animateTo({ duration: 260, curve: Curve.EaseOut }, () => {
+          this.listOpacity = 1;
+          this.listOffset = 0;
+        });
+      })
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F6F7FB')
-    .onAppear(async () => {
-      // 页面显示时的初始化
-      await this.refresh();
-      
-      // 分层动画效果
-      animateTo({ duration: 220, curve: Curve.EaseOut }, () => {
-        this.headerOpacity = 1;
-        this.headerOffset = 0;
-      });
-      animateTo({ duration: 260, curve: Curve.EaseOut }, () => {
-        this.listOpacity = 1;
-        this.listOffset = 0;
-      });
-    })
   }
 }

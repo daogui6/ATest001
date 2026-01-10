@@ -433,6 +433,10 @@ export struct HomePage {
    */
   build() {
     Stack() {
+      Image($r('app.media.bgt'))
+        .width('100%')
+        .height('100%')
+        .objectFit(ImageFit.Cover)
       Column() {
         // 头部导航栏
         Row() {
@@ -648,6 +652,5 @@ export struct HomePage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F7F8FA')
   }
 }

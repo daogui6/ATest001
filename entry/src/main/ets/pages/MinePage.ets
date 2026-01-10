@@ -637,388 +637,395 @@ export struct MinePage {
    * 根据登录状态显示不同的内容区域
    */
   build() {
-    Column() {
-      // ========== 头部导航栏 ==========
-      Row() {
-        Blank().width(36)
-        Text('我的')
-          .fontSize(22)
-          .fontWeight(FontWeight.Bold)
-          .layoutWeight(1)
-          .textAlign(TextAlign.Center)
-        Button('设置', { type: ButtonType.Capsule })
-          .fontSize(12)
-          .fontColor('#4F46E5')
-          .backgroundColor('#EEF2FF')
-          .height(28)
-          .padding({ left: 10, right: 10 })
-          .onClick(async () => {
-            await this.openSettingsPage();
-          })
-      }
-      .padding(12)
-      .margin({ top: 12, left: 16, right: 16, bottom: 12 })
-      .backgroundColor('#FFFFFF')
-      .borderRadius(16)
-      .shadow({ radius: 14, color: '#14000000', offsetX: 0, offsetY: 6 })
-      .alignItems(VerticalAlign.Center)
-      .opacity(this.headerOpacity)
-      .translate({ x: 0, y: this.headerOffset })
-
-      // ========== 主要内容区域 ==========
-      Scroll() {
-        Column({ space: 16 }) {
-          // ========== 用户信息卡片 ==========
-          Row({ space: 12 }) {
-            // 用户头像区域
-            Stack({ alignContent: Alignment.Center }) {
-              if (this.avatarUrl) {
-                Image(this.avatarUrl)
-                  .width(52)
-                  .height(52)
-                  .borderRadius(26)
-                  .objectFit(ImageFit.Cover)
-              } else {
-                Image($r('app.media.startIcon'))
-                  .width(52)
-                  .height(52)
-                  .borderRadius(26)
-                  .backgroundColor('#4C6FFF')
-                  .objectFit(ImageFit.Cover)
-                Text(this.isLogin ? (this.nickname ? this.nickname.slice(0, 1) : '我') : '访')
-                  .fontSize(18)
-                  .fontWeight(FontWeight.Bold)
-                  .fontColor('#FFFFFF')
-                  .textAlign(TextAlign.Center)
-              }
-            }
-            .width(52)
-            .height(52)
-            .borderRadius(26)
-            .border({ width: 1, color: '#E2E8F5' })
-
-            // 用户信息文本区域
-            Column({ space: 4 }) {
-              Text(this.isLogin ? this.nickname : '欢迎来到我的主页')
-                .fontSize(18)
-                .fontWeight(FontWeight.Medium)
-              Text(
-                this.isLogin
-                  ? `ID：${this.uid} · ${this.publicName || this.username || '未设置昵称'}`
-                  : '登录后可同步点赞、评论等记录'
-              )
-                .fontSize(12)
-                .opacity(0.6)
-              if (this.isLogin) {
-                Text(this.bio).fontSize(12).opacity(0.7).maxLines(2)
-              }
-            }
+    Stack() {
+      Image($r('app.media.bgt'))
+        .width('100%')
+        .height('100%')
+        .objectFit(ImageFit.Cover)
+      Column() {
+        // ========== 头部导航栏 ==========
+        Row() {
+          Blank().width(36)
+          Text('我的')
+            .fontSize(22)
+            .fontWeight(FontWeight.Bold)
             .layoutWeight(1)
-          }
-          .padding(16)
-          .borderRadius(16)
-          .backgroundColor('#FFFFFF')
-          .border({ width: 1, color: '#E9EEF5' })
-          .shadow({ radius: 10, color: '#1A3B5A26', offsetX: 0, offsetY: 6 })
+            .textAlign(TextAlign.Center)
+          Button('设置', { type: ButtonType.Capsule })
+            .fontSize(12)
+            .fontColor('#4F46E5')
+            .backgroundColor('#EEF2FF')
+            .height(28)
+            .padding({ left: 10, right: 10 })
+            .onClick(async () => {
+              await this.openSettingsPage();
+            })
+        }
+        .padding(12)
+        .margin({ top: 12, left: 16, right: 16, bottom: 12 })
+        .backgroundColor('#FFFFFF')
+        .borderRadius(16)
+        .shadow({ radius: 14, color: '#14000000', offsetX: 0, offsetY: 6 })
+        .alignItems(VerticalAlign.Center)
+        .opacity(this.headerOpacity)
+        .translate({ x: 0, y: this.headerOffset })
 
-          Column({ space: 12 }) {
-            Row() {
-              Text('常用服务').fontSize(16).fontWeight(FontWeight.Medium)
-            }
+        // ========== 主要内容区域 ==========
+        Scroll() {
+          Column({ space: 16 }) {
+            // ========== 用户信息卡片 ==========
             Row({ space: 12 }) {
-              Column({ space: 6 }) {
-                Text('⭐').fontSize(22)
-                Text('我的收藏').fontSize(12)
+              // 用户头像区域
+              Stack({ alignContent: Alignment.Center }) {
+                if (this.avatarUrl) {
+                  Image(this.avatarUrl)
+                    .width(52)
+                    .height(52)
+                    .borderRadius(26)
+                    .objectFit(ImageFit.Cover)
+                } else {
+                  Image($r('app.media.startIcon'))
+                    .width(52)
+                    .height(52)
+                    .borderRadius(26)
+                    .backgroundColor('#4C6FFF')
+                    .objectFit(ImageFit.Cover)
+                  Text(this.isLogin ? (this.nickname ? this.nickname.slice(0, 1) : '我') : '访')
+                    .fontSize(18)
+                    .fontWeight(FontWeight.Bold)
+                    .fontColor('#FFFFFF')
+                    .textAlign(TextAlign.Center)
+                }
               }
-              .layoutWeight(1)
-              .padding(12)
-              .borderRadius(12)
-              .backgroundColor('#F6F7FB')
-              .border({ width: 1, color: '#E9EEF5' })
-              .onClick(async () => await this.openFavoritePage())
+              .width(52)
+              .height(52)
+              .borderRadius(26)
+              .border({ width: 1, color: '#E2E8F5' })
 
-              Column({ space: 6 }) {
-                Text('📥').fontSize(22)
-                Text('离线下载').fontSize(12)
-              }
-              .layoutWeight(1)
-              .padding(12)
-              .borderRadius(12)
-              .backgroundColor('#F6F7FB')
-              .border({ width: 1, color: '#E9EEF5' })
-              .onClick(async () => await this.openOfflineDownloads())
-
-              Column({ space: 6 }) {
-                Text('🛡️').fontSize(22)
-                Text('隐私中心').fontSize(12)
-              }
-              .layoutWeight(1)
-              .padding(12)
-              .borderRadius(12)
-              .backgroundColor('#F6F7FB')
-              .border({ width: 1, color: '#E9EEF5' })
-              .onClick(async () => await this.openPrivacyCenter())
-            }
-          }
-          .padding(16)
-          .borderRadius(16)
-          .backgroundColor('#FFFFFF')
-          .border({ width: 1, color: '#E9EEF5' })
-          .shadow({ radius: 10, color: '#1A3B5A1A', offsetX: 0, offsetY: 6 })
-
-          // ========== 功能入口区域 ==========
-          Column({ space: 12 }) {
-            Row() {
-              Text('我的足迹').fontSize(16).fontWeight(FontWeight.Medium)
-            }
-            
-            // 第一行功能入口
-            Row({ space: 12 }) {
-              // 浏览历史入口
-              Column({ space: 6 }) {
-                Text('🕘').fontSize(22)
-                Text('浏览历史').fontSize(12)
-              }
-              .layoutWeight(1)
-              .padding(12)
-              .borderRadius(12)
-              .backgroundColor('#F6F7FB')
-              .border({ width: 1, color: '#E9EEF5' })
-              .onClick(async () => await this.openHistory())
-
-              // 点赞记录入口
-              Column({ space: 6 }) {
-                Text('❤️').fontSize(22)
-                Text('点赞过').fontSize(12)
-              }
-              .layoutWeight(1)
-              .padding(12)
-              .borderRadius(12)
-              .backgroundColor('#F6F7FB')
-              .border({ width: 1, color: '#E9EEF5' })
-              .onClick(async () => await this.openLiked())
-
-              // 评论记录入口
-              Column({ space: 6 }) {
-                Text('💬').fontSize(22)
-                Text('评论过').fontSize(12)
-              }
-              .layoutWeight(1)
-              .padding(12)
-              .borderRadius(12)
-              .backgroundColor('#F6F7FB')
-              .border({ width: 1, color: '#E9EEF5' })
-              .onClick(async () => await this.openCommented())
-            }
-
-            // 第二行功能入口（通知）
-            Row({ space: 12 }) {
-              Column({ space: 6 }) {
-                Text('🔔').fontSize(22)
-                Row({ space: 6 }) {
-                  Text('通知').fontSize(12)
-                  // 未读通知徽章
-                  if (this.unreadNotifications > 0) {
-                    Text(`${this.unreadNotifications}`)
-                      .fontSize(10)
-                      .fontColor('#FFFFFF')
-                      .padding({ left: 6, right: 6, top: 2, bottom: 2 })
-                      .borderRadius(10)
-                      .backgroundColor('#4C6FFF')
-                  }
+              // 用户信息文本区域
+              Column({ space: 4 }) {
+                Text(this.isLogin ? this.nickname : '欢迎来到我的主页')
+                  .fontSize(18)
+                  .fontWeight(FontWeight.Medium)
+                Text(
+                  this.isLogin
+                    ? `ID：${this.uid} · ${this.publicName || this.username || '未设置昵称'}`
+                    : '登录后可同步点赞、评论等记录'
+                )
+                  .fontSize(12)
+                  .opacity(0.6)
+                if (this.isLogin) {
+                  Text(this.bio).fontSize(12).opacity(0.7).maxLines(2)
                 }
               }
               .layoutWeight(1)
-              .padding(12)
-              .borderRadius(12)
-              .backgroundColor('#F6F7FB')
-              .border({ width: 1, color: '#E9EEF5' })
-              .onClick(async () => await this.openNotifications())
-
-              Column({ space: 6 }) {
-                Text('🧾').fontSize(22)
-                Text('更新日志').fontSize(12)
-              }
-              .layoutWeight(1)
-              .padding(12)
-              .borderRadius(12)
-              .backgroundColor('#F6F7FB')
-              .border({ width: 1, color: '#E9EEF5' })
-              .onClick(async () => await this.openChangelog())
-
-              Column({ space: 6 }) {
-                Text('🐞').fontSize(22)
-                Text('反馈').fontSize(12)
-              }
-              .layoutWeight(1)
-              .padding(12)
-              .borderRadius(12)
-              .backgroundColor('#F6F7FB')
-              .border({ width: 1, color: '#E9EEF5' })
-              .onClick(async () => await this.openFeedback())
             }
-          }
-          .padding(16)
-          .borderRadius(16)
-          .backgroundColor('#FFFFFF')
-          .border({ width: 1, color: '#E9EEF5' })
-          .shadow({ radius: 10, color: '#1A3B5A1A', offsetX: 0, offsetY: 6 })
-
-          Column({ space: 12 }) {
-            Row() {
-              Text('我的动态').fontSize(16).fontWeight(FontWeight.Medium)
-            }
-            Row({ space: 12 }) {
-              Column({ space: 4 }) {
-                Text(`${this.readingStreakDays}`).fontSize(18).fontWeight(FontWeight.Bold)
-                Text('连续阅读日').fontSize(11).opacity(0.6)
-              }
-              .layoutWeight(1)
-              Column({ space: 4 }) {
-                Text(`${this.weeklyFavCount}`).fontSize(18).fontWeight(FontWeight.Bold)
-                Text('本周收藏').fontSize(11).opacity(0.6)
-              }
-              .layoutWeight(1)
-              .onClick(async () => await this.openFavoritePage())
-              Column({ space: 4 }) {
-                Text(`${this.readingListCount}`).fontSize(18).fontWeight(FontWeight.Bold)
-                Text('待读清单').fontSize(11).opacity(0.6)
-              }
-              .layoutWeight(1)
-            }
-            .padding(12)
-            .borderRadius(12)
-            .backgroundColor('#F8FAFC')
-
-            Row({ space: 8 }) {
-              Text('📌').fontSize(16)
-              Text(`已为你更新 ${this.recommendCount} 条个性化推荐`).fontSize(12).opacity(0.7)
-              Blank().layoutWeight(1)
-              Text('查看').fontSize(12).fontColor('#3B82F6')
-            }
-            .padding(12)
-            .borderRadius(12)
-            .backgroundColor('#F6F7FB')
+            .padding(16)
+            .borderRadius(16)
+            .backgroundColor('#FFFFFF')
             .border({ width: 1, color: '#E9EEF5' })
-            .onClick(async () => await this.openHomePage())
-          }
-          .padding(16)
-          .borderRadius(16)
-          .backgroundColor('#FFFFFF')
-          .border({ width: 1, color: '#E9EEF5' })
-          .shadow({ radius: 10, color: '#1A3B5A1A', offsetX: 0, offsetY: 6 })
+            .shadow({ radius: 10, color: '#1A3B5A26', offsetX: 0, offsetY: 6 })
 
-          // ========== 登录/注册区域（未登录状态） ==========
-          if (!this.isLogin) {
             Column({ space: 12 }) {
-              Text('登录').fontSize(16).fontWeight(FontWeight.Medium)
-              
-              // 用户名输入框
-              TextInput({ text: this.loginUsername, placeholder: '请输入用户名' })
-                .onChange((v) => { this.loginUsername = v; })
-                .padding({ left: 12, right: 12 })
-                .borderRadius(10)
-                .backgroundColor('#F6F7FB')
-              
-              // 密码输入框
-              TextInput({ text: this.loginPassword, placeholder: '请输入密码' })
-                .type(InputType.Password)
-                .onChange((v) => { this.loginPassword = v; })
-                .padding({ left: 12, right: 12 })
-                .borderRadius(10)
-                .backgroundColor('#F6F7FB')
-              
-              // 记住密码选项
-              Row({ space: 8 }) {
-                Checkbox({ name: 'rememberPassword', group: 'loginPrefs' })
-                  .select(this.rememberPassword)
-                  .onChange((value: boolean) => { this.rememberPassword = value; })
-                Text('记住密码').fontSize(14)
+              Row() {
+                Text('常用服务').fontSize(16).fontWeight(FontWeight.Medium)
               }
-              .alignItems(VerticalAlign.Center)
-              
-              // 用户协议选项
-              Row({ space: 8 }) {
-                Checkbox({ name: 'loginAgree', group: 'loginAgreement' })
-                  .select(this.loginAgree)
-                  .onChange((value: boolean) => {
-                    this.loginAgree = value;
-                    if (value) {
-                      this.message = '';
-                    }
-                  })
-                Text() {
-                  Span('我已阅读并同意').fontSize(12)
-                  Span('《用户协议》')
-                    .fontSize(12)
-                    .fontColor('#3D6DFF')
-                    .onClick((): void => {
-                      this.showAgreement('user');
-                    })
-                  Span('和').fontSize(12)
-                  Span('《隐私政策》')
-                    .fontSize(12)
-                    .fontColor('#3D6DFF')
-                    .onClick((): void => {
-                      this.showAgreement('privacy');
-                    })
-                }
-                .onClick(() => {
-                  const next = !this.loginAgree;
-                  this.loginAgree = next;
-                  if (next) {
-                    this.message = '';
-                  }
-                })
-              }
-              .alignItems(VerticalAlign.Center)
-              .margin({ top: 4 })
-
-              // 登录/注册按钮同一行
               Row({ space: 12 }) {
-                Button('登录', { type: ButtonType.Capsule })
-                  .layoutWeight(1)
-                  .onClick(async () => { await this.handleLogin(); })
-                Button('注册', { type: ButtonType.Capsule })
-                  .layoutWeight(1)
-                  .onClick(async () => {
-                    this.message = '';
-                    await this.openRegisterPage();
-                  })
-              }
-              .margin({ top: 4 })
+                Column({ space: 6 }) {
+                  Text('⭐').fontSize(22)
+                  Text('我的收藏').fontSize(12)
+                }
+                .layoutWeight(1)
+                .padding(12)
+                .borderRadius(12)
+                .backgroundColor('#F6F7FB')
+                .border({ width: 1, color: '#E9EEF5' })
+                .onClick(async () => await this.openFavoritePage())
 
-              // 错误消息显示
-              if (this.message) {
-                Text(this.message).fontSize(14).fontColor(Color.Red).margin({ top: 4 })
+                Column({ space: 6 }) {
+                  Text('📥').fontSize(22)
+                  Text('离线下载').fontSize(12)
+                }
+                .layoutWeight(1)
+                .padding(12)
+                .borderRadius(12)
+                .backgroundColor('#F6F7FB')
+                .border({ width: 1, color: '#E9EEF5' })
+                .onClick(async () => await this.openOfflineDownloads())
+
+                Column({ space: 6 }) {
+                  Text('🛡️').fontSize(22)
+                  Text('隐私中心').fontSize(12)
+                }
+                .layoutWeight(1)
+                .padding(12)
+                .borderRadius(12)
+                .backgroundColor('#F6F7FB')
+                .border({ width: 1, color: '#E9EEF5' })
+                .onClick(async () => await this.openPrivacyCenter())
               }
             }
             .padding(16)
             .borderRadius(16)
             .backgroundColor('#FFFFFF')
             .border({ width: 1, color: '#E9EEF5' })
-            .shadow({ radius: 12, color: '#1A3B5A14', offsetX: 0, offsetY: 6 })
+            .shadow({ radius: 10, color: '#1A3B5A1A', offsetX: 0, offsetY: 6 })
+
+            // ========== 功能入口区域 ==========
+            Column({ space: 12 }) {
+              Row() {
+                Text('我的足迹').fontSize(16).fontWeight(FontWeight.Medium)
+              }
+
+              // 第一行功能入口
+              Row({ space: 12 }) {
+                // 浏览历史入口
+                Column({ space: 6 }) {
+                  Text('🕘').fontSize(22)
+                  Text('浏览历史').fontSize(12)
+                }
+                .layoutWeight(1)
+                .padding(12)
+                .borderRadius(12)
+                .backgroundColor('#F6F7FB')
+                .border({ width: 1, color: '#E9EEF5' })
+                .onClick(async () => await this.openHistory())
+
+                // 点赞记录入口
+                Column({ space: 6 }) {
+                  Text('❤️').fontSize(22)
+                  Text('点赞过').fontSize(12)
+                }
+                .layoutWeight(1)
+                .padding(12)
+                .borderRadius(12)
+                .backgroundColor('#F6F7FB')
+                .border({ width: 1, color: '#E9EEF5' })
+                .onClick(async () => await this.openLiked())
+
+                // 评论记录入口
+                Column({ space: 6 }) {
+                  Text('💬').fontSize(22)
+                  Text('评论过').fontSize(12)
+                }
+                .layoutWeight(1)
+                .padding(12)
+                .borderRadius(12)
+                .backgroundColor('#F6F7FB')
+                .border({ width: 1, color: '#E9EEF5' })
+                .onClick(async () => await this.openCommented())
+              }
+
+              // 第二行功能入口（通知）
+              Row({ space: 12 }) {
+                Column({ space: 6 }) {
+                  Text('🔔').fontSize(22)
+                  Row({ space: 6 }) {
+                    Text('通知').fontSize(12)
+                    // 未读通知徽章
+                    if (this.unreadNotifications > 0) {
+                      Text(`${this.unreadNotifications}`)
+                        .fontSize(10)
+                        .fontColor('#FFFFFF')
+                        .padding({ left: 6, right: 6, top: 2, bottom: 2 })
+                        .borderRadius(10)
+                        .backgroundColor('#4C6FFF')
+                    }
+                  }
+                }
+                .layoutWeight(1)
+                .padding(12)
+                .borderRadius(12)
+                .backgroundColor('#F6F7FB')
+                .border({ width: 1, color: '#E9EEF5' })
+                .onClick(async () => await this.openNotifications())
+
+                Column({ space: 6 }) {
+                  Text('🧾').fontSize(22)
+                  Text('更新日志').fontSize(12)
+                }
+                .layoutWeight(1)
+                .padding(12)
+                .borderRadius(12)
+                .backgroundColor('#F6F7FB')
+                .border({ width: 1, color: '#E9EEF5' })
+                .onClick(async () => await this.openChangelog())
+
+                Column({ space: 6 }) {
+                  Text('🐞').fontSize(22)
+                  Text('反馈').fontSize(12)
+                }
+                .layoutWeight(1)
+                .padding(12)
+                .borderRadius(12)
+                .backgroundColor('#F6F7FB')
+                .border({ width: 1, color: '#E9EEF5' })
+                .onClick(async () => await this.openFeedback())
+              }
+            }
+            .padding(16)
+            .borderRadius(16)
+            .backgroundColor('#FFFFFF')
+            .border({ width: 1, color: '#E9EEF5' })
+            .shadow({ radius: 10, color: '#1A3B5A1A', offsetX: 0, offsetY: 6 })
+
+            Column({ space: 12 }) {
+              Row() {
+                Text('我的动态').fontSize(16).fontWeight(FontWeight.Medium)
+              }
+              Row({ space: 12 }) {
+                Column({ space: 4 }) {
+                  Text(`${this.readingStreakDays}`).fontSize(18).fontWeight(FontWeight.Bold)
+                  Text('连续阅读日').fontSize(11).opacity(0.6)
+                }
+                .layoutWeight(1)
+                Column({ space: 4 }) {
+                  Text(`${this.weeklyFavCount}`).fontSize(18).fontWeight(FontWeight.Bold)
+                  Text('本周收藏').fontSize(11).opacity(0.6)
+                }
+                .layoutWeight(1)
+                .onClick(async () => await this.openFavoritePage())
+                Column({ space: 4 }) {
+                  Text(`${this.readingListCount}`).fontSize(18).fontWeight(FontWeight.Bold)
+                  Text('待读清单').fontSize(11).opacity(0.6)
+                }
+                .layoutWeight(1)
+              }
+              .padding(12)
+              .borderRadius(12)
+              .backgroundColor('#F8FAFC')
+
+              Row({ space: 8 }) {
+                Text('📌').fontSize(16)
+                Text(`已为你更新 ${this.recommendCount} 条个性化推荐`).fontSize(12).opacity(0.7)
+                Blank().layoutWeight(1)
+                Text('查看').fontSize(12).fontColor('#3B82F6')
+              }
+              .padding(12)
+              .borderRadius(12)
+              .backgroundColor('#F6F7FB')
+              .border({ width: 1, color: '#E9EEF5' })
+              .onClick(async () => await this.openHomePage())
+            }
+            .padding(16)
+            .borderRadius(16)
+            .backgroundColor('#FFFFFF')
+            .border({ width: 1, color: '#E9EEF5' })
+            .shadow({ radius: 10, color: '#1A3B5A1A', offsetX: 0, offsetY: 6 })
+
+            // ========== 登录/注册区域（未登录状态） ==========
+            if (!this.isLogin) {
+              Column({ space: 12 }) {
+                Text('登录').fontSize(16).fontWeight(FontWeight.Medium)
+
+                // 用户名输入框
+                TextInput({ text: this.loginUsername, placeholder: '请输入用户名' })
+                  .onChange((v) => { this.loginUsername = v; })
+                  .padding({ left: 12, right: 12 })
+                  .borderRadius(10)
+                  .backgroundColor('#F6F7FB')
+
+                // 密码输入框
+                TextInput({ text: this.loginPassword, placeholder: '请输入密码' })
+                  .type(InputType.Password)
+                  .onChange((v) => { this.loginPassword = v; })
+                  .padding({ left: 12, right: 12 })
+                  .borderRadius(10)
+                  .backgroundColor('#F6F7FB')
+
+                // 记住密码选项
+                Row({ space: 8 }) {
+                  Checkbox({ name: 'rememberPassword', group: 'loginPrefs' })
+                    .select(this.rememberPassword)
+                    .onChange((value: boolean) => { this.rememberPassword = value; })
+                  Text('记住密码').fontSize(14)
+                }
+                .alignItems(VerticalAlign.Center)
+
+                // 用户协议选项
+                Row({ space: 8 }) {
+                  Checkbox({ name: 'loginAgree', group: 'loginAgreement' })
+                    .select(this.loginAgree)
+                    .onChange((value: boolean) => {
+                      this.loginAgree = value;
+                      if (value) {
+                        this.message = '';
+                      }
+                    })
+                  Text() {
+                    Span('我已阅读并同意').fontSize(12)
+                    Span('《用户协议》')
+                      .fontSize(12)
+                      .fontColor('#3D6DFF')
+                      .onClick((): void => {
+                        this.showAgreement('user');
+                      })
+                    Span('和').fontSize(12)
+                    Span('《隐私政策》')
+                      .fontSize(12)
+                      .fontColor('#3D6DFF')
+                      .onClick((): void => {
+                        this.showAgreement('privacy');
+                      })
+                  }
+                  .onClick(() => {
+                    const next = !this.loginAgree;
+                    this.loginAgree = next;
+                    if (next) {
+                      this.message = '';
+                    }
+                  })
+                }
+                .alignItems(VerticalAlign.Center)
+                .margin({ top: 4 })
+
+                // 登录/注册按钮同一行
+                Row({ space: 12 }) {
+                  Button('登录', { type: ButtonType.Capsule })
+                    .layoutWeight(1)
+                    .onClick(async () => { await this.handleLogin(); })
+                  Button('注册', { type: ButtonType.Capsule })
+                    .layoutWeight(1)
+                    .onClick(async () => {
+                      this.message = '';
+                      await this.openRegisterPage();
+                    })
+                }
+                .margin({ top: 4 })
+
+                // 错误消息显示
+                if (this.message) {
+                  Text(this.message).fontSize(14).fontColor(Color.Red).margin({ top: 4 })
+                }
+              }
+              .padding(16)
+              .borderRadius(16)
+              .backgroundColor('#FFFFFF')
+              .border({ width: 1, color: '#E9EEF5' })
+              .shadow({ radius: 12, color: '#1A3B5A14', offsetX: 0, offsetY: 6 })
+            }
           }
+          .padding({ left: 16, right: 16, bottom: 16 })
+          .opacity(this.contentOpacity)
+          .translate({ x: 0, y: this.contentOffset })
         }
-        .padding({ left: 16, right: 16, bottom: 16 })
-        .opacity(this.contentOpacity)
-        .translate({ x: 0, y: this.contentOffset })
+        .layoutWeight(1)
       }
-      .layoutWeight(1)
+      .width('100%')
+      .height('100%')
+      .onAppear(() => {
+        // 页面进入动画效果
+        animateTo({ duration: 220, curve: Curve.EaseOut }, () => {
+          this.headerOpacity = 1;
+          this.headerOffset = 0;
+        });
+        animateTo({ duration: 260, curve: Curve.EaseOut }, () => {
+          this.contentOpacity = 1;
+          this.contentOffset = 0;
+        });
+      })
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#EFF2F9')
-    .onAppear(() => {
-      // 页面进入动画效果
-      animateTo({ duration: 220, curve: Curve.EaseOut }, () => {
-        this.headerOpacity = 1;
-        this.headerOffset = 0;
-      });
-      animateTo({ duration: 260, curve: Curve.EaseOut }, () => {
-        this.contentOpacity = 1;
-        this.contentOffset = 0;
-      });
-    })
   }
 }

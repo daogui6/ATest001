@@ -401,6 +401,10 @@ export struct CategoryPage {
    */
   build() {
     Stack() {
+      Image($r('app.media.bgt'))
+        .width('100%')
+        .height('100%')
+        .objectFit(ImageFit.Cover)
       //  主内容区域
       Column() {
         //  头部标题区域（带动画效果）
@@ -579,6 +583,5 @@ export struct CategoryPage {
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F7F8FA') // 页面背景色
   }
 }

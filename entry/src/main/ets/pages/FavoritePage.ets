@@ -243,100 +243,107 @@ export struct FavoritePage {
    * 采用分层布局结构，包含头部标题和文章列表
    */
   build() {
-    Column() {
-      // 顶部标题栏
-      Stack({ alignContent: Alignment.Center }) {
-        Row() {
-          if (this.showBackButton) {
-            Text('←')
-              .fontSize(22)
-              .onClick(() => router.back())
-              .width(40)
-          } else {
-            Blank().width(40)
-          }
-
-          Blank().layoutWeight(1)
-
-          // 收藏数量统计
-          Text(`共 ${this.favArticles.length} 条`)
-            .fontSize(14)
-            .opacity(0.7)
-            .textAlign(TextAlign.End)
-            .padding({ right: 8 })
-        }
-        .alignItems(VerticalAlign.Center)
+    Stack() {
+      Image($r('app.media.bgt'))
         .width('100%')
-
-        // 页面标题
-        Text('收藏')
-          .fontSize(22)
-          .fontWeight(FontWeight.Bold)
-          .textAlign(TextAlign.Center)
-
-      }
-      .padding(12)
-      .margin({ top: 12, left: 16, right: 16, bottom: 12 })
-      .width('100%')
-      .backgroundColor('#FFFFFF')
-      .borderRadius(16)
-      .shadow({ radius: 14, color: '#14000000', offsetX: 0, offsetY: 6 })
-      .opacity(this.headerOpacity)
-      .translate({ x: 0, y: this.headerOffset })
-
-      // 主体内容区域
-      if (this.uid === '0') {
-        // 未登录状态提示
-        Text('请先去【我的】页登录').margin(16).opacity(0.7)
-      } else if (this.favArticles.length === 0) {
-        // 空状态提示
-        Text('暂无收藏').margin(16).opacity(0.7)
-      } else {
-        // 收藏文章列表
-        List() {
-          ForEach(this.favArticles, (item: Article) => {
-            ListItem() {
-              Row() {
-                // 文章信息区域
-                Column({ space: 6 }) {
-                  Text(item.title).fontSize(16).fontWeight(FontWeight.Medium)
-                  Text(item.desc).fontSize(13).opacity(0.7).maxLines(2)
-                }.layoutWeight(1)
-
-                // 取消收藏按钮（使用gesture避免触发卡片跳转）
-                Text('★')
-                  .fontSize(22)
-                  .margin({ left: 10 })
-                  .gesture(
-                    TapGesture().onAction(async () => {
-                      await this.removeFav(item.id);
-                    })
-                  )
-              }
-              .padding(12)
-              .margin({ left: 16, right: 16, bottom: 12 })
-              .borderRadius(16)
-              .backgroundColor('#FFFFFF')
-              .shadow({ radius: 12, color: '#1A000000', offsetX: 0, offsetY: 5 })
-              // 点击卡片进入正文
-              .onClick(async () => {
-                await this.openDetail(item);
-              })
+        .height('100%')
+        .objectFit(ImageFit.Cover)
+      Column() {
+        // 顶部标题栏
+        Stack({ alignContent: Alignment.Center }) {
+          Row() {
+            if (this.showBackButton) {
+              Text('←')
+                .fontSize(22)
+                .onClick(() => router.back())
+                .width(40)
+            } else {
+              Blank().width(40)
             }
-          })
+
+            Blank().layoutWeight(1)
+
+            // 收藏数量统计
+            Text(`共 ${this.favArticles.length} 条`)
+              .fontSize(14)
+              .opacity(0.7)
+              .textAlign(TextAlign.End)
+              .padding({ right: 8 })
+          }
+          .alignItems(VerticalAlign.Center)
+          .width('100%')
+
+          // 页面标题
+          Text('收藏')
+            .fontSize(22)
+            .fontWeight(FontWeight.Bold)
+            .textAlign(TextAlign.Center)
+
         }
+        .padding(12)
+        .margin({ top: 12, left: 16, right: 16, bottom: 12 })
         .width('100%')
-        .layoutWeight(1)
+        .backgroundColor('#FFFFFF')
+        .borderRadius(16)
+        .shadow({ radius: 14, color: '#14000000', offsetX: 0, offsetY: 6 })
+        .opacity(this.headerOpacity)
+        .translate({ x: 0, y: this.headerOffset })
+
+        // 主体内容区域
+        if (this.uid === '0') {
+          // 未登录状态提示
+          Text('请先去【我的】页登录').margin(16).opacity(0.7)
+        } else if (this.favArticles.length === 0) {
+          // 空状态提示
+          Text('暂无收藏').margin(16).opacity(0.7)
+        } else {
+          // 收藏文章列表
+          List() {
+            ForEach(this.favArticles, (item: Article) => {
+              ListItem() {
+                Row() {
+                  // 文章信息区域
+                  Column({ space: 6 }) {
+                    Text(item.title).fontSize(16).fontWeight(FontWeight.Medium)
+                    Text(item.desc).fontSize(13).opacity(0.7).maxLines(2)
+                  }.layoutWeight(1)
+
+                  // 取消收藏按钮（使用gesture避免触发卡片跳转）
+                  Text('★')
+                    .fontSize(22)
+                    .margin({ left: 10 })
+                    .gesture(
+                      TapGesture().onAction(async () => {
+                        await this.removeFav(item.id);
+                      })
+                    )
+                }
+                .padding(12)
+                .margin({ left: 16, right: 16, bottom: 12 })
+                .borderRadius(16)
+                .backgroundColor('#FFFFFF')
+                .shadow({ radius: 12, color: '#1A000000', offsetX: 0, offsetY: 5 })
+                // 点击卡片进入正文
+                .onClick(async () => {
+                  await this.openDetail(item);
+                })
+              }
+            })
+          }
+          .width('100%')
+          .layoutWeight(1)
+        }
       }
+      .width('100%')
+      .height('100%')
+      .onAppear(() => {
+        // 页面显示时的初始化操作
+        this.updateBackButton();
+        this.refresh();
+        this.animateHeader();
+      })
     }
     .width('100%')
     .height('100%')
-    .onAppear(() => {
-      // 页面显示时的初始化操作
-      this.updateBackButton();
-      this.refresh();
-      this.animateHeader();
-    })
-    .backgroundColor('#F7F8FA')
   }
 }

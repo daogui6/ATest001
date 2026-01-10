@@ -352,227 +352,234 @@ export struct SearchPage {
    * 根据不同的状态显示相应的内容区域
    */
   build() {
-    Column() {
-      // ========== 头部导航栏 ==========
-      Row() {
-        // 返回按钮
-        Text('←')
-          .fontSize(22)
-          .onClick(() => router.back())
-          .width(40)
+    Stack() {
+      Image($r('app.media.bgt'))
+        .width('100%')
+        .height('100%')
+        .objectFit(ImageFit.Cover)
+      Column() {
+        // ========== 头部导航栏 ==========
+        Row() {
+          // 返回按钮
+          Text('←')
+            .fontSize(22)
+            .onClick(() => router.back())
+            .width(40)
 
-        // 页面标题
-        Text('搜索')
-          .fontSize(22)
-          .fontWeight(FontWeight.Bold)
-          .layoutWeight(1)
-          .textAlign(TextAlign.Center)
-
-        // 右侧占位（保持对称）
-        Blank().width(40)
-      }
-      .width('100%')
-      .padding({ top: 16, left: 16, right: 16, bottom: 12 })
-      .opacity(this.headerOpacity)
-      .translate({ x: 0, y: this.headerOffset })
-
-      // ========== 搜索输入区域 ==========
-      Row({ space: 8 }) {
-        Row({ space: 8 }) {
-          // 搜索图标
-          Text('🔍').fontSize(16).opacity(0.6)
-
-          // 搜索输入框
-          TextInput({ placeholder: '输入关键词', text: this.keyword })
+          // 页面标题
+          Text('搜索')
+            .fontSize(22)
+            .fontWeight(FontWeight.Bold)
             .layoutWeight(1)
-            .onChange((v) => {
-              this.keyword = v;
-              this.isEditing = true; // 标记为编辑状态
-            })
+            .textAlign(TextAlign.Center)
+
+          // 右侧占位（保持对称）
+          Blank().width(40)
         }
-        .layoutWeight(1)
-        .padding({ left: 12, right: 12, top: 10, bottom: 10 })
-        .borderRadius(16)
-        .backgroundColor('#FFFFFF')
-        .border({ width: 1, color: '#E9EEF5' })
+        .width('100%')
+        .padding({ top: 16, left: 16, right: 16, bottom: 12 })
+        .opacity(this.headerOpacity)
+        .translate({ x: 0, y: this.headerOffset })
 
-        // 搜索按钮
-        Button('搜索', { type: ButtonType.Capsule })
-          .onClick(async () => await this.performSearch())
-      }
-      .padding({ left: 16, right: 16, bottom: 12 })
-      .opacity(this.panelOpacity)
-      .translate({ x: 0, y: this.panelOffset })
+        // ========== 搜索输入区域 ==========
+        Row({ space: 8 }) {
+          Row({ space: 8 }) {
+            // 搜索图标
+            Text('🔍').fontSize(16).opacity(0.6)
 
-      // ========== 提示语（搜索前） ==========
-      if (!this.hasSearched) {
-        Text('支持远端搜索 WanAndroid 文章，试试输入"鸿蒙"或"AI"。')
-          .fontSize(13)
-          .opacity(0.7)
-          .margin({ left: 16, right: 16, bottom: 8 })
-          .opacity(this.panelOpacity)
-          .translate({ x: 0, y: this.panelOffset })
-      }
-
-      // ========== 热搜词/推荐词 ==========
-      if (!this.hasSearched || this.isEditing) {
-        this.buildKeywordChips('热搜词', this.hotKeywords);
-        this.buildKeywordChips('推荐词', this.recommendKeywords);
-      }
-
-      // ========== 搜索历史记录区域 ==========
-      if (this.searchHistory.length > 0 && (this.isEditing || !this.hasSearched)) {
-        Column({ space: 8 }) {
-          // 历史记录标题和清空按钮
-          Row() {
-            Text('搜索记录')
-              .fontSize(14)
-              .fontWeight(FontWeight.Medium)
+            // 搜索输入框
+            TextInput({ placeholder: '输入关键词', text: this.keyword })
               .layoutWeight(1)
-              .textAlign(TextAlign.Center)
-            Text('清空')
-              .fontSize(12)
-              .opacity(0.6)
-              .onClick(async () => await this.clearSearchHistory())
+              .onChange((v) => {
+                this.keyword = v;
+                this.isEditing = true; // 标记为编辑状态
+              })
           }
-          .padding({ left: 16, right: 16 })
+          .layoutWeight(1)
+          .padding({ left: 12, right: 12, top: 10, bottom: 10 })
+          .borderRadius(16)
+          .backgroundColor('#FFFFFF')
+          .border({ width: 1, color: '#E9EEF5' })
 
-
-          Text('提示：点击关键词快速搜索，右侧可删除单条，清空后不可恢复。')
-            .fontSize(11)
-            .opacity(0.55)
-            .padding({ left: 16, right: 16, bottom: 8 })
-            .opacity(this.panelOpacity)
-            .translate({ x: 0, y: this.panelOffset })
-
-          // 历史记录列表
-          Column({ space: 6 }) {
-            ForEach(this.searchHistory, (item: string) => {
-              Row({ space: 8 }) {
-                // 历史关键词（可点击搜索）
-                Text(item)
-                  .layoutWeight(1)
-                  .fontSize(13)
-                  .onClick(async () => {
-                    await this.applyKeyword(item);
-                  })
-
-                // 删除按钮
-                Text('删除')
-                  .fontSize(12)
-                  .opacity(0.6)
-                  .gesture(
-                    TapGesture().onAction(async () => {
-                      await this.removeSearchKeyword(item);
-                    })
-                  )
-              }
-              .padding({ left: 12, right: 12, top: 10, bottom: 10 })
-              .backgroundColor('#FFFFFF')
-              .borderRadius(12)
-              .border({ width: 1, color: '#E9EEF5' })
-              .margin({ left: 16, right: 16 })
-            }, (item: string) => item)
-          }
-        }
-        .padding({ bottom: 12 })
-        .opacity(this.panelOpacity)
-        .translate({ x: 0, y: this.panelOffset })
-        .margin({ top: 20 })
-      } else if (this.searchHistory.length === 0 && (this.isEditing || !this.hasSearched)) {
-        Column({ space: 6 }) {
-          Text('暂无搜索记录')
-            .fontSize(13)
-            .fontWeight(FontWeight.Medium)
+          // 搜索按钮
+          Button('搜索', { type: ButtonType.Capsule })
+            .onClick(async () => await this.performSearch())
         }
         .padding({ left: 16, right: 16, bottom: 12 })
         .opacity(this.panelOpacity)
         .translate({ x: 0, y: this.panelOffset })
-      }
 
-      // ========== 加载状态提示 ==========
-      if (this.loading) {
-        Row({ space: 8 }) {
-          AppLoadingProgress()
-          Text('正在搜索...').opacity(0.7)
+        // ========== 提示语（搜索前） ==========
+        if (!this.hasSearched) {
+          Text('支持远端搜索 WanAndroid 文章，试试输入"鸿蒙"或"AI"。')
+            .fontSize(13)
+            .opacity(0.7)
+            .margin({ left: 16, right: 16, bottom: 8 })
+            .opacity(this.panelOpacity)
+            .translate({ x: 0, y: this.panelOffset })
         }
-        .padding(16)
-        .opacity(this.panelOpacity)
-        .translate({ x: 0, y: this.panelOffset })
-      }
-      // ========== 错误状态提示 ==========
-      else if (this.errorMsg) {
-        Column({ space: 6 }) {
-          Text('搜索失败，请稍后重试').fontSize(13).opacity(0.7)
-          Text(this.errorMsg).fontSize(12).opacity(0.6)
-        }
-        .padding({ left: 16, right: 16, bottom: 6 })
-        .opacity(this.panelOpacity)
-        .translate({ x: 0, y: this.panelOffset })
-      }
-      // ========== 空结果提示 ==========
-      else if (this.hasSearched && this.results.length === 0) {
-        Column({ space: 6 }) {
-          Text('未找到相关内容').fontSize(13).opacity(0.8)
-          Text('可以尝试更短的关键词，或点击上方热搜词快速搜索。')
-            .fontSize(12)
-            .opacity(0.6)
-        }
-        .margin({ left: 16, right: 16, bottom: 8 })
-        .opacity(this.panelOpacity)
-        .translate({ x: 0, y: this.panelOffset })
-      }
 
-      // ========== 搜索结果列表 ==========
-      List() {
-        ForEach(this.results, (item: Article) => {
-          ListItem() {
+        // ========== 热搜词/推荐词 ==========
+        if (!this.hasSearched || this.isEditing) {
+          this.buildKeywordChips('热搜词', this.hotKeywords);
+          this.buildKeywordChips('推荐词', this.recommendKeywords);
+        }
+
+        // ========== 搜索历史记录区域 ==========
+        if (this.searchHistory.length > 0 && (this.isEditing || !this.hasSearched)) {
+          Column({ space: 8 }) {
+            // 历史记录标题和清空按钮
             Row() {
-              // 文章信息区域
-              Column({ space: 6 }) {
-                Text(item.title).fontSize(16).fontWeight(FontWeight.Medium)
-                Text(item.desc).fontSize(13).opacity(0.7).maxLines(2)
-                Text(`作者：${item.author}`).fontSize(12).opacity(0.6)
-              }
-              .layoutWeight(1)
-
-              // 收藏按钮（星标）
-              Text(this.favIds.has(item.id) ? '★' : '☆')
-                .fontSize(22)
-                .margin({ left: 10 })
-                .gesture(
-                  TapGesture().onAction(async () => {
-                    await this.toggleFav(item);
-                  })
-                )
+              Text('搜索记录')
+                .fontSize(14)
+                .fontWeight(FontWeight.Medium)
+                .layoutWeight(1)
+                .textAlign(TextAlign.Center)
+              Text('清空')
+                .fontSize(12)
+                .opacity(0.6)
+                .onClick(async () => await this.clearSearchHistory())
             }
-            .padding(12)
-            .margin({ left: 16, right: 16, bottom: 12 })
-            .borderRadius(16)
-            .backgroundColor('#FFFFFF')
-            .border({ width: 1, color: '#E9EEF5' })
-            .onClick(async () => { await this.openDetail(item); })
+            .padding({ left: 16, right: 16 })
+
+
+            Text('提示：点击关键词快速搜索，右侧可删除单条，清空后不可恢复。')
+              .fontSize(11)
+              .opacity(0.55)
+              .padding({ left: 16, right: 16, bottom: 8 })
+              .opacity(this.panelOpacity)
+              .translate({ x: 0, y: this.panelOffset })
+
+            // 历史记录列表
+            Column({ space: 6 }) {
+              ForEach(this.searchHistory, (item: string) => {
+                Row({ space: 8 }) {
+                  // 历史关键词（可点击搜索）
+                  Text(item)
+                    .layoutWeight(1)
+                    .fontSize(13)
+                    .onClick(async () => {
+                      await this.applyKeyword(item);
+                    })
+
+                  // 删除按钮
+                  Text('删除')
+                    .fontSize(12)
+                    .opacity(0.6)
+                    .gesture(
+                      TapGesture().onAction(async () => {
+                        await this.removeSearchKeyword(item);
+                      })
+                    )
+                }
+                .padding({ left: 12, right: 12, top: 10, bottom: 10 })
+                .backgroundColor('#FFFFFF')
+                .borderRadius(12)
+                .border({ width: 1, color: '#E9EEF5' })
+                .margin({ left: 16, right: 16 })
+              }, (item: string) => item)
+            }
           }
-        }, (item: Article) => item.id.toString())
+          .padding({ bottom: 12 })
+          .opacity(this.panelOpacity)
+          .translate({ x: 0, y: this.panelOffset })
+          .margin({ top: 20 })
+        } else if (this.searchHistory.length === 0 && (this.isEditing || !this.hasSearched)) {
+          Column({ space: 6 }) {
+            Text('暂无搜索记录')
+              .fontSize(13)
+              .fontWeight(FontWeight.Medium)
+          }
+          .padding({ left: 16, right: 16, bottom: 12 })
+          .opacity(this.panelOpacity)
+          .translate({ x: 0, y: this.panelOffset })
+        }
+
+        // ========== 加载状态提示 ==========
+        if (this.loading) {
+          Row({ space: 8 }) {
+            AppLoadingProgress()
+            Text('正在搜索...').opacity(0.7)
+          }
+          .padding(16)
+          .opacity(this.panelOpacity)
+          .translate({ x: 0, y: this.panelOffset })
+        }
+        // ========== 错误状态提示 ==========
+        else if (this.errorMsg) {
+          Column({ space: 6 }) {
+            Text('搜索失败，请稍后重试').fontSize(13).opacity(0.7)
+            Text(this.errorMsg).fontSize(12).opacity(0.6)
+          }
+          .padding({ left: 16, right: 16, bottom: 6 })
+          .opacity(this.panelOpacity)
+          .translate({ x: 0, y: this.panelOffset })
+        }
+        // ========== 空结果提示 ==========
+        else if (this.hasSearched && this.results.length === 0) {
+          Column({ space: 6 }) {
+            Text('未找到相关内容').fontSize(13).opacity(0.8)
+            Text('可以尝试更短的关键词，或点击上方热搜词快速搜索。')
+              .fontSize(12)
+              .opacity(0.6)
+          }
+          .margin({ left: 16, right: 16, bottom: 8 })
+          .opacity(this.panelOpacity)
+          .translate({ x: 0, y: this.panelOffset })
+        }
+
+        // ========== 搜索结果列表 ==========
+        List() {
+          ForEach(this.results, (item: Article) => {
+            ListItem() {
+              Row() {
+                // 文章信息区域
+                Column({ space: 6 }) {
+                  Text(item.title).fontSize(16).fontWeight(FontWeight.Medium)
+                  Text(item.desc).fontSize(13).opacity(0.7).maxLines(2)
+                  Text(`作者：${item.author}`).fontSize(12).opacity(0.6)
+                }
+                .layoutWeight(1)
+
+                // 收藏按钮（星标）
+                Text(this.favIds.has(item.id) ? '★' : '☆')
+                  .fontSize(22)
+                  .margin({ left: 10 })
+                  .gesture(
+                    TapGesture().onAction(async () => {
+                      await this.toggleFav(item);
+                    })
+                  )
+              }
+              .padding(12)
+              .margin({ left: 16, right: 16, bottom: 12 })
+              .borderRadius(16)
+              .backgroundColor('#FFFFFF')
+              .border({ width: 1, color: '#E9EEF5' })
+              .onClick(async () => { await this.openDetail(item); })
+            }
+          }, (item: Article) => item.id.toString())
+        }
+        .width('100%')
+        .layoutWeight(1)
+        .opacity(this.panelOpacity)
+        .translate({ x: 0, y: this.panelOffset })
       }
       .width('100%')
-      .layoutWeight(1)
-      .opacity(this.panelOpacity)
-      .translate({ x: 0, y: this.panelOffset })
+      .height('100%')
+      .onAppear(() => {
+        // 页面进入动画效果
+        animateTo({ duration: 220, curve: Curve.EaseOut }, () => {
+          this.headerOpacity = 1;
+          this.headerOffset = 0;
+        });
+        animateTo({ duration: 260, curve: Curve.EaseOut }, () => {
+          this.panelOpacity = 1;
+          this.panelOffset = 0;
+        });
+      })
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F6F7FB')
-    .onAppear(() => {
-      // 页面进入动画效果
-      animateTo({ duration: 220, curve: Curve.EaseOut }, () => {
-        this.headerOpacity = 1;
-        this.headerOffset = 0;
-      });
-      animateTo({ duration: 260, curve: Curve.EaseOut }, () => {
-        this.panelOpacity = 1;
-        this.panelOffset = 0;
-      });
-    })
   }
 }

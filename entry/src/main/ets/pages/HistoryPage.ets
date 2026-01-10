@@ -146,98 +146,105 @@ export struct HistoryPage {
    * 采用分层渐入的动画效果，提升用户体验
    */
   build() {
-    Column() {
-      // 顶部导航栏
-      Row() {
-        // 返回按钮
-        Text('←')
-          .fontSize(20)
-          .margin({ left: 16 })
-          .onClick(() => router.back());
+    Stack() {
+      Image($r('app.media.bgt'))
+        .width('100%')
+        .height('100%')
+        .objectFit(ImageFit.Cover)
+      Column() {
+        // 顶部导航栏
+        Row() {
+          // 返回按钮
+          Text('←')
+            .fontSize(20)
+            .margin({ left: 16 })
+            .onClick(() => router.back());
 
-        // 页面标题
-        Text('阅读历史')
-          .fontSize(22)
-          .fontWeight(FontWeight.Bold)
-          .layoutWeight(1)
-          .textAlign(TextAlign.Center)
+          // 页面标题
+          Text('阅读历史')
+            .fontSize(22)
+            .fontWeight(FontWeight.Bold)
+            .layoutWeight(1)
+            .textAlign(TextAlign.Center)
 
-        // 动态操作按钮：有历史时显示清空按钮，无历史时显示占位
-        if (this.history.length > 0) {
-          Button('清空', { type: ButtonType.Capsule })
-            .onClick(async () => await this.clearHistory());
-        } else {
-          Blank().width(78) // 占位保持布局平衡
+          // 动态操作按钮：有历史时显示清空按钮，无历史时显示占位
+          if (this.history.length > 0) {
+            Button('清空', { type: ButtonType.Capsule })
+              .onClick(async () => await this.clearHistory());
+          } else {
+            Blank().width(78) // 占位保持布局平衡
+          }
         }
-      }
-      .alignItems(VerticalAlign.Center)
-      .padding({ top: 16, right: 16, bottom: 12 })
-      .opacity(this.headerOpacity)
-      .translate({ x: 0, y: this.headerOffset })
+        .alignItems(VerticalAlign.Center)
+        .padding({ top: 16, right: 16, bottom: 12 })
+        .opacity(this.headerOpacity)
+        .translate({ x: 0, y: this.headerOffset })
 
-      // 主体内容区域
-      if (this.loading) {
-        // 加载中状态
-        Row({ space: 8 }) {
-          AppLoadingProgress()
-          Text('正在加载历史...').opacity(0.7)
-        }
-        .padding(16)
-        .opacity(this.listOpacity)
-        .translate({ x: 0, y: this.listOffset })
-      } else if (this.history.length === 0) {
-        // 空状态提示
-        Text('暂无阅读记录').margin(16).opacity(0.7)
+        // 主体内容区域
+        if (this.loading) {
+          // 加载中状态
+          Row({ space: 8 }) {
+            AppLoadingProgress()
+            Text('正在加载历史...').opacity(0.7)
+          }
+          .padding(16)
           .opacity(this.listOpacity)
           .translate({ x: 0, y: this.listOffset })
-      } else {
-        // 历史记录列表
-        List() {
-          ForEach(this.history, (item: Article) => {
-            ListItem() {
-              Row() {
-                Column({ space: 6 }) {
-                  // 文章标题
-                  Text(item.title).fontSize(16).fontWeight(FontWeight.Medium)
-                  // 文章描述
-                  Text(item.desc).fontSize(13).opacity(0.7).maxLines(2)
-                  // 作者信息
-                  Text(`作者：${item.author}`).fontSize(12).opacity(0.6)
+        } else if (this.history.length === 0) {
+          // 空状态提示
+          Text('暂无阅读记录').margin(16).opacity(0.7)
+            .opacity(this.listOpacity)
+            .translate({ x: 0, y: this.listOffset })
+        } else {
+          // 历史记录列表
+          List() {
+            ForEach(this.history, (item: Article) => {
+              ListItem() {
+                Row() {
+                  Column({ space: 6 }) {
+                    // 文章标题
+                    Text(item.title).fontSize(16).fontWeight(FontWeight.Medium)
+                    // 文章描述
+                    Text(item.desc).fontSize(13).opacity(0.7).maxLines(2)
+                    // 作者信息
+                    Text(`作者：${item.author}`).fontSize(12).opacity(0.6)
+                  }
+                  .layoutWeight(1) // 占据剩余空间
                 }
-                .layoutWeight(1) // 占据剩余空间
+                .padding(12)
+                .margin({ left: 16, right: 16, bottom: 12 })
+                .borderRadius(16)
+                .backgroundColor('#FFFFFF')
+                .border({ width: 1, color: '#E9EEF5' }) // 细边框增强视觉层次
+                .onClick(async () => await this.openDetail(item.id))
               }
-              .padding(12)
-              .margin({ left: 16, right: 16, bottom: 12 })
-              .borderRadius(16)
-              .backgroundColor('#FFFFFF')
-              .border({ width: 1, color: '#E9EEF5' }) // 细边框增强视觉层次
-              .onClick(async () => await this.openDetail(item.id))
-            }
-          })
+            })
+          }
+          .width('100%')
+          .layoutWeight(1) // 占据剩余垂直空间
+          .opacity(this.listOpacity)
+          .translate({ x: 0, y: this.listOffset })
         }
-        .width('100%')
-        .layoutWeight(1) // 占据剩余垂直空间
-        .opacity(this.listOpacity)
-        .translate({ x: 0, y: this.listOffset })
       }
+      .width('100%')
+      .height('100%')
+      .onAppear(() => {
+        // 页面显示时的动画效果
+
+        // 头部导航栏动画：渐入+上移
+        animateTo({ duration: 220, curve: Curve.EaseOut }, () => {
+          this.headerOpacity = 1;
+          this.headerOffset = 0;
+        });
+
+        // 列表内容动画：延迟渐入+上移（创造层次感）
+        animateTo({ duration: 260, curve: Curve.EaseOut }, () => {
+          this.listOpacity = 1;
+          this.listOffset = 0;
+        });
+      })
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F6F7FB') // 浅灰色背景提升内容可读性
-    .onAppear(() => {
-      // 页面显示时的动画效果
-      
-      // 头部导航栏动画：渐入+上移
-      animateTo({ duration: 220, curve: Curve.EaseOut }, () => {
-        this.headerOpacity = 1;
-        this.headerOffset = 0;
-      });
-      
-      // 列表内容动画：延迟渐入+上移（创造层次感）
-      animateTo({ duration: 260, curve: Curve.EaseOut }, () => {
-        this.listOpacity = 1;
-        this.listOffset = 0;
-      });
-    })
   }
 }

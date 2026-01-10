@@ -139,85 +139,92 @@ export struct LikedPage {
    * 创建点赞记录列表界面
    */
   build() {
-    Column() {
-      // 顶部导航栏
-      Row() {
-        Text('←')
-          .fontSize(20)
-          .margin({ left: 16 })
-          .onClick(() => router.back());
-
-        Text('点赞过')
-          .fontSize(20)
-          .fontWeight(FontWeight.Bold)
-          .layoutWeight(1)
-          .textAlign(TextAlign.Center)
-          .margin({ right: 36 })
-      }
-      .alignItems(VerticalAlign.Center)
-      .padding({ top: 16, right: 16, bottom: 12 })
-      .opacity(this.headerOpacity)
-      .translate({ x: 0, y: this.headerOffset })
-
-      // 主体内容区域
-      if (this.uid === '0') {
-        // 未登录状态提示
-        Text('请先去【我的】页登录').margin(16).opacity(0.7)
-          .opacity(this.listOpacity)
-          .translate({ x: 0, y: this.listOffset })
-      } else if (this.likedArticles.length === 0) {
-        // 空状态提示
-        Text('暂无点赞记录').margin(16).opacity(0.7)
-          .opacity(this.listOpacity)
-          .translate({ x: 0, y: this.listOffset })
-      } else {
-        // 点赞文章列表
-        List() {
-          ForEach(this.likedArticles, (item: Article) => {
-            ListItem() {
-              Column({ space: 6 }) {
-                Text(item.title)
-                  .fontSize(16)
-                  .fontWeight(FontWeight.Medium)
-                  .maxLines(2)
-                Text(item.desc).fontSize(13).opacity(0.7).maxLines(2)
-                Text(`作者：${item.author}`).fontSize(12).opacity(0.6)
-              }
-              .width('100%')
-              .height(120)
-              .padding(12)
-              .margin({ bottom: 12 })
-              .borderRadius(16)
-              .backgroundColor('#FFFFFF')
-              .border({ width: 1, color: '#E9EEF5' })
-              .justifyContent(FlexAlign.SpaceBetween)
-              .onClick(async () => await this.openDetail(item))
-            }
-          })
-        }
-        .padding({ left: 16, right: 16 })
+    Stack() {
+      Image($r('app.media.bgt'))
         .width('100%')
-        .layoutWeight(1)
-        .opacity(this.listOpacity)
-        .translate({ x: 0, y: this.listOffset })
+        .height('100%')
+        .objectFit(ImageFit.Cover)
+      Column() {
+        // 顶部导航栏
+        Row() {
+          Text('←')
+            .fontSize(20)
+            .margin({ left: 16 })
+            .onClick(() => router.back());
+
+          Text('点赞过')
+            .fontSize(20)
+            .fontWeight(FontWeight.Bold)
+            .layoutWeight(1)
+            .textAlign(TextAlign.Center)
+            .margin({ right: 36 })
+        }
+        .alignItems(VerticalAlign.Center)
+        .padding({ top: 16, right: 16, bottom: 12 })
+        .opacity(this.headerOpacity)
+        .translate({ x: 0, y: this.headerOffset })
+
+        // 主体内容区域
+        if (this.uid === '0') {
+          // 未登录状态提示
+          Text('请先去【我的】页登录').margin(16).opacity(0.7)
+            .opacity(this.listOpacity)
+            .translate({ x: 0, y: this.listOffset })
+        } else if (this.likedArticles.length === 0) {
+          // 空状态提示
+          Text('暂无点赞记录').margin(16).opacity(0.7)
+            .opacity(this.listOpacity)
+            .translate({ x: 0, y: this.listOffset })
+        } else {
+          // 点赞文章列表
+          List() {
+            ForEach(this.likedArticles, (item: Article) => {
+              ListItem() {
+                Column({ space: 6 }) {
+                  Text(item.title)
+                    .fontSize(16)
+                    .fontWeight(FontWeight.Medium)
+                    .maxLines(2)
+                  Text(item.desc).fontSize(13).opacity(0.7).maxLines(2)
+                  Text(`作者：${item.author}`).fontSize(12).opacity(0.6)
+                }
+                .width('100%')
+                .height(120)
+                .padding(12)
+                .margin({ bottom: 12 })
+                .borderRadius(16)
+                .backgroundColor('#FFFFFF')
+                .border({ width: 1, color: '#E9EEF5' })
+                .justifyContent(FlexAlign.SpaceBetween)
+                .onClick(async () => await this.openDetail(item))
+              }
+            })
+          }
+          .padding({ left: 16, right: 16 })
+          .width('100%')
+          .layoutWeight(1)
+          .opacity(this.listOpacity)
+          .translate({ x: 0, y: this.listOffset })
+        }
       }
+      .width('100%')
+      .height('100%')
+      .onAppear(() => {
+        // 页面显示时的初始化
+        this.refresh();
+
+        // 分层动画效果
+        animateTo({ duration: 220, curve: Curve.EaseOut }, () => {
+          this.headerOpacity = 1;
+          this.headerOffset = 0;
+        });
+        animateTo({ duration: 260, curve: Curve.EaseOut }, () => {
+          this.listOpacity = 1;
+          this.listOffset = 0;
+        });
+      })
     }
     .width('100%')
     .height('100%')
-    .backgroundColor('#F6F7FB')
-    .onAppear(() => {
-      // 页面显示时的初始化
-      this.refresh();
-      
-      // 分层动画效果
-      animateTo({ duration: 220, curve: Curve.EaseOut }, () => {
-        this.headerOpacity = 1;
-        this.headerOffset = 0;
-      });
-      animateTo({ duration: 260, curve: Curve.EaseOut }, () => {
-        this.listOpacity = 1;
-        this.listOffset = 0;
-      });
-    })
   }
 }
