@@ -669,6 +669,11 @@ export struct MinePage {
                 .padding(12)
                 .borderRadius(12)
                 .backgroundColor('#F6F7FB')
+                .stateStyles({
+                  pressed: { backgroundColor: '#B8D0EE' },
+                  hovered: { backgroundColor: '#B8D0EE' }
+                })
+                .animation({ duration: 160, curve: Curve.EaseOut })
                 .border({ width: 1, color: '#E9EEF5' })
                 .onClick(async () => await this.openFavoritePage())
 
@@ -680,6 +685,11 @@ export struct MinePage {
                 .padding(12)
                 .borderRadius(12)
                 .backgroundColor('#F6F7FB')
+                .stateStyles({
+                  pressed: { backgroundColor: '#B8D0EE' },
+                  hovered: { backgroundColor: '#B8D0EE' }
+                })
+                .animation({ duration: 160, curve: Curve.EaseOut })
                 .border({ width: 1, color: '#E9EEF5' })
                 .onClick(async () => await this.openOfflineDownloads())
 
@@ -691,6 +701,11 @@ export struct MinePage {
                 .padding(12)
                 .borderRadius(12)
                 .backgroundColor('#F6F7FB')
+                .stateStyles({
+                  pressed: { backgroundColor: '#B8D0EE' },
+                  hovered: { backgroundColor: '#B8D0EE' }
+                })
+                .animation({ duration: 160, curve: Curve.EaseOut })
                 .border({ width: 1, color: '#E9EEF5' })
                 .onClick(async () => await this.openPrivacyCenter())
               }
@@ -718,6 +733,11 @@ export struct MinePage {
                 .padding(12)
                 .borderRadius(12)
                 .backgroundColor('#F6F7FB')
+                .stateStyles({
+                  pressed: { backgroundColor: '#B8D0EE' },
+                  hovered: { backgroundColor: '#B8D0EE' }
+                })
+                .animation({ duration: 160, curve: Curve.EaseOut })
                 .border({ width: 1, color: '#E9EEF5' })
                 .onClick(async () => await this.openHistory())
 
@@ -731,6 +751,11 @@ export struct MinePage {
                 .borderRadius(12)
                 .backgroundColor('#F6F7FB')
                 .border({ width: 1, color: '#E9EEF5' })
+                .stateStyles({
+                  pressed: { backgroundColor: '#B8D0EE' },
+                  hovered: { backgroundColor: '#B8D0EE' }
+                })
+                .animation({ duration: 160, curve: Curve.EaseOut })
                 .onClick(async () => await this.openLiked())
 
                 // 评论记录入口
@@ -742,6 +767,11 @@ export struct MinePage {
                 .padding(12)
                 .borderRadius(12)
                 .backgroundColor('#F6F7FB')
+                .stateStyles({
+                  pressed: { backgroundColor: '#B8D0EE' },
+                  hovered: { backgroundColor: '#B8D0EE' }
+                })
+                .animation({ duration: 160, curve: Curve.EaseOut })
                 .border({ width: 1, color: '#E9EEF5' })
                 .onClick(async () => await this.openCommented())
               }
@@ -767,6 +797,11 @@ export struct MinePage {
                 .padding(12)
                 .borderRadius(12)
                 .backgroundColor('#F6F7FB')
+                .stateStyles({
+                  pressed: { backgroundColor: '#B8D0EE' },
+                  hovered: { backgroundColor: '#B8D0EE' }
+                })
+                .animation({ duration: 160, curve: Curve.EaseOut })
                 .border({ width: 1, color: '#E9EEF5' })
                 .onClick(async () => await this.openNotifications())
 
@@ -778,6 +813,11 @@ export struct MinePage {
                 .padding(12)
                 .borderRadius(12)
                 .backgroundColor('#F6F7FB')
+                .stateStyles({
+                  pressed: { backgroundColor: '#B8D0EE' },
+                  hovered: { backgroundColor: '#B8D0EE' }
+                })
+                .animation({ duration: 160, curve: Curve.EaseOut })
                 .border({ width: 1, color: '#E9EEF5' })
                 .onClick(async () => await this.openChangelog())
 
@@ -789,6 +829,11 @@ export struct MinePage {
                 .padding(12)
                 .borderRadius(12)
                 .backgroundColor('#F6F7FB')
+                .stateStyles({
+                  pressed: { backgroundColor: '#B8D0EE' },
+                  hovered: { backgroundColor: '#B8D0EE' }
+                })
+                .animation({ duration: 160, curve: Curve.EaseOut })
                 .border({ width: 1, color: '#E9EEF5' })
                 .onClick(async () => await this.openFeedback())
               }
