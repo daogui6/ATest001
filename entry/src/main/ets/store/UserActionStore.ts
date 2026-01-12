@@ -12,8 +12,13 @@
  * - 评论数据：按用户ID存储文章ID集合
  * - 文章缓存：全局缓存点赞和评论的文章详情
  * - 数据分离：行为记录与文章内容分开存储
+ *
+ * 性能优化：
+ * - Set数据结构提供O(1)查找性能
+ * - 缓存限制防止存储溢出
+ * - 异步操作避免UI阻塞
+ * - 数据验证确保存储安全
  */
-
 import type common from '@ohos.app.ability.common';
 import { Prefs } from './Prefs';
 import type { Article } from '../model/Article';

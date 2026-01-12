@@ -17,6 +17,12 @@
  * - 用户登录状态管理
  * - 用户资料更新同步
  * - 退出登录的完整清理
+ *
+ * 安全特性：
+ * - 用户输入验证和清理
+ * - Cookie安全存储
+ * - 会话数据加密存储
+ * - 退出登录的完整清理
  */
 
 import type common from '@ohos.app.ability.common';

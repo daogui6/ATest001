@@ -23,6 +23,12 @@
  * - API错误码处理
  * - 数据格式验证
  * - 网络异常处理
+ *
+ * 网络优化：
+ * - 请求超时控制
+ * - HTTP连接复用
+ * - Cookie自动管理
+ * - 数据缓存策略
  */
 
 import http from '@ohos.net.http';
