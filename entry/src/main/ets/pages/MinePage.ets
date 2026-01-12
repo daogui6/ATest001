@@ -7,22 +7,27 @@
  * - 用户足迹管理（浏览历史、点赞、评论）
  * - 通知消息管理
  * - 个人资料持久化存储
- * 
+ * - 阅读统计和个性化推荐
+ *
  * 页面架构：
  * - 头部导航栏
  * - 用户信息区域
  * - 功能入口网格
- * - 账号信息编辑区域（已登录状态）
- * 
+ * - 阅读统计区域
+ * - 个性化推荐区域
+ *
  * 状态管理：
  * - @State: 管理组件内部状态
  * - @StorageLink: 跨页面状态同步
  * - @Watch: 监听状态变化
- * 
+ *
  * 数据持久化：
  * - Preferences: 本地数据存储
  * - UserStore: 用户数据管理
  * - NotificationStore: 通知数据管理
+ * - HistoryStore: 历史记录管理
+ * - FavoriteStore: 收藏数据管理
+ * - ReadingListStore: 待读清单管理
  */
 
 import type common from '@ohos.app.ability.common';
@@ -36,6 +41,8 @@ import { HistoryStore } from '../store/HistoryStore';
 import { FavoriteStore } from '../store/FavoriteStore';
 import { ReadingListStore } from '../store/ReadingListStore';
 
+// ==================== 全局状态初始化 ====================
+
 // 全局会话版本号，用于跨页面同步登录状态
 AppStorage.setOrCreate('session_version', 0);
 // 全局通知版本号，用于跨页面同步通知状态
@@ -46,19 +53,25 @@ AppStorage.setOrCreate('reading_version', 0);
 
 /**
  * 个人中心页面组件
- * 
+ *
  * 主要功能：
  * 1. 用户认证（登录/退出）
  * 2. 个人信息管理
  * 3. 用户足迹查看
  * 4. 通知管理
+ * 5. 阅读统计展示
+ * 6. 个性化推荐
+ *
+ * 页面状态：
+ * - 未登录状态：显示登录提示和基础功能
+ * - 已登录状态：显示完整个人信息和所有功能
  */
 @Component
 export struct MinePage {
   // ========== 配置常量 ==========
   /** Preferences存储的键名约定 */
   private KEY_UID = 'session.userId';        // 用户ID存储键
-  private KEY_LOGIN = 'session.isLogin';     // 登录状态存储键
+  private KEY_LOGIN = 'session.isLogin';     // 登录状态存储键（兼容性保留）
   private KEY_NICK = 'profile.nickname';     // 昵称存储键
   private KEY_BIO = 'profile.bio';           // 签名存储键
   private KEY_AVATAR = 'profile.avatar';     // 头像存储键
@@ -66,28 +79,30 @@ export struct MinePage {
   // ========== 用户状态管理 ==========
   /** 登录状态 - 控制页面显示不同的内容区域 */
   @State isLogin: boolean = false;
-  
+
   /** 用户基本信息 */
-  @State nickname: string = '用户1';         // 用户昵称
-  @State bio: string = '这个人很懒，还没有签名～'; // 用户签名
-  @State avatarUrl: string = '';             // 用户头像
-  @State uid: string = '0';                  // 用户唯一标识
-  @State username: string = '';              // 用户名
+  @State nickname: string = '用户1';         // 用户昵称（默认值）
+  @State bio: string = '这个人很懒，还没有签名～'; // 用户签名（默认值）
+  @State avatarUrl: string = '';             // 用户头像URL
+  @State uid: string = '0';                  // 用户唯一标识，'0'表示未登录
+  @State username: string = '';              // 用户名（登录用）
   @State publicName: string = '';            // 公开昵称
-  @State token: string = '';                 // 用户令牌
+  @State token: string = '';                 // 用户令牌（API认证用）
   @State isEditingProfile: boolean = false;  // 是否处于编辑资料状态
 
   // ========== 动画效果状态 ==========
   /** 页面进入动画效果 */
-  @State headerOpacity: number = 0;          // 头部透明度
-  @State headerOffset: number = 12;          // 头部偏移量
+  @State headerOpacity: number = 0;          // 头部透明度（淡入效果）
+  @State headerOffset: number = 12;          // 头部偏移量（滑动效果）
   @State contentOpacity: number = 0;         // 内容透明度
   @State contentOffset: number = 18;         // 内容偏移量
-  @State enablePush: boolean = true;         // 设置：消息提醒
-  @State enableAutoPlay: boolean = true;     // 设置：自动播放
-  @State enableCellular: boolean = false;    // 设置：移动网络播放
 
-  // ========== 通知状态管理 ==========
+  /** 用户设置状态 */
+  @State enablePush: boolean = true;         // 设置：消息提醒开关
+  @State enableAutoPlay: boolean = true;     // 设置：自动播放开关
+  @State enableCellular: boolean = false;    // 设置：移动网络播放开关
+
+  // ========== 通知和统计状态 ==========
   /** 通知相关状态 - 使用@StorageLink实现跨页面同步 */
   @StorageLink('notification_version')
   @Watch('onNotificationVersionChange')      // 监听通知版本变化
@@ -112,21 +127,31 @@ export struct MinePage {
 
   /** 未读通知数量 */
   @State unreadNotifications: number = 0;
-  @State recommendCount: number = 3;
-  @State readingStreakDays: number = 0;
-  @State weeklyFavCount: number = 0;
-  @State readingListCount: number = 0;
-  @State pressedCardId: string = '';
+  @State recommendCount: number = 0;         // 个性化推荐数量
+  @State readingStreakDays: number = 0;      // 连续阅读天数
+  @State weeklyFavCount: number = 0;         // 本周收藏数量
+  @State readingListCount: number = 0;       // 待读清单数量
+
+  /** 交互效果状态 */
+  @State pressedCardId: string = '';         // 当前按下的卡片ID（用于按压效果）
 
   // ========== 工具方法 ==========
+
+  /**
+   * 处理卡片触摸事件
+   * 实现卡片的按压效果反馈
+   *
+   * @param cardId 卡片唯一标识
+   * @param event 触摸事件对象
+   */
   private handleCardTouch(cardId: string, event: TouchEvent) {
     if (event.type === TouchType.Down) {
-      this.pressedCardId = cardId;
+      this.pressedCardId = cardId;  // 按下时记录卡片ID
       return;
     }
     if (event.type === TouchType.Up || event.type === TouchType.Cancel) {
       if (this.pressedCardId === cardId) {
-        this.pressedCardId = '';
+        this.pressedCardId = '';    // 抬起或取消时清除状态
       }
     }
   }
@@ -134,7 +159,7 @@ export struct MinePage {
   /**
    * 获取宿主UIAbility的Context
    * 为Preferences/数据库等系统能力提供稳定的上下文参数
-   * 
+   *
    * @returns UIAbility上下文对象
    */
   private hostCtx(): common.UIAbilityContext {
@@ -142,21 +167,31 @@ export struct MinePage {
   }
 
   // ========== 生命周期方法 ==========
-  
+
   /**
    * 页面即将显示时调用
    * 用于初始化数据和加载资源
+   *
+   * 执行顺序：
+   * 1. 加载用户会话信息
+   * 2. 刷新通知数量
+   * 3. 刷新推荐数量
+   * 4. 刷新阅读统计数据
    */
   async aboutToAppear() {
-    await this.loadSession();        // 加载用户会话
-    await this.refreshNotifications(); // 刷新通知
-    this.refreshRecommendCount();
-    await this.refreshReadingStats();
+    await this.loadSession();           // 加载用户会话
+    await this.refreshNotifications();  // 刷新通知
+    this.refreshRecommendCount();       // 刷新推荐数量
+    await this.refreshReadingStats();   // 刷新阅读统计
   }
 
   /**
    * 监听通知版本变化
    * 当全局通知版本号变化时自动刷新通知
+   *
+   * 触发场景：
+   * - 其他页面有新通知
+   * - 通知被标记为已读
    */
   private onNotificationVersionChange() {
     this.refreshNotifications();
@@ -165,33 +200,55 @@ export struct MinePage {
   /**
    * 监听会话版本变化
    * 当登录状态更新时刷新用户信息
+   *
+   * 触发场景：
+   * - 用户登录成功
+   * - 用户退出登录
+   * - 用户信息被更新
    */
   private onSessionVersionChange() {
-    this.loadSession();
-    this.refreshNotifications();
-    this.refreshReadingStats();
+    this.loadSession();              // 重新加载会话
+    this.refreshNotifications();     // 刷新通知
+    this.refreshReadingStats();      // 刷新阅读统计
   }
 
+  /**
+   * 监听历史版本变化
+   * 当浏览历史更新时刷新阅读统计
+   */
   private onHistoryVersionChange() {
     this.refreshReadingStats();
   }
 
+  /**
+   * 监听收藏版本变化
+   * 当收藏状态变化时刷新阅读统计
+   */
   private onFavVersionChange() {
     this.refreshReadingStats();
   }
 
+  /**
+   * 监听待读清单版本变化
+   * 当待读清单更新时刷新阅读统计
+   */
   private onReadingVersionChange() {
     this.refreshReadingStats();
   }
 
   // ========== 数据加载方法 ==========
-  
+
   /**
    * 加载用户会话信息
    * 优先从UserStore获取，如果不存在则从Preferences获取
+   *
+   * 数据源优先级：
+   * 1. UserStore（服务器同步数据）
+   * 2. Preferences（本地存储数据）
+   * 3. 默认值（未登录状态）
    */
   private async loadSession() {
-    // 优先从UserStore获取当前用户
+    // 优先从UserStore获取当前用户（服务器数据）
     const user = await UserStore.currentUser(this.hostCtx());
     if (user) {
       this.uid = String(user.id);
@@ -205,7 +262,7 @@ export struct MinePage {
       return;
     }
 
-    // 从Preferences获取用户信息
+    // 从Preferences获取用户信息（本地数据）
     const uid = await Prefs.getString(this.hostCtx(), this.KEY_UID, '0');
     this.isLogin = (uid !== '0');
 
@@ -217,6 +274,11 @@ export struct MinePage {
 
   /**
    * 保存所有用户信息到本地存储
+   *
+   * 保存内容：
+   * - 用户ID和登录状态
+   * - 昵称、签名、头像
+   * - 同步到服务器（如果已登录）
    */
   private async saveAll() {
     await Prefs.putString(this.hostCtx(), this.KEY_UID, this.uid);
@@ -227,7 +289,7 @@ export struct MinePage {
 
     // 如果已登录，同步到服务器
     if (this.isLogin && this.uid !== '0') {
-      await UserStore.updateProfile(this.hostCtx(), { 
+      await UserStore.updateProfile(this.hostCtx(), {
         nickname: this.nickname,
         bio: this.bio,
         avatarUrl: this.avatarUrl
@@ -238,6 +300,12 @@ export struct MinePage {
   /**
    * 持久化个人资料变更
    * 保存到本地存储并触发全局状态更新
+   *
+   * 处理逻辑：
+   * 1. 数据清理和默认值处理
+   * 2. 保存到本地存储
+   * 3. 触发全局状态更新
+   * 4. 显示成功提示
    */
   private async persistProfileChanges() {
     // 数据清理和默认值处理
@@ -245,17 +313,23 @@ export struct MinePage {
     this.bio = this.bio.trim() || '这个人很懒，还没有签名～';
 
     await this.saveAll();
-    
+
     // 触发全局状态更新，通知其他页面刷新
     AppStorage.setOrCreate('session_version', 0);
     const v = (AppStorage.get('session_version') as number) ?? 0;
     AppStorage.set('session_version', v + 1);
-    
+
     promptAction.showToast({ message: '已保存个人资料' });
   }
 
   /**
    * 打开头像选择器
+   *
+   * 流程：
+   * 1. 申请相册权限
+   * 2. 打开系统相册选择器
+   * 3. 获取选择的图片URI
+   * 4. 更新头像显示
    */
   private async chooseAvatar() {
     try {
@@ -270,7 +344,7 @@ export struct MinePage {
       options.maxSelectNumber = 1;
       const result = await photoPicker.select(options);
       if (result?.photoUris?.length) {
-        this.avatarUrl = result.photoUris[0];
+        this.avatarUrl = result.photoUris[0];  // 更新头像URL
       }
     } catch (e) {
       promptAction.showToast({ message: '头像选择失败，请稍后重试' });
@@ -279,6 +353,8 @@ export struct MinePage {
 
   /**
    * 相册权限申请弹窗
+   *
+   * @returns 用户是否授权相册权限
    */
   private async requestPhotoPermission(): Promise<boolean> {
     try {
@@ -290,15 +366,20 @@ export struct MinePage {
           { text: '允许', color: '#4C6FFF' }
         ]
       });
-      return result?.index === 1;
+      return result?.index === 1;  // 返回用户选择结果
     } catch {
-      return false;
+      return false;  // 异常情况下默认不允许
     }
   }
 
   /**
    * 处理退出登录状态
    * 重置所有用户相关状态
+   *
+   * 重置内容：
+   * - 用户ID设为'0'
+   * - 清空用户信息
+   * - 关闭编辑状态
    */
   private handleLogoutState() {
     this.uid = '0';
@@ -313,31 +394,40 @@ export struct MinePage {
   /**
    * 处理退出登录
    * 调用退出API并重置状态
+   *
+   * 执行流程：
+   * 1. 重置本地状态
+   * 2. 保存到本地存储
+   * 3. 调用服务器退出API
+   * 4. 触发全局状态更新
+   * 5. 刷新通知状态
+   * 6. 显示退出提示
    */
   private async handleLogout() {
-    this.handleLogoutState();
-    await this.saveAll();
-    await UserStore.logout(this.hostCtx());
+    this.handleLogoutState();  // 重置状态
+    await this.saveAll();      // 保存到本地
+    await UserStore.logout(this.hostCtx());  // 服务器退出
 
     // 触发全局状态更新
     AppStorage.setOrCreate('session_version', 0);
     const v = (AppStorage.get('session_version') as number) ?? 0;
     AppStorage.set('session_version', v + 1);
-    
-    await this.refreshNotifications();
+
+    await this.refreshNotifications();  // 刷新通知
     promptAction.showToast({ message: '已退出登录' });
   }
 
   /**
    * 取消编辑资料
+   * 恢复原始数据并关闭编辑状态
    */
   private async cancelEditProfile() {
-    await this.loadSession();
-    this.isEditingProfile = false;
+    await this.loadSession();      // 重新加载原始数据
+    this.isEditingProfile = false; // 关闭编辑状态
   }
 
   // ========== 页面跳转方法 ==========
-  
+
   /**
    * 打开浏览历史页面
    */
@@ -394,6 +484,7 @@ export struct MinePage {
 
   /**
    * 打开待读清单页面
+   * 需要登录状态验证
    */
   private async openReadingListPage() {
     if (!this.isLogin || this.uid === '0') {
@@ -430,14 +521,14 @@ export struct MinePage {
   }
 
   // ========== 通知管理方法 ==========
-  
+
   /**
    * 刷新通知数量
    * 根据登录状态获取未读通知数量
    */
   private async refreshNotifications() {
     if (!this.isLogin || this.uid === '0') {
-      this.unreadNotifications = 0;
+      this.unreadNotifications = 0;  // 未登录用户无通知
       return;
     }
     this.unreadNotifications = await NotificationStore.unreadCount(this.hostCtx(), this.uid);
@@ -472,60 +563,90 @@ export struct MinePage {
 
   /**
    * 刷新个性化推荐数量
+   * 生成随机推荐数量（模拟数据）
    */
   private refreshRecommendCount() {
-    this.recommendCount = Math.floor(Math.random() * 9) + 1;
+    this.recommendCount = Math.floor(Math.random() * 9) + 1;  // 1-9的随机数
   }
 
+  /**
+   * 格式化日期键
+   * 将时间戳转换为日期字符串用于连续阅读计算
+   *
+   * @param ts 时间戳
+   * @returns 格式化的日期键（年-月-日）
+   */
   private formatDateKey(ts: number): string {
     const date = new Date(ts);
     return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
   }
 
+  /**
+   * 计算连续阅读天数
+   *
+   * @param viewedAtList 阅读时间戳数组
+   * @returns 连续阅读天数
+   */
   private calcReadingStreak(viewedAtList: number[]): number {
     const daySet = new Set(viewedAtList.map((ts) => this.formatDateKey(ts)));
     if (daySet.size === 0) {
-      return 0;
+      return 0;  // 无阅读记录
     }
     let streak = 0;
-    const cursor = new Date();
+    const cursor = new Date();  // 从今天开始向前检查
+
+    // 连续向前检查日期是否存在阅读记录
     while (true) {
       const key = `${cursor.getFullYear()}-${cursor.getMonth()}-${cursor.getDate()}`;
       if (!daySet.has(key)) {
-        break;
+        break;  // 遇到断档日期，停止计数
       }
       streak += 1;
-      cursor.setDate(cursor.getDate() - 1);
+      cursor.setDate(cursor.getDate() - 1);  // 向前一天
     }
     return streak;
   }
 
+  /**
+   * 刷新阅读统计数据
+   * 计算连续阅读天数、本周收藏数量、待读清单数量
+   */
   private async refreshReadingStats() {
     const ctx = this.hostCtx();
+
+    // 计算连续阅读天数
     const history = await HistoryStore.loadHistory(ctx);
     const viewedAtList = history
       .map(item => item.viewedAt)
       .filter(item => typeof item === 'number') as number[];
     this.readingStreakDays = this.calcReadingStreak(viewedAtList);
 
+    // 检查用户登录状态
     const uid = await FavoriteStore.getUid(ctx);
     if (uid === '0') {
       this.weeklyFavCount = 0;
       this.readingListCount = 0;
       return;
     }
+
+    // 计算本周收藏数量
     const favSet = await FavoriteStore.loadFavSet(ctx, uid);
     const times = await FavoriteStore.loadFavTimes(ctx, uid);
     let timesUpdated = false;
+
+    // 为新增收藏添加时间戳
     favSet.forEach((id) => {
       if (!times.has(id)) {
         times.set(id, Date.now());
         timesUpdated = true;
       }
     });
+
     if (timesUpdated) {
       await FavoriteStore.saveFavTimes(ctx, uid, times);
     }
+
+    // 统计一周内的收藏数量
     const oneWeekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
     let weekCount = 0;
     times.forEach((ts) => {
@@ -535,6 +656,7 @@ export struct MinePage {
     });
     this.weeklyFavCount = weekCount;
 
+    // 获取待读清单数量
     const list = await ReadingListStore.loadList(ctx, uid);
     this.readingListCount = list.size;
   }
@@ -560,6 +682,9 @@ export struct MinePage {
     promptAction.showToast({ message: '帮助中心正在建设中' });
   }
 
+  /**
+   * 打开离线下载页面
+   */
   private async openOfflineDownloads() {
     try {
       await router.pushUrl({ url: 'pages/OfflineDownloadsPage' });
@@ -568,6 +693,9 @@ export struct MinePage {
     }
   }
 
+  /**
+   * 打开隐私中心页面
+   */
   private async openPrivacyCenter() {
     try {
       await router.pushUrl({ url: 'pages/PrivacyCenterPage' });
@@ -584,26 +712,36 @@ export struct MinePage {
   }
 
   // ========== 页面构建方法 ==========
-  
+
   /**
    * 构建页面UI
    * 根据登录状态显示不同的内容区域
+   *
+   * 布局结构：
+   * 1. Stack层：背景图 + 主内容
+   * 2. Column层：头部导航 + 滚动内容
+   * 3. Scroll层：可滚动的内容区域
+   * 4. 条件渲染：根据状态显示不同内容
    */
   build() {
     Stack() {
+      // 背景图片层
       Image($r('app.media.bgt'))
         .width('100%')
         .height('100%')
         .objectFit(ImageFit.Cover)
+
+      // 主内容区域
       Column() {
         // ========== 头部导航栏 ==========
         Row() {
-          Blank().width(36)
+          Blank().width(36)  // 左侧占位
           Text('我的')
             .fontSize(22)
             .fontWeight(FontWeight.Bold)
             .layoutWeight(1)
             .textAlign(TextAlign.Center)
+          // 设置按钮
           Button('设置', { type: ButtonType.Capsule })
             .fontSize(12)
             .fontColor('#4F46E5')
@@ -631,17 +769,20 @@ export struct MinePage {
               // 用户头像区域
               Stack({ alignContent: Alignment.Center }) {
                 if (this.avatarUrl) {
+                  // 自定义头像
                   Image(this.avatarUrl)
                     .width(52)
                     .height(52)
                     .borderRadius(26)
                     .objectFit(ImageFit.Cover)
                 } else {
+                  // 默认头像
                   Image($r('app.media.mrtx'))
                     .width(52)
                     .height(52)
                     .borderRadius(26)
                     .objectFit(ImageFit.Cover)
+                  // 头像字母（昵称首字母或"访"）
                   Text(this.isLogin ? (this.nickname ? this.nickname.slice(0, 1) : '我') : '访')
                     .fontSize(18)
                     .fontWeight(FontWeight.Bold)
@@ -661,7 +802,7 @@ export struct MinePage {
                   .fontWeight(FontWeight.Medium)
                   .onClick(async () => {
                     if (!this.isLogin) {
-                      await this.openLoginPage();
+                      await this.openLoginPage();  // 未登录时跳转登录页
                     }
                   })
                 Text(
@@ -675,7 +816,7 @@ export struct MinePage {
                   Text(this.bio).fontSize(12).opacity(0.7).maxLines(2)
                 }
               }
-              .layoutWeight(1)
+              .layoutWeight(1)  // 占据剩余空间
             }
             .padding(16)
             .borderRadius(16)
@@ -683,11 +824,13 @@ export struct MinePage {
             .border({ width: 1, color: '#E9EEF5' })
             .shadow({ radius: 10, color: '#1A3B5A26', offsetX: 0, offsetY: 6 })
 
+            // ========== 常用服务区域 ==========
             Column({ space: 12 }) {
               Row() {
                 Text('常用服务').fontSize(16).fontWeight(FontWeight.Medium)
               }
               Row({ space: 12 }) {
+                // 我的收藏入口
                 Column({ space: 6 }) {
                   Text('⭐').fontSize(22)
                   Text('我的收藏').fontSize(12)
@@ -703,6 +846,7 @@ export struct MinePage {
                 })
                 .onClick(async () => await this.openFavoritePage())
 
+                // 离线下载入口
                 Column({ space: 6 }) {
                   Text('📥').fontSize(22)
                   Text('离线下载').fontSize(12)
@@ -718,6 +862,7 @@ export struct MinePage {
                 })
                 .onClick(async () => await this.openOfflineDownloads())
 
+                // 隐私中心入口
                 Column({ space: 6 }) {
                   Text('🛡️').fontSize(22)
                   Text('隐私中心').fontSize(12)
@@ -740,7 +885,7 @@ export struct MinePage {
             .border({ width: 1, color: '#E9EEF5' })
             .shadow({ radius: 10, color: '#1A3B5A1A', offsetX: 0, offsetY: 6 })
 
-            // ========== 功能入口区域 ==========
+            // ========== 我的足迹区域 ==========
             Column({ space: 12 }) {
               Row() {
                 Text('我的足迹').fontSize(16).fontWeight(FontWeight.Medium)
@@ -797,8 +942,9 @@ export struct MinePage {
                 .onClick(async () => await this.openCommented())
               }
 
-              // 第二行功能入口（通知）
+              // 第二行功能入口（通知相关）
               Row({ space: 12 }) {
+                // 通知入口（带未读徽章）
                 Column({ space: 6 }) {
                   Text('🔔').fontSize(22)
                   Row({ space: 6 }) {
@@ -825,6 +971,7 @@ export struct MinePage {
                 })
                 .onClick(async () => await this.openNotifications())
 
+                // 更新日志入口
                 Column({ space: 6 }) {
                   Text('🧾').fontSize(22)
                   Text('更新日志').fontSize(12)
@@ -840,6 +987,7 @@ export struct MinePage {
                 })
                 .onClick(async () => await this.openChangelog())
 
+                // 反馈入口
                 Column({ space: 6 }) {
                   Text('🐞').fontSize(22)
                   Text('反馈').fontSize(12)
@@ -862,34 +1010,42 @@ export struct MinePage {
             .border({ width: 1, color: '#E9EEF5' })
             .shadow({ radius: 10, color: '#1A3B5A1A', offsetX: 0, offsetY: 6 })
 
+            // ========== 我的动态区域 ==========
             Column({ space: 12 }) {
               Row() {
                 Text('我的动态').fontSize(16).fontWeight(FontWeight.Medium)
               }
+
+              // 阅读统计数据
               Row({ space: 12 }) {
+                // 连续阅读天数
                 Column({ space: 4 }) {
                   Text(`${this.readingStreakDays}`).fontSize(18).fontWeight(FontWeight.Bold)
                   Text('连续阅读日').fontSize(11).opacity(0.6)
                 }
                 .layoutWeight(1)
+
+                // 本周收藏数量
                 Column({ space: 4 }) {
                   Text(`${this.weeklyFavCount}`).fontSize(18).fontWeight(FontWeight.Bold)
                   Text('本周收藏').fontSize(11).opacity(0.6)
                 }
                 .layoutWeight(1)
                 .onClick(async () => await this.openFavoritePage())
+
+                // 待读清单数量
                 Column({ space: 4 }) {
                   Text(`${this.readingListCount}`).fontSize(18).fontWeight(FontWeight.Bold)
                   Text('待读清单').fontSize(11).opacity(0.6)
                 }
                 .layoutWeight(1)
                 .onClick(async () => await this.openReadingListPage())
-
               }
               .padding(12)
               .borderRadius(12)
               .backgroundColor('#F8FAFC')
 
+              // 个性化推荐入口
               Row({ space: 8 }) {
                 Text('📌').fontSize(16)
                 Text(`已为你更新 ${this.recommendCount} 条个性化推荐`).fontSize(12).opacity(0.7)
@@ -912,7 +1068,7 @@ export struct MinePage {
           .opacity(this.contentOpacity)
           .translate({ x: 0, y: this.contentOffset })
         }
-        .layoutWeight(1)
+        .layoutWeight(1)  // 占据剩余垂直空间
       }
       .width('100%')
       .height('100%')

@@ -101,7 +101,7 @@ export struct SplashPage {
       
       /**
        * 全屏背景图片
-       * 使用app.media.background资源，覆盖整个屏幕
+       * 使用app.media.beijingtu，覆盖整个屏幕
        */
       Image($r('app.media.beijingtu'))
         .width('100%')
@@ -113,7 +113,7 @@ export struct SplashPage {
       Column({ space: 16 }) {
         /**
          * 应用图标
-         * 使用app.media.xuexi资源
+         * 使用AppLoadingProgress资源
          * 应用透明度动画和缩放动画效果
          */
         AppLoadingProgress({
