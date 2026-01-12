@@ -35,7 +35,7 @@ import type { Article } from '../model/Article';
 import { ArticleStore } from '../store/ArticleStore';
 import { FavoriteStore } from '../store/FavoriteStore';
 import { SearchHistoryStore } from '../store/SearchHistoryStore';
-import { searchArticles } from '../service/WanService';
+import { fetchHotKeywords, searchArticles } from '../service/WanService';
 import { AppLoadingProgress } from '../components/AppLoadingProgress';
 
 // 全局状态管理 - 用于跨页面同步
@@ -56,7 +56,7 @@ AppStorage.setOrCreate('session_version', 0); // 会话版本号
 @Component
 export struct SearchPage {
   // ========== 推荐关键词 ==========
-  private hotKeywords: string[] = ['鸿蒙', 'HarmonyOS', 'Compose', 'Kotlin', 'AI'];
+  @State hotKeywords: string[] = ['鸿蒙', 'HarmonyOS', 'Compose', 'Kotlin', 'AI'];
   private recommendKeywords: string[] = ['性能优化', '动画', '架构', '网络请求', '组件化'];
 
   // ========== 上下文获取 ==========
@@ -131,6 +131,7 @@ export struct SearchPage {
   async aboutToAppear() {
     await this.refreshFav();          // 刷新收藏状态
     await this.loadSearchHistory();   // 加载搜索历史
+    await this.loadHotKeywords();     // 加载热搜关键词
   }
 
   /**
@@ -174,6 +175,20 @@ export struct SearchPage {
    */
   private async loadSearchHistory() {
     this.searchHistory = await SearchHistoryStore.load(this.hostCtx());
+  }
+
+  /**
+   * 加载热搜关键词
+   */
+  private async loadHotKeywords() {
+    try {
+      const keywords = await fetchHotKeywords();
+      if (keywords.length > 0) {
+        this.hotKeywords = keywords;
+      }
+    } catch (e) {
+      promptAction.showToast({ message: (e as Error)?.message ?? '热词加载失败' });
+    }
   }
 
   /**

@@ -73,6 +73,15 @@ interface CategoryPayload {
 }
 
 /**
+ * 热词数据负载接口
+ * 从API返回的热词数据格式
+ */
+interface HotKeyPayload {
+  id?: number;    // 热词ID
+  name?: string;  // 热词名称
+}
+
+/**
  * 用户数据负载接口
  * 从API返回的原始用户数据格式
  */
@@ -485,4 +494,20 @@ export async function fetchCategories(): Promise<Category[]> {
     cid: item.id ?? 0,
     name: item.name ?? '未命名'
   }));
+}
+
+/**
+ * 获取热搜关键词
+ *
+ * @returns 热搜关键词数组
+ */
+export async function fetchHotKeywords(): Promise<string[]> {
+  const data = await getJson<HotKeyPayload[]>('/hotkey/json');
+  if (!Array.isArray(data)) {
+    throw new Error('热词数据格式错误');
+  }
+
+  return data
+    .map(item => item.name?.trim())
+    .filter((name): name is string => Boolean(name));
 }
