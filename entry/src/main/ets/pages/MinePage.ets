@@ -393,6 +393,21 @@ export struct MinePage {
   }
 
   /**
+   * 打开待读清单页面
+   */
+  private async openReadingListPage() {
+    if (!this.isLogin || this.uid === '0') {
+      promptAction.showToast({ message: '请先登录后查看待读清单' });
+      return;
+    }
+    try {
+      await router.pushUrl({ url: 'pages/ReadingListPage' });
+    } catch (e) {
+      promptAction.showToast({ message: '跳转失败：页面不存在或参数错误' });
+    }
+  }
+
+  /**
    * 打开首页（默认首页标签页）
    */
   private async openHomePage() {
@@ -868,6 +883,8 @@ export struct MinePage {
                   Text('待读清单').fontSize(11).opacity(0.6)
                 }
                 .layoutWeight(1)
+                .onClick(async () => await this.openReadingListPage())
+
               }
               .padding(12)
               .borderRadius(12)

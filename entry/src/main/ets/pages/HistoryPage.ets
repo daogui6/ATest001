@@ -170,6 +170,11 @@ export struct HistoryPage {
           // 动态操作按钮：有历史时显示清空按钮，无历史时显示占位
           if (this.history.length > 0) {
             Button('清空', { type: ButtonType.Capsule })
+              .fontSize(12)
+              .fontColor('#4F46E5')
+              .backgroundColor('#EEF2FF')
+              .height(28)
+              .padding({ left: 10, right: 10 })
               .onClick(async () => await this.clearHistory());
           } else {
             Blank().width(78) // 占位保持布局平衡
