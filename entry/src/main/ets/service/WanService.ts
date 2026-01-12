@@ -507,7 +507,9 @@ export async function fetchHotKeywords(): Promise<string[]> {
     throw new Error('热词数据格式错误');
   }
 
-  return data
+  const names = data
     .map(item => item.name?.trim())
-    .filter((name): name is string => Boolean(name));
+    .filter(name => typeof name === 'string' && name.length > 0);
+
+  return names as string[];
 }
