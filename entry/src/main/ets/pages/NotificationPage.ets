@@ -205,27 +205,29 @@ export struct NotificationPage {
         .objectFit(ImageFit.Cover)
       Column() {
         // 顶部导航栏
-        Row() {
-          Text('←')
-            .fontSize(20)
-            .margin({ left: 16 })
-            .onClick(() => router.back());
+        Stack({ alignContent: Alignment.Center }) {
+          Row() {
+            Text('←')
+              .fontSize(20)
+              .margin({ left: 16 })
+              .onClick(() => router.back());
+
+            Blank().layoutWeight(1)
+
+            // 全部已读按钮
+            Text('全部已读')
+              .fontSize(12)
+              .opacity(0.7)
+              .margin({ right: 16 })
+              .onClick(async () => await this.markAllRead());
+          }
+          .alignItems(VerticalAlign.Center)
+          .width('100%')
 
           Text('通知')
             .fontSize(20)
             .fontWeight(FontWeight.Bold)
-            .layoutWeight(1)
-            .textAlign(TextAlign.Center)
-            .margin({ right: 36 })
-
-          // 全部已读按钮
-          Text('全部已读')
-            .fontSize(12)
-            .opacity(0.7)
-            .margin({ right: 16 })
-            .onClick(async () => await this.markAllRead());
         }
-        .alignItems(VerticalAlign.Center)
         .padding({ top: 16, right: 16, bottom: 12 })
         .opacity(this.headerOpacity)
         .translate({ x: 0, y: this.headerOffset })

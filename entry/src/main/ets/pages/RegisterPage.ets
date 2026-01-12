@@ -87,7 +87,7 @@ export struct RegisterPage {
     
     promptAction.showToast({ message: '注册成功，已登录' });
     await this.requestNewUserPermissions();
-    await this.goBack();
+    await this.goToMine();
   }
 
   /**
@@ -99,6 +99,17 @@ export struct RegisterPage {
       await router.back();
     } catch (e) {
       // 回退失败时跳转到我的页面
+      await router.pushUrl({ url: 'pages/MinePage' });
+    }
+  }
+
+  /**
+   * 注册完成后跳转到我的页面
+   */
+  private async goToMine() {
+    try {
+      await router.replaceUrl({ url: 'pages/MinePage' });
+    } catch (e) {
       await router.pushUrl({ url: 'pages/MinePage' });
     }
   }

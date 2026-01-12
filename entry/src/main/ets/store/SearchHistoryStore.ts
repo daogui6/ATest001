@@ -8,7 +8,7 @@
  * - 提供搜索历史列表的加载功能
  * 
  * 存储设计：
- * - 全局存储，不区分用户
+ * - 按用户ID隔离存储
  * - 关键词按时间倒序排列（最新的在前）
  * - 限制最多保存20条搜索记录
  * - 自动去重和空白字符处理
@@ -16,6 +16,7 @@
 
 import type common from '@ohos.app.ability.common';
 import { Prefs } from './Prefs';
+import { UserStore } from './UserStore';
 
 export class SearchHistoryStore {
   /**
@@ -23,8 +24,12 @@ export class SearchHistoryStore {
    * 
    * @returns 搜索历史存储键名
    */
-  private static key(): string {
-    return 'history.search_keywords';
+  private static async key(ctx: common.UIAbilityContext): Promise<string> {
+    const current = await UserStore.currentUser(ctx);
+    if (current && typeof current.id === 'number') {
+      return `history.search_keywords.${current.id}`;
+    }
+    return 'history.search_keywords.guest';
   }
 
   /**
@@ -34,8 +39,9 @@ export class SearchHistoryStore {
    * @returns 搜索关键词数组（按时间倒序）
    */
   static async load(ctx: common.UIAbilityContext): Promise<string[]> {
+    const key = await SearchHistoryStore.key(ctx);
     // 从本地存储读取搜索历史数据
-    const raw = await Prefs.getString(ctx, SearchHistoryStore.key(), '[]');
+    const raw = await Prefs.getString(ctx, key, '[]');
     
     try {
       // 解析JSON数据
@@ -56,8 +62,9 @@ export class SearchHistoryStore {
    * @param keyword 搜索关键词
    */
   static async addKeyword(ctx: common.UIAbilityContext, keyword: string): Promise<void> {
+    const key = await SearchHistoryStore.key(ctx);
     // 加载现有搜索历史
-    const raw = await Prefs.getString(ctx, SearchHistoryStore.key(), '[]');
+    const raw = await Prefs.getString(ctx, key, '[]');
     let list: string[] = [];
     
     try {
@@ -84,7 +91,7 @@ export class SearchHistoryStore {
     const trimmed = filtered.slice(0, 20);
     
     // 保存更新后的搜索历史
-    await Prefs.putString(ctx, SearchHistoryStore.key(), JSON.stringify(trimmed));
+    await Prefs.putString(ctx, key, JSON.stringify(trimmed));
   }
 
   /**
@@ -94,8 +101,9 @@ export class SearchHistoryStore {
    * @param keyword 要移除的关键词
    */
   static async removeKeyword(ctx: common.UIAbilityContext, keyword: string): Promise<void> {
+    const key = await SearchHistoryStore.key(ctx);
     // 加载现有搜索历史
-    const raw = await Prefs.getString(ctx, SearchHistoryStore.key(), '[]');
+    const raw = await Prefs.getString(ctx, key, '[]');
     let list: string[] = [];
     
     try {
@@ -109,7 +117,7 @@ export class SearchHistoryStore {
     const filtered = list.filter(item => item !== keyword);
     
     // 保存更新后的搜索历史
-    await Prefs.putString(ctx, SearchHistoryStore.key(), JSON.stringify(filtered));
+    await Prefs.putString(ctx, key, JSON.stringify(filtered));
   }
 
   /**
@@ -118,7 +126,8 @@ export class SearchHistoryStore {
    * @param ctx UIAbility上下文
    */
   static async clear(ctx: common.UIAbilityContext): Promise<void> {
+    const key = await SearchHistoryStore.key(ctx);
     // 清空搜索历史数据
-    await Prefs.putString(ctx, SearchHistoryStore.key(), '[]');
+    await Prefs.putString(ctx, key, '[]');
   }
 }

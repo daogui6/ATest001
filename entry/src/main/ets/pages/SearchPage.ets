@@ -147,6 +147,7 @@ export struct SearchPage {
    */
   private onSessionVersionChange() {
     this.refreshFav();
+    void this.loadSearchHistory();
   }
 
   // ========== 数据管理方法 ==========
