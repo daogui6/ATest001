@@ -526,6 +526,7 @@ export struct CategoryPage {
               .fontSize(22)
               .onClick(() => router.back())  // 返回上一页
               .width(40)
+              .fontColor('#4A5568')
           } else {
             Blank().width(40)  // 占位保持布局平衡
           }
@@ -536,15 +537,16 @@ export struct CategoryPage {
             .fontWeight(FontWeight.Bold)
             .layoutWeight(1)
             .textAlign(TextAlign.Center)
+            .fontColor('#1F2937')
 
           Blank().width(40)  // 右侧占位保持对称
         }
         .width('100%')
-        .padding(12)
-        .margin({ top: 12, left: 16, right: 16, bottom: 12 })
+        .padding({ left: 12, right: 12, top: 10, bottom: 10 })
+        .margin({ top: 12, left: 16, right: 16, bottom: 10 })
         .backgroundColor('#FFFFFF')
-        .borderRadius(16)
-        .shadow({ radius: 14, color: '#14000000', offsetX: 0, offsetY: 6 })
+        .borderRadius(18)
+        .shadow({ radius: 16, color: '#1A000000', offsetX: 0, offsetY: 8 })
         .opacity(this.headerOpacity)
         .translate({ x: 0, y: this.headerOffset })
 
@@ -552,20 +554,39 @@ export struct CategoryPage {
         Row() {
           // 左侧：分类导航列表（宽度34%）
           Column() {
+            Text('分类导航')
+              .fontSize(12)
+              .fontColor('#8A94A6')
+              .margin({ left: 4, bottom: 6 })
             List() {
               ForEach(this.categories, (c: Category) => {
                 ListItem() {
-                  Text(c.name)
-                    .fontSize(14)
-                    .fontWeight(this.selectedCid === c.cid ? FontWeight.Bold : FontWeight.Normal)
-                    .padding(12)
-                    .width('100%')
-                    .textAlign(TextAlign.Center)
-                    .backgroundColor(this.selectedCid === c.cid ? '#EEF4FF' : '#FFFFFF')  // 选中状态高亮
-                    .borderRadius(8)
-                    .border({ width: 1, color: this.selectedCid === c.cid ? '#D6E4FF' : '#EEF0F3' })
-                    .shadow({ radius: 6, color: '#0D000000', offsetX: 0, offsetY: 2 })
+                  Row() {
+                    if (this.selectedCid === c.cid) {
+                      Text('')
+                        .width(4)
+                        .height(18)
+                        .borderRadius(2)
+                        .backgroundColor('#4C7DFF')
+                        .margin({ right: 8 })
+                    } else {
+                      Blank().width(12)
+                    }
+
+                    Text(c.name)
+                      .fontSize(14)
+                      .fontWeight(this.selectedCid === c.cid ? FontWeight.Bold : FontWeight.Normal)
+                      .layoutWeight(1)
+                      .fontColor(this.selectedCid === c.cid ? '#1F2A44' : '#5B6576')
+                  }
+                  .padding({ left: 10, right: 10, top: 10, bottom: 10 })
+                  .width('100%')
+                  .backgroundColor(this.selectedCid === c.cid ? '#EEF4FF' : '#FFFFFF')  // 选中状态高亮
+                  .borderRadius(12)
+                  .border({ width: 1, color: this.selectedCid === c.cid ? '#D6E4FF' : '#EEF0F3' })
+                  .shadow({ radius: 8, color: '#12000000', offsetX: 0, offsetY: 3 })
                 }
+                .margin({ bottom: 8 })
                 .width('100%')
                 .onClick(async () => {
                   // 分类切换逻辑
@@ -580,7 +601,10 @@ export struct CategoryPage {
             }
           }
           .width('34%')
-          .padding({ left: 12, right: 6 })
+          .padding({ left: 12, right: 6, top: 10, bottom: 10 })
+          .backgroundColor('#FFFFFF')
+          .borderRadius(16)
+          .shadow({ radius: 10, color: '#0F000000', offsetX: 0, offsetY: 4 })
 
           // 右侧：文章列表区域（宽度66%）
           Column() {
@@ -597,7 +621,7 @@ export struct CategoryPage {
                 Text('网络加载失败，数据暂不可用').fontSize(13).opacity(0.7)
                 Text(this.errorMsg).fontSize(12).opacity(0.6)
               }
-              .padding({ left: 12, right: 12, bottom: 6 })
+              .padding({ left: 12, right: 12, bottom: 6, top: 6 })
             }
 
             // 下拉刷新容器
@@ -622,6 +646,7 @@ export struct CategoryPage {
                         Text(this.favIds.has(item.id) ? '★' : '☆')
                           .fontSize(20)
                           .margin({ left: 8 })
+                          .fontColor(this.favIds.has(item.id) ? '#FF9F1C' : '#A3A9B6')
                           .gesture(
                             TapGesture().onAction(async () => {
                               await this.toggleFav(item);
@@ -630,9 +655,9 @@ export struct CategoryPage {
                       }
                       .padding(12)
                       .margin({ left: 6, right: 12, bottom: 12 })
-                      .borderRadius(16)
+                      .borderRadius(18)
                       .backgroundColor('#FFFFFF')
-                      .shadow({ radius: 12, color: '#1A000000', offsetX: 0, offsetY: 5 })
+                      .shadow({ radius: 14, color: '#1F000000', offsetX: 0, offsetY: 6 })
                       .onClick(async () => {
                         await this.openDetail(item);  // 跳转到详情页
                       })
@@ -675,6 +700,9 @@ export struct CategoryPage {
           }
           .width('66%')
         }
+        .padding({ left: 8, right: 8, bottom: 12 })
+        .margin({ left: 12, right: 12, bottom: 12 })
+        .borderRadius(20)
         .layoutWeight(1)  // 占据剩余空间
       }
       .width('100%')
