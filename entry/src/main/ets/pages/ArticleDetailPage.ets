@@ -536,66 +536,89 @@ struct ArticleDetailPage {
     this.bumpFavVersion(); // 触发全局收藏状态更新
   }
 
+  // 更新待读清单
   private async refreshReadingList() {
-    const ctx = this.hostCtx();
-    const uid = await ReadingListStore.getUid(ctx);
-    if (uid === '0') {
-      this.readingListIds = new Set<number>();
+    const ctx = this.hostCtx(); // 获取当前上下文
+    const uid = await ReadingListStore.getUid(ctx); // 获取当前用户ID
+    if (uid === '0') { // 如果用户未登录
+      this.readingListIds = new Set<number>(); // 清空待读清单
       return;
     }
-    this.readingListIds = await ReadingListStore.loadList(ctx, uid);
+    this.readingListIds = await ReadingListStore.loadList(ctx, uid); // 加载用户的待读清单
   }
 
+  // 更新离线下载
   private async refreshDownloads() {
-    const ctx = this.hostCtx();
-    const uid = await DownloadStore.getUid(ctx);
-    const list = await DownloadStore.loadDownloads(ctx, uid);
-    this.downloadedIds = new Set(list.map(item => item.id));
+    const ctx = this.hostCtx(); // 获取当前上下文
+    const uid = await DownloadStore.getUid(ctx); // 获取当前用户ID
+    const list = await DownloadStore.loadDownloads(ctx, uid); // 加载用户的下载列表
+    this.downloadedIds = new Set(list.map(item => item.id)); // 更新已下载文章ID集合
   }
 
+  /**
+   *  待读/取消待读切换
+   * 支持登录验证、本地状态更新、数据持久化
+   */
   private async toggleReadingList(id: number) {
-    const ctx = this.hostCtx();
-    const uid = await ReadingListStore.getUid(ctx);
-    if (uid === '0') {
-      promptAction.showToast({ message: '请先在【我的】里登录' });
+    const ctx = this.hostCtx(); // 获取当前上下文
+    const uid = await ReadingListStore.getUid(ctx); // 获取当前用户ID
+    if (uid === '0') { // 如果用户未登录
+      promptAction.showToast({ message: '请先在【我的】里登录' }); // 提示用户登录
       return;
     }
-    const next = new Set(this.readingListIds);
-    if (next.has(id)) {
-      next.delete(id);
-      promptAction.showToast({ message: '已从待读清单移除' });
-    } else {
-      next.add(id);
-      promptAction.showToast({ message: '已加入待读清单' });
+    const next = new Set(this.readingListIds); // 创建新的待读清单集合
+    if (next.has(id)) { // 如果文章已在待读清单中
+      next.delete(id); // 移除文章
+      promptAction.showToast({ message: '已从待读清单移除' }); // 提示移除成功
+    } else { // 如果文章不在待读清单中
+      next.add(id); // 添加文章
+      promptAction.showToast({ message: '已加入待读清单' }); // 提示添加成功
     }
-    this.readingListIds = next;
-    await ReadingListStore.saveList(ctx, uid, next);
-    this.bumpReadingVersion();
+    this.readingListIds = next; // 更新待读清单集合
+    await ReadingListStore.saveList(ctx, uid, next); // 保存待读清单到存储
+    this.bumpReadingVersion(); // 更新待读清单版本
   }
 
+  /**
+   *  离线下载
+   * 支持登录验证、本地状态更新、数据持久化
+   */
   private async handleDownload() {
+    // 检查当前文章是否存在，若不存在则返回
     if (!this.article) {
       return;
     }
+    // 获取当前上下文
     const ctx = this.hostCtx();
+    // 获取当前用户ID
     const uid = await DownloadStore.getUid(ctx);
+    // 获取文章链接，若链接不存在则使用空字符串
     const link = this.article.link?.trim() ?? '';
+    // 初始化文章内容
     let content = this.article.content;
+    // 如果文章链接存在
     if (link.length > 0) {
       try {
+        // 尝试获取文章原文内容
         const text = await fetchArticleContent(link);
+        // 若获取到的内容不为空，则更新文章内容
         if (text.trim().length > 0) {
           content = text;
         }
       } catch {
+        // 若获取原文失败，显示提示信息
         promptAction.showToast({ message: '原文下载失败，已保存摘要内容' });
       }
     }
+    // 将文章添加到下载存储中
     await DownloadStore.addDownload(ctx, uid, this.article, content);
+    // 更新已下载文章的ID集合
     const nextDownloadedIds = new Set<number>(Array.from(this.downloadedIds));
     nextDownloadedIds.add(this.article.id);
     this.downloadedIds = nextDownloadedIds;
+    // 更新下载版本号
     this.bumpDownloadVersion();
+    // 显示下载成功提示
     promptAction.showToast({ message: '已加入离线下载' });
   }
 
@@ -721,27 +744,39 @@ struct ArticleDetailPage {
    *  文章点赞/取消点赞
    */
   private async toggleLikeStatus() {
+    // 获取当前文章对象
     const article = this.article;
+    // 检查文章是否已加载，未加载则提示
     if (!article) {
       promptAction.showToast({ message: '文章未加载' });
       return;
     }
 
+    // 获取当前上下文
     const ctx = this.hostCtx();
+    // 获取当前用户ID
     const uid = await FavoriteStore.getUid(ctx);
+    // 更新组件中的用户ID
     this.uid = uid;
-    
+
+    // 检查用户是否已登录，未登录则提示
     if (uid === '0') {
       promptAction.showToast({ message: '请先在【我的】里登录' });
       return;
     }
 
+    // 调用交互存储切换点赞状态
     const state = await InteractionStore.toggleLike(ctx, article.id, uid);
+    // 更新组件的点赞状态
     this.liked = state.liked;
+    // 更新组件的点赞数量
     this.likeCount = state.count;
+    // 更新用户行为存储中的点赞状态
     await UserActionStore.updateLiked(ctx, uid, article, state.liked);
+    // 更新点赞版本以触发UI刷新
     this.bumpLikedVersion();
   }
+
 
   /**
    *  评论点赞/取消点赞
