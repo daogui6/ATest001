@@ -693,14 +693,14 @@ export struct SearchPage {
             .translate({ x: 0, y: this.panelOffset })
         }
 
-        // ========== 热搜词/推荐词（编辑状态或未搜索时显示） ==========
-        if (!this.hasSearched || this.isEditing) {
+        // ========== 热搜词/推荐词（仅未搜索时显示） ==========
+        if (!this.hasSearched) {
           this.buildKeywordChips('热搜词', this.hotKeywords);
           this.buildKeywordChips('推荐词', this.recommendKeywords);
         }
 
         // ========== 搜索历史记录区域 ==========
-        if (this.searchHistory.length > 0 && (this.isEditing || !this.hasSearched)) {
+        if (this.searchHistory.length > 0 && !this.hasSearched) {
           Column({ space: 8 }) {
             // 历史记录标题和清空按钮区域
             Row() {
@@ -760,7 +760,7 @@ export struct SearchPage {
           .margin({ top: 20 })
         }
         // ========== 空历史记录提示 ==========
-        else if (this.searchHistory.length === 0 && (this.isEditing || !this.hasSearched)) {
+        else if (this.searchHistory.length === 0 && !this.hasSearched) {
           Column({ space: 6 }) {
             Text('暂无搜索记录')
               .fontSize(13)
