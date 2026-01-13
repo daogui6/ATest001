@@ -255,11 +255,13 @@ export struct RegisterPage {
    */
   private async goToMine() {
     try {
-      // 优先使用替换导航，避免回退到注册页
-      await router.replaceUrl({ url: 'pages/MinePage' });
+      // 设置主页面Tab为“我的”，再替换到主页面避免回退到注册页
+      AppStorage.setOrCreate('main_tab_index', 0);
+      AppStorage.set('main_tab_index', 3);
+      await router.replaceUrl({ url: 'pages/Index' });
     } catch (e) {
       // 替换失败时使用推入导航
-      await router.pushUrl({ url: 'pages/MinePage' });
+      await router.pushUrl({ url: 'pages/Index' });
     }
   }
 
